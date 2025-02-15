@@ -1,0 +1,83 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_reservations.supprime_bloc') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Supprimer des réservations en bloc</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Numéro d'unité</small></p>
+                        <div class="input-group mb-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" name="no_unite" placeholder="Numéro d'unité visée"
+                                  aria-label="no_unite" autofocus="autofocus" required>
+                        </div>
+                        <p class="mb-0"><small><b>Plage de dates</b></small></p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Du</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_debut" placeholder="Date du début de la plage"
+                                  value="" aria-label="date_debut" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Au</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_fin" placeholder="Date de fin de la plage"
+                                  value="" aria-label="date_fin" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Ressource</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="ress" data-width="100%" autofocus="autofocus" required>
+                                <option value='' hidden>Choisir..</option>
+                                {% for item in liste_ressources %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                    <button type="submit" class="btn bg-steel text-white float-right mb-2">Soumettre</button>
+                    </div>
+                </div>
+            </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

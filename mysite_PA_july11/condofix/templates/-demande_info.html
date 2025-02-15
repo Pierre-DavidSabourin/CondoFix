@@ -1,0 +1,138 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Formulaire de contact CondoFix</title>
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <script src="../static/jquery-3.5.1.js"></script>
+
+<script type="text/javascript">
+    $(window).on('load', function() {
+        $('#myModal').modal('show');
+    });
+</script>
+</head>
+<body>
+<div id="myModal" class="modal fade">
+    <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confidentialité</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>En cliquant sur « Continuer », vous acceptez le stockage et l'utilisation de vos données personnelles
+            pour nos analyses et pour contribuer à nos efforts de marketing.</p>
+        <p>Pour plus d'informations, consultez notre <a href="{{ url_for('bp_public.confidentialite') }}">politique de confidentialité.</a></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Continuer</button>
+        <button type="button" onclick="window.location.href='{{ url_for( 'bp_public.home' ) }}';" class="btn btn-secondary">Retour à l'accueil</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="list-group">
+    <form action="{{ url_for('bp_public.soumettre_info') }}" method=post class="form-horizontal" role="form">
+
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Demande d'information</h4>
+                    <p class="mb-0">CONDOSYS</p>
+                    <p class="mb-0"><small>255 Bellevue Suite 506, Sherbrooke QC, J1J 0B1</small></p>
+                    <p class="mb-0"><small>(819) 620-3167</small></p>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-0"><small>Nom du syndicat</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-group"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" maxlength="40" name="syndicat_nom" placeholder="Nom du syndicat"
+                              aria-label="syndicat_nom" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-0"><small>Nombre de portes</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-home"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" maxlength="3" name="nbre_portes"  placeholder="Portes"
+                                  aria-label="nbre_portes" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Nom et prénom</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-address-book"></i></span>
+                           </div>
+                           <input type="text" class="form-control border-right-0" maxlength="30" name="contact_nom" placeholder="Nom et prénom"
+                                  aria-label="contact_nom" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Courriel</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                           </div>
+                           <input type="email" class="form-control border-right-0" maxlength="40" name="contact_email" placeholder="Courriel"
+                                  aria-label="contact_email" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-7">
+                        <p class="mb-0"><small>Votre rôle:</small></p>
+                        <div class="input-group mb-2">
+                            <div class="form-group form-inline justify-content-between">
+                                    <input type="radio" name="options_role" id="option1" value="administrateur"><small>&nbsp;administrateur&nbsp;</small><br>
+                                    <input type="radio" name="options_role" id="option2" value="gestionnaire"><small>&nbsp;gestionnaire&nbsp;</small><br>
+                                    <input type="radio" name="options_role" id="option3" value="coproprietaire"><small>&nbsp;copropriétaire</small><br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <p class="mb-0"><small>Téléphone (000-000-0000)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                           </div>
+                           <input type="text" class="form-control border-right-0" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" name="contact_tel" placeholder="Téléphone"
+                                  aria-label="contact_tel" maxlength="12" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-1"><small>Je voudrais:</small></p>
+                        <input type="radio" name="options_demande" id="optionA" value="1"><small>&nbsp;un code pour accéder au site démo (courriel requis)</small><br />
+                        <input type="radio" name="options_demande" id="optionB" value="2" required="required"><small>&nbsp;un appel pour discuter de mes besoins</small><br />
+                        <input type="radio" name="options_demande" id="optionC" value="3"><small>&nbsp;une démonstration à distance du logiciel (20 minutes)</small><br>
+                    </div>
+                    <div class="col-md-4">
+
+                    </div>
+                </div>
+                <p class="mt-2 mb-0"><small>Commentaires</small></p>
+                    <div class="input-group mb-2">
+                       <textarea class="form-control form-control-sm mb-3 text-align:left" maxlength="200" rows="3" name="commentaires" placeholder="Veuillez inscrire vos commentaires" autofocus="autofocus" required></textarea>
+                    </div>
+            <button type="submit" class="btn bg-steel btn-rounded text-white float-right">Soumettre</button>
+            </div>
+    </form>
+</div>
+</body>
+<script src="../static/jquery-3.5.1.min.js"></script>
+{% endblock content %}

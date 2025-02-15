@@ -1,0 +1,120 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_documentation.doc_modif', id_doc=liste_document[0][0]) }}" enctype="multipart/form-data"
+          method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <input type="hidden" name="id_doc" value="{{ liste_document[0][0] }}">
+                <div class="text-center" >
+                    <h4>Modification de document</h4>
+                </div>
+                <p class="mb-0"><small>Description</small></p>
+                <div class="input-group mb-2">
+                   <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                   </div>
+                   <input type="text" class="form-control border-right-0" name="desc_doc" placeholder="Description"
+                          value="{{ liste_document[0][2] }}" aria-label="desc_doc" autofocus="autofocus" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Type</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="type_doc" id="id_doc" data-width="100%" onchange="TypeChange();" autofocus="autofocus" required>
+                                <option value='' hidden>Choisir..</option>
+                                {% for item in liste_types_docs %}
+                                <option value="{{ item[0] }}" >{{ item[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <!--                sélection de l'option à partir de la liste-->
+                        <script>
+                            function selectElement(id, valueToSelect) {
+                                let element = document.getElementById(id);
+                                element.value = valueToSelect;
+                            }
+                            selectElement("id_doc","{{ liste_document[0][1] }}")
+                        </script>
+                        <p class="mb-0"><small>Fournisseur</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-address-book"></i></span>
+                           </div>
+                           <input type="text" class="form-control border-right-0" name="fournisseur" id="fourn" placeholder="Fournisseur"
+                                  value="{{ liste_document[0][5] }}" aria-label="fournisseur" autofocus="autofocus">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Fréquence</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" name="freq" id="freq" step="0" placeholder="Fréquence (ans)"
+                                  value="{{ liste_document[0][4] }}" aria-label="freq" autofocus="autofocus">
+                        </div>
+                        <p class="mb-0"><small>Montant $HT</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" name="montant_HT" id="montant" step="0" placeholder="Montant hors taxes ($)"
+                                  value="{{ liste_document[0][6] }}" aria-label="montant_HT" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <p class="mb-0"><small>Date prochain</small></p>
+                <div class="input-group mb-2">
+                   <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                   </div>
+                   <input type="date" class="form-control border-right-0" name="date_proch" id="date" placeholder="Date du prochain rapport"
+                          value="{{ liste_document[0][7] }}" aria-label="montant_HT" autofocus="autofocus">
+                </div>
+                <p class="mb-0"><small>Titre du document</small></p>
+                <div class="input-group mb-2">
+                   <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-file-pdf-o"></i></span>
+                   </div>
+                   <input type="text" class="form-control border-right-0" name="doc_titre"  placeholder="Titre du document"
+                          value="{{ liste_document[0][8] }}" aria-label="doc_titre" autofocus="autofocus " readonly>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                        <label><b>Téléchargement</b></label>
+                        <div class="custom-file">
+                            <div style="position:relative;">
+                            <input type="file" name="fichier_choisi" id="fichier_upload">
+                        </div>
+                        <a><small>NOTE: Le fichier choisi écrasera celui indiqué dans le champ 'Titre du document'.</small></a>
+                        <button type="submit" class="btn bg-steel text-white float-right mb-1">Soumettre</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+    <script type="text/javascript">
+                    var x = {{ liste_document[0][1] }}
+                    if (x>=5) {
+                      document.getElementById("freq").style.display = "none";
+                      document.getElementById("fourn").style.display = "none";
+                      document.getElementById("montant").style.display = "none";
+                      document.getElementById("date").style.display = "none";
+                    }
+    </script>
+</body>
+{% endblock content %}

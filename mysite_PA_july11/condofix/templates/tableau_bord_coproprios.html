@@ -1,0 +1,153 @@
+{% extends "proprios_layout.html" %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>CondoFix</title>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="row">
+                <div class="card-group col-sm-12">
+                    <div class="card bg-danger mt-0 mb-0">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Critique</small></p>
+                            <h4 class="card-text text-center text-white px-0 mb-0 pb-0">{{ indicateurs[0] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[1] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-warning">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Élevée</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[2] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[3] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-primary">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Moyenne</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[4] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[5] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-success">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1" ><small>Non prioritaire</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[6] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[7] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-light">
+                        <div class="card-body px-0 pt-2 pb-1">
+                            <h5 class="card-text text-center px-0 pb-0 mb-0">{{ indicateurs[8] }}j.</h5>
+                            <p class="card-title_2 text-center px-0 mb-1"><small>Cible: {{ indicateurs[13] }} j.</small></p>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>Âge moyen</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-1">
+                <img src="{{ image_1 }}"/>
+            </div>
+            <div class="row mt-1">
+                <div class="card-group col-sm-12">
+                    <div class="card bg-dark">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>En cours</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[9] }}</h4>
+                        </div>
+                    </div>
+                    <div class="card bg-secondary">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Attente facture</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[10] }}</h4>
+                        </div>
+                    </div>
+                    <div class="card bg-info">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1" ><small>Fermés</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[11] }}</h4>
+                        </div>
+                    </div>
+                    <div class="card bg-light">
+                        <div class="card-body px-0 pt-2 pb-1">
+                            <p class="card-title_1 text-center px-0 mb-0"><small>Performance estimation</small></p>
+                            <h5 class="card-text text-center px-0 pb-0 mb-0">{{ indicateurs[12] }}%</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="row">
+                <div class="col-12">
+                    <img style="margin:0px; padding:0px;" src="{{ image_2 }}"/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="datagrid">
+                        <style>
+                        table {
+                            font-family: arial, sans-serif;
+                            font-size: 8px;
+                            border-collapse: collapse;
+                            width: 108%;
+                        }
+                        th {
+                            border: 1px solid #dddddd;
+                            text-align: right;
+                            color: white;
+                            background-color: blue;
+                            padding: 3px;
+                        }
+                        td {
+                            border: 1px solid #dddddd;
+                            font-weight:bold;
+                            text-align: right;
+                            padding: 3px;
+                        }
+
+                        tr:nth-child(even) {
+                            background-color: #dddddd;
+                        }
+                        </style>
+                        <table>
+                            <tr>
+                                <th width="130px"><strong>Type de travail</strong></th>
+                                <th width="100px"><strong>Main d'oeuvre</strong></th>
+                                <th width="100px"><strong>Taux horaire</strong></th>
+                                <th width="100px"><strong>Matériel</strong></th>
+                            </tr>
+                             {% for item in tableau_list %}
+                            <tr>
+                                <td width="130px">{{ item[0] }}</td>
+                                <td width="100px">{{ item[1] }}</td>
+                                <td width="100px">{{ item[2] }}</td>
+                                <td width="100px">{{ item[3] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="row">
+                <div class="col-12">
+                    <img style="margin:0px; padding:0px;" src="{{ image_3 }}"/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <img style="margin:0px; padding:0px;" src="{{ image_4 }}"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+
+{% endblock content %}

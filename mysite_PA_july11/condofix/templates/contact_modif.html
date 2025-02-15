@@ -1,0 +1,57 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_contacts.contact_modif', ident_contact=liste_contact[0][0]) }}"
+          method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-4 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Modification de contact</h4>
+                </div>
+                <p class="mb-0"><small>Nom et prénom</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-address-book"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" name="contact_nom" placeholder="Nom, prénom" value="{{ liste_contact[0][1] }}"
+                              aria-label="contact_nom" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Titre</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-briefcase"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" name="contact_titre" placeholder="Titre" aria-label="title"
+                              value="{{ liste_contact[0][2] }}" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Description/notes</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" name="contact_desc" placeholder="Description/Notes" aria-label="contact_desc"
+                              value="{{ liste_contact[0][3] }}" autofocus="autofocus">
+                </div>
+                <p class="mb-0"><small>Courriel</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                       </div>
+                       <input type="email" class="form-control border-right-0" name="contact_email" placeholder="Courriel" aria-label="contact_email"
+                              value="{{ liste_contact[0][4] }}" autofocus="autofocus">
+                </div>
+                <p class="mb-0"><small>Téléphone (000-000-0000)</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                       </div>
+                       <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" class="form-control border-right-0" name="contact_tel" placeholder="Téléphone"
+                              aria-label="contact_tel" value="{{ liste_contact[0][5] }}" autofocus="autofocus">
+                </div>
+                <button type="submit" class="btn bg-steel text-white float-right my-2">Soumettre</button>            </div>
+        </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

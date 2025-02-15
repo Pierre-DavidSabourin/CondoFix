@@ -1,0 +1,136 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Permet le bon layout de la table incluant triage et formatage : -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+    <script>
+    $(document).ready(function() {
+        $('#table_data').DataTable({
+            language: {
+                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            }
+        });
+    } );
+    </script>
+</head>
+<body>
+<div class="col-md-10 mx-auto">
+    <h2>Clients</h2>
+<!--    si nouveau: parametre =0-->
+    <a class="btn btn-primary btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_central.clients_enreg', parametre=0) }}">Nouveau</a>
+    <br>
+    <div class="datagrid">
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            font-size: 12px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
+        <table>
+                    <tr>
+                        <th width="60px"><strong>Client ID</strong></th>
+                        <th width="100px"><strong>Nom</strong></th>
+                        <th width="80px"><strong>Database</strong></th>
+                        <th width="80px"><strong>CarnetPlus</strong></th>
+                        <th width="100px"><strong>Module réservations</strong></th>
+                        <th width="40px"><strong>Actif</strong></th>
+                        <th width="60px"><strong>Action</strong></th>
+                    </tr>
+                {% for item in fill_clients %}
+                <tr>
+                    <td width="60px">{{ item[0] }}</td>
+                    <td width="100px">{{ item[1] }}</td>
+                    <td width="80px">{{ item[5] }}</td>
+                    <td width="80px">{{ item[8] }}</td>
+                    <td width="100px">{{ item[7] }}</td>
+                    <td width="40px">{{ item[6] }}</td>
+                    <td class="text-center align-middle">
+                        <div class="btn-group">
+                            <a class="btn btn-primary btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_central.clients_enreg',parametre=item[0]) }}">Modifier</a>
+                        </div>
+                         </td>
+                </tr>
+                {% endfor %}
+        </table>
+    </div>
+    <div class="col-md-10 page-center">
+        <h2>Usagers</h2>
+        <!--    si nouveau: parametre =0-->
+        <a class="btn btn-primary btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_central.usagers_enreg', parametre=0) }}">Nouveau</a>
+        <br>
+        <div class="datagrid">
+            <style>
+                table {
+                    font-family: arial, sans-serif;
+                    font-size: 12px;
+                    border-collapse: collapse;
+                    width: 100%;
+                }
+                td, th {
+                    border: 1px solid #dddddd;
+                    text-align: left;
+                    padding: 8px;
+                }
+                tr:nth-child(even) {
+                    background-color: #dddddd;
+                }
+            </style>
+            <table id="table_data" class="table table-striped table-bordered" style="width:100%">
+                <thead>
+                <tr>
+                    <th width="60px"><strong>Usager ID</strong></th>
+                    <th width="60px"><strong>IDClient</strong></th>
+                    <th width="120px"><strong>Nom d'usager</strong></th>
+                    <th width="60px"><strong>IDTypeUsager</strong></th>
+                    <th width="120px"><strong>Email</strong></th>
+                    <th width="80px"><strong>MotPasse</strong></th>
+                    <th width="40px"><strong>Actif</strong></th>
+                    <th width="80px"><strong>Action</strong></th>
+                </tr>
+                </thead>
+                {% for item_1 in fill_usagers %}
+                <tr>
+                    <td width="60px">{{ item_1[0] }}</td>
+                    <td width="60px">{{ item_1[1] }}</td>
+                    <td width="120px">{{ item_1[2] }}</td>
+                    <td width="60px">{{ item_1[3] }}</td>
+                    <td width="120px">{{ item_1[4] }}</td>
+                    <td width="80px">{{ item_1[5] }}</td>
+                    <td width="40px">{{ item_1[7] }}</td>
+                    <td class="text-center align-middle">
+                        <div class="btn-group">
+                            <a class="btn btn-primary btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_central.usagers_enreg',parametre=item_1[0]) }}">Modifier</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

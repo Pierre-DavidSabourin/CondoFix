@@ -1,0 +1,65 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Limites du système comptable en copropriété</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, carnet d'entretien, carnet entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3ZZ8SZVD5E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3ZZ8SZVD5E');
+</script>
+<body>
+<style>
+    html, body {
+  height: 100%;
+}
+.container, .row.justify-content-center.align-items-center {
+  flex: 1; /* additionally, equal width */
+}
+  height: 100%;
+  min-height: 100%;
+}
+</style>
+<div class="container">
+        <div class="row mb-1 col-12">
+            <h1 style="font-size: 4vw;">Carnet d'entretien de copropriété et comptabilité</h1>
+        </div>
+        <div class="row mb-1">
+            <div class="col-6">
+                <h5 style="font-size: 2.5vw;">La grande majorité des syndicats de propriété utilisent principalement leur système comptable
+                    pour gérer l'entretien de leur immeuble.</h5>
+                <p style="font-size: 2vw;">Cette approche présente de sérieuses limitations qui s'intensifient face aux exigences
+                    de la loi 16 touchant la gestion du carnet d'entretien. La figure 1 affiche ces limitations et les avantages comparatifs
+                    d'un système GMAO comme CondoFix.</p>
+                </p>
+            </div>
+            <div class="col-6">
+                <img  class="img-fluid mb-4" src="../static/images_publiques/Rapport_financier.png"/>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <img class="img-fluid" src="../static/images_publiques/Tableau_Comptable_GMAO.png"/>
+                <p class="text-center" style="font-size: 2vw;"><small><b>Figure 1</b> - Comparaison de système comptable vs. GMAO</small></p>
+            </div>
+        </div>
+        <div class="row">
+            <a class="btn-lg btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+            <a class="btn-lg text-black btn-warning btn-rounded mx-2 my-4" role="button" href="/video_infos">Vidéo 3 min.</a>
+            <a class="btn-lg text-white btn-danger btn-rounded my-4" role="button" href="/demo">Essai gratuit</a></div>
+        </div>
+</div>
+</body>
+{% endblock content %}

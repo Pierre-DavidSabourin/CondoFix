@@ -1,0 +1,99 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Permet le bon layout de la table incluant triage et formatage : -->
+    <link rel="stylesheet" href="../static/DataTables/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire' de datatables : -->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.3.0/Chart.min.js"></script>
+</head>
+<body>
+<style>
+    h4 {
+  margin: 1px;
+}
+</style>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-8">
+            <div class="wrapper">
+                <h4>Solde et dépenses ajustées du fonds de prévoyance</h4>
+                <p><small>En $ actualisés. Détails des valeurs ajustées affichés à droite du graphique.</small></p>
+                <canvas id="line-chart" width="800" height="400"></canvas>
+            </div>
+            <script>
+              //console.log({{labels|tojson}});
+              //console.log({{values_1|tojson}});
+              new Chart(document.getElementById("line-chart"), {
+                  type: 'line',
+                  data: {
+                    labels: {{labels}},
+                    datasets: [
+                      {
+                      label: 'Dépenses             ',
+                      borderColor: "#caf270",
+                      fill: false,
+                      pointStyle: "line",
+                      data: {{ values_1|tojson }},
+                    }, {
+                      label: 'Solde             ',
+                      borderColor: "#45c490",
+                      fill: false,
+                      pointStyle: "line",
+                      data: {{ values_2|tojson }},
+                    }, {
+                      label: 'Dépenses (ajustées)             ',
+                      borderColor: "#caf270",
+                      fill: false,
+                      borderDash: [5,2],
+                      pointStyle: "line",
+                      data: {{ values_3|tojson }},
+                    }, {
+                      label: 'Solde (ajusté)              ',
+                      borderColor: "#45c490",
+                      fill: false,
+                      borderDash: [5,2],
+                      pointStyle: "line",
+                      data: {{ values_4|tojson }},
+                    },
+                    ]
+                  },
+                  options: {
+                       legend: { display: true,
+                       position: 'bottom',
+                       labels: {usePointStyle: true},
+                       textAlign: 'left',
+                       symbolWidth: 40
+                },
+                title: {
+                  display: false,
+                  text: 'Predicted world population (millions) in 2050'
+                },
+                    responsive: false
+                  }
+                  });
+            </script>
+        </div>
+        <div class="col-sm-4">
+            <h6 style=" margin-top: 20px; margin-bottom: 20px;">Solde au {{ fill_champs[10] }}: {{ fill_champs[9] }}</h6>
+            <div class="container col-md-12 bg-form-bground p-4 rounded">
+                <br><p><small><b>Les dépenses ajustées</b> sont calculées en appliquant l'indice réel du coût de construction (ICC*)
+            annualisé de {{ fill_champs[7] }}% durant les années que l'indice est compilé puis le taux moyen d'inflation prévu dans l'analyse pour les années subséquentes.
+                <br><br><b>Le solde ajusté</b> est compilé à partir du solde actuel le plus récent
+                 avec le rendement moyen** des obligations du Canada de 5 ans de {{ fill_champs[8] }}%.</small></p>
+                </div>
+                <p><small>* Statistiques Canada Tableau : 18-10-0276-01 pour immeubles appartement dans la RMR de Montréal.
+                <br>** Statistiques Canada Tableau : 10-10-0122-01 pour obligations types du gouvernement canadien à 5 ans</small></p>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+{% endblock content %}

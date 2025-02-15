@@ -1,0 +1,131 @@
+{% extends "layout_admin_tables.html" %}
+{% block content %}
+
+<head>
+    <title>CondoFix</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="../static/ToolsIcon.png">
+     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
+    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <!-- pour le style de la table-->
+    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+    <script>
+    $(document).ready(function() {
+        $('#table_data').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+             {
+               extend: 'excelHtml5',
+               title: 'Export CondoFix Documents'
+
+            },
+        ],
+        columnDefs: [
+            { "visible": false, "targets": [  ], }
+        ],
+        "pageLength":100,
+        language: {
+                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            }
+        });
+    } );
+    </script>
+</script>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12 col-xs-12 col-sm-12">
+            <div class="form-group form-inline justify-content-between">
+                <div><h2>Registre de documentation</h2></div>
+                <div>
+                    <label for="disk"><small>Répertoire 2GB max.:</small></label>
+                    <meter id="disk" value="{{ jauge_val }}"></meter>
+                </div>
+            </div>
+            <a class="btn bg-steel text-white btn-rounded mb-2" role="button" href="{{ url_for('bp_documentation.doc_enreg', parametre=0) }}">Nouveau</a>
+            <div class="datagrid">
+                <style>
+                    table {
+                        font-family: arial, sans-serif;
+                        font-size: 10px;
+                        border-collapse: collapse;
+                        width: 100%;
+                        z-index: -1;
+                    }
+                    td, th {
+                        border: 1px solid #dddddd;
+                        text-align: center;
+                        padding: 2px;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #dddddd;
+                    }
+                </style>
+                <table id="table_data" class="table table-striped table-bordered" style="width:100%">
+                <thead>
+                <tr>
+                    <th width="80px"><strong>Description</strong></th>
+                    <th width="60px"><strong>Type</strong></th>
+                    <th width="40px"><strong>Fréq. (ans)</strong></th>
+                    <th width="70px"><strong>Fournisseur</strong></th>
+                    <th width="50px"><strong>Montant ($)</strong></th>
+                    <th width="60px"><strong>Date prochain</strong></th>
+                    <th width="60px"><strong>Action</strong></th>
+                </tr>
+                </thead>
+                {% for item in fill_documents %}
+                <tr>
+                    <th width="80px">{{ item[2] }}</th>
+                    <td width="60px">{{ item[7] }}</td>
+                    <td width="40px">{{ item[3] }}</td>
+                    <td width="70px">{{ item[4] }}</td>
+                    <td width="50px">{{ item[5] }}</td>
+                    <td width="60px">{{ item[6] }}</td>
+                    <td class="align-middle" >
+                        <a href="{{ url_for('bp_documentation.doc_affiche_admin',id_doc=item[0]) }}" class="text-primary"><small><b>Afficher</b></small></a>
+                        <a href="{{ url_for('bp_documentation.doc_enreg',parametre=item[0]) }}" class="text-warning"><small><b>Modifier</b></small></a>
+                        <a href="" class="text-danger" data-toggle="modal" data-target="#Supprimer_Modal{{ item[0] }}"><small><b>Supprimer</b></small>
+                        </a>
+                        <div class="form-group">
+                            <form action="{{ url_for('bp_documentation.doc_delete',id_doc=item[0]) }}" method=post class="form-horizontal" role="form">
+                                <!-- Modal -->
+                                <div class="modal fade" id="Supprimer_Modal{{ item[0] }}" tabindex="-1" role="dialog" aria-labelledby="SupprimerModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-body">
+                                                <h5>Voulez-vous vraiment SUPPRIMER ce document?</h5><br>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-primary">Oui</button>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            </div>
+    </div>
+</div>
+</div>
+</body>
+{% endblock %}
+
+

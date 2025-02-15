@@ -1,0 +1,61 @@
+{% extends "proprios_layout.html" %}
+{% block content %}
+<body>
+<div class="col-md-12 page">
+        <h2>Mes réservations</h2>
+        <form action="{{ url_for('bp_reservations.reservations_unite') }}" method=post class="form-inline justify-content-between mb-2" role="form">
+            <div class="form-group">
+                <label>&nbsp&nbspNo. d'unité:&nbsp&nbsp</label>
+                <input class="form-control form-control-sm mr-2" type="number" name="unite_no" style="width: 80px;" value="" autofocus="autofocus">
+                <button type="submit" class="btn bg-steel text-white btn-sm float-right" name="btn_enreg">Soumettre</button>
+            </div>
+        </form>
+        <div class="datagrid">
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            font-size: 11px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: center;
+            padding: 8px;
+        }
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
+        <table>
+                <tr>
+                    <th width="40px"><strong>Unité</strong></th>
+                    <th width="80px"><strong>Ressource</strong></th>
+                    <th width="60px"><strong>Date</strong></th>
+                    <th width="70px"><strong>Heure début</strong></th>
+                    <th width="50px"><strong>Durée (h.)</strong></th>
+                    <th width="110px"><strong>Notes</strong></th>
+                    <th width="60px"><strong>Action</strong></th>
+                </tr>
+                {% for item in liste_rez_unite %}
+                <tr>
+                    <td width="40px">{{ item[6] }}</td>
+                    <td width="80px">{{ item[8] }}</td>
+                    <td width="60px">{{  item[3]  }}</td>
+                    <td width="70px">{{  item[4]  }}</td>
+                    <td width="50px">{{  item[5]  }}</td>
+                    <td width="110px">{{  item[7]  }}</td>
+                    <td class="text-center align-middle">
+                        <div class="btn-group">
+                            <a class="btn btn-danger btn-rounded btn-sm" role="button" href="{{ url_for('bp_reservations.rez_unite_supprime', id_rez=item[0]) }}">Supprimer</a>
+                        </div>
+                         </td>
+                </tr>
+                {% endfor %}
+            </table>
+    </div>
+</div>
+</body>
+{% endblock %}
+           <!--                    <a href="{{ url_for('populate', collector_id = o.collector_id) }}">Modifier</a>-->
+

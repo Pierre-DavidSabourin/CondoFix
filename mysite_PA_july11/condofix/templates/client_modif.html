@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="../static/font-awesome-4.7.0/css/font-awesome.min.css">
+</head>
+<div class="text-center" >
+    <h4>Modification de client</h4>
+</div>
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_central.client_modif', ident_client=liste_client[0][0]) }}" method=post class="form-horizontal" role="form">
+         <div class="row">
+            <div class="container col-md-6 bg-secondary text-white rounded">
+                <!--                <form class="form-horizontal" role="form">-->
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <label for="client_nom"><b>Nom du client</b></label>
+                    <input class="form-control form-control-sm" value="{{ liste_client[0][1] }}"  type="text" name="client_nom" autofocus="autofocus">
+                    <!--                </form>-->
+                </div>
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <label for="database"><b>Database</b></label>
+                    <input class="form-control form-control-sm" value="{{ liste_client[0][5] }}"  type="text" maxlength="12" name="database" autofocus="autofocus">
+                    <!--                </form>-->
+                </div>
+                <div class="form-check">
+                    {% if (liste_client[0][2] ==0): %}
+                    <input type="checkbox" class="form-check-input"  name="carnet_plus">
+                    {% else %}
+                    <input type="checkbox" class="form-check-input"  name="carnet_plus" checked>
+                    {% endif %}
+                    <label class="form-check-label" for="carnet_plus">Carnet Plus</label>
+                </div>
+                <div class="form-check">
+                    {% if (liste_client[0][4] ==0): %}
+                    <input type="checkbox" class="form-check-input"  name="module_rez">
+                    {% else %}
+                    <input type="checkbox" class="form-check-input"  name="module_rez" checked>
+                    {% endif %}
+                    <label class="form-check-label" for="module_rez">Module de réservations</label>
+                </div>
+                <div class="form-check">
+                    {% if (liste_client[0][3] ==0): %}
+                    <input type="checkbox" class="form-check-input"  name="actif">
+                    {% else %}
+                    <input type="checkbox" class="form-check-input"  name="actif" checked>
+                    {% endif %}
+                    <label class="form-check-label" for="actif">Actif</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-success float-right mb-3" name="btn_enreg">Soumettre</button>
+            </div>
+            <br>
+    </form>
+</div>

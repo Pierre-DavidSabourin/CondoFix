@@ -1,0 +1,171 @@
+{% extends "layout_admin_tables.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<head>
+    <title>CondoFix</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="../static/ToolsIcon.png">
+     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
+    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <!-- pour le style de la table-->
+    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+    <script>
+    $(document).ready(function() {
+        $('#table_data').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+             {
+               extend: 'excelHtml5',
+               title: 'Export CondoFix Tickets en attente'
+
+            },
+        ],
+        "pageLength":100,
+        language: {
+                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            }
+        });
+    } );
+    </script>
+</head>
+<body>
+<div class="container">
+        <div class="col-md-12 col-xs-12 col-sm-12">
+                <div class="col-12 pl-0">
+                    <h2>Tickets en attente de facture</h2>
+                </div>
+                <div class="datagrid">
+                <style>
+                    table {
+                        font-family: arial, sans-serif;
+                        font-size: 10px;
+                        border-collapse: collapse;
+                        width: 100%;
+                        z-index: -1;
+                    }
+                    td, th {
+                        border: 1px solid #dddddd;
+                        text-align: left;
+                        padding: 2px;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #dddddd;
+                    }
+                </style>
+                <table id="table_data" class="table table-striped table-bordered" style="width:100%">
+                <thead>
+                <tr>
+                    <th width="20px"><strong>No.</strong></th>
+                    <th width="50px"><strong>Complété</strong></th>
+                    <th width="50px"><strong>Intervenant</strong></th>
+                    <th width="80px"><strong>Description</strong></th>
+                    <th width="50px"><strong>No.(s) facture</strong></th>
+                    <th width="40px"><strong>Total (TTC)$</strong></th>
+                    <th width="40px"><strong>MO (HT)$</strong></th>
+                    <th width="40px"><strong>Mat (HT)$</strong></th>
+                    <th width="80px"><strong>Action</strong></th>
+                </tr>
+                </thead>
+                {% for item in ticket_list %}
+                <tr>
+                    <td width="20px">{{ item[0] }}</td>
+                    <td width="50px">{{ item[8] }}</td>
+                    <td width="50px">{{ item[18] }}</td>
+                    <td width="80px">{{ item[6] }}</td>
+                    <td width="50px">{{ item[12] }}</td>
+                    <td width="40px">{{ item[16] }}</td>
+                    <td width="40px">{{ item[13] }}</td>
+                    <td width="40px">{{ item[14] }}</td>
+                    <td class="align-middle" >
+                        <div>
+                            <a href="{{ url_for('bp_tickets.affiche_ticket_en_attente',id_ticket=item[0]) }}" class="text-primary"><b>Modifier</b></a>
+                            &nbsp;&nbsp;&nbsp;<a href="" class="text-secondary" data-toggle="modal" data-target="#Dupliquer_Modal{{ item[0] }}"><b>Dupliquer</b></a>
+                        </div>
+                        <a href="" class="text-warning" data-toggle="modal" data-target="#Ajout_Modal{{ item[0] }}"><b>Ajout de facture</b></a>
+                        <br>
+                        <a href="" class="text-danger" data-toggle="modal" data-target="#Fermer_Modal{{ item[0] }}"><b>Fermer ticket</b></a>
+                        <div class="form-group">
+                            <form action="{{ url_for('bp_tickets.dupliquer_en_attente', id_ticket=item[0]) }}" method=post class="form-horizontal" role="form">
+                                <!-- Modal -->
+                                <div class="modal fade" id="Dupliquer_Modal{{ item[0] }}" tabindex="-1" role="dialog" aria-labelledby="DupliquerModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-body">
+                                                <h5>Voulez-vous vraiment DUPLIQUER ce ticket?</h5><br>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-primary">Oui</button>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="form-group">
+                            <form action="{{ url_for('bp_factures.creation_facture_non_ocr', id_ticket=item[0]) }}" method=post class="form-horizontal" role="form">
+                                <!-- Modal -->
+                                <div class="modal fade" id="Ajout_Modal{{ item[0] }}" tabindex="-1" role="dialog" aria-labelledby="AjoutModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-body">
+                                                <h5>Voulez-vous numériser cette facture?</h5><br>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <a href="{{ url_for('bp_ocr.lancer_facture_attente_ocr', id_ticket=item[0]) }}" class="btn btn-primary">Oui</a>
+                                                <button type="submit" class="btn btn-secondary">Non</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="form-group">
+                            <form action="{{ url_for('bp_tickets.ferme_ticket', id_ticket=item[0]) }}" method=post class="form-horizontal" role="form">
+                                <!-- Modal -->
+                                <div class="modal fade" id="Fermer_Modal{{ item[0] }}" tabindex="-1" role="dialog" aria-labelledby="FermerModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-body">
+                                                <h5>Voulez-vous vraiment FERMER ce ticket?</h5><br>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-primary">Oui</button>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            </div>
+    </div>
+</div>
+</body>
+{% endblock content %}
+

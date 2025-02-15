@@ -1,0 +1,60 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Limites du système comptable en copropriété</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao,entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+
+<body>
+<div class="container mt-4">
+
+    <div class="row col-12">
+        <div class="col-12">
+            <h5><u>Gestion d'entretien de copropriété</u></h5>
+            <h1>Dépassez les limites de votre système comptable</h1>
+        <div>
+        <div class="col-4">
+               </div>
+        </div>
+    </div>
+    <br>
+    <div class="row col-12 mt-3">
+        <div class="col-6">
+            <h5>La grande majorité des syndicats de propriété utilisent principalement leur système comptable pour gérer l'entretien de leur immeuble.</h5>
+            <p>Cette approche présente de sérieuses limitations qui s'intensifient face aux exigences de la loi 16 touchant la gestion du carnet d'entretien.</p>
+            <p>Les administrateurs font face aux nombreuses limitations d'un système comptable lorsque celui-ci est utilisé pour
+                gérer l'entretien d'un immeuble :</p>
+            <ul>
+                <li>Nombre restreint de postes de dépenses d’entretien</li>
+                <li>Délai de 2 à 6 semaines avant publication des rapports comptables</li>
+                <li>Aucun détail des interventions disponible dans les rapports (recherche de factures requise)</li>
+                <li>Aucun forage des données</li>
+                <li>Historique des dépenses seulement disponible sur une base annuelle</li>
+             </ul>
+            <p>La figure 1 illustre les avantages d'une système GMAO comme CondoFix pour la gestion d'entretien par rapport au système comptable.</p>
+
+            <br>
+            <div class="mb-2">
+                <a style="font-size: 2.5vw;" href="{{ url_for('bp_public.produits') }}"><b>Voir nos offres</b></a>
+            </div>
+            <a class="btn-lg text-black btn-warning btn-rounded mt-4" role="button" href="/video_infos">Vidéo 3 min.</a>
+            <a class="btn-lg text-white btn-danger btn-rounded" role="button" href="/demo">Essai gratuit</a>
+
+        </div>
+        <div class="col-6">
+            <img  class="img-fluid mb-4" src="../static/Rapport_financier.png"/>
+            <img class="img-fluid" src="../static/Tableau_Comptable_GMAO.png"/>
+            <p class="text-center"><small><b>Figure 1</b> - Comparaison de système comptable vs. GMAO</small></p>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

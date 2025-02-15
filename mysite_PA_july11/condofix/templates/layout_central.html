@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta content="telephone=no" name="format-detection">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+<!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="../static/font-awesome-4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+<header class="site-header">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top py-0">
+        <button class="pull-left navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <h4 class="text-warning font-weight-bold ">Central</h4>
+        <a class="navbar-brand" href="#">
+            <img src="../static/ToolsIcon.png" alt="Logo" style="padding: 8px;" width="50" height="50">
+        </a>
+        <a class="btn-sm btn-warning mr-3" href="{{ url_for('bp_admin.logout') }}" role="button">Logout</a>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('bp_tableaux_bord.plotView', parametre='admin') }}">Clients</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('bp_documentation.docs_table') }}">Usagers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="">Facturation</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="">Importation</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="">Procédures</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>
+<main role="main" class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            {% block content %}
+            <!--                content of each template is inserted here-->
+            {% endblock %}
+        </div>
+    </div>
+</main>
+</body>
+</html>
+<!-- JQuery et JavaScript pour que les menus fonctionnent -->
+<script src="../static/jquery-3.5.1.js"></script>
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+

@@ -1,0 +1,122 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Le système GMAO en copropriété</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao,entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+
+<body>
+<div class="container mt-4">
+
+    <div class="row col-12">
+        <div class="col-12">
+            <h5>Syndicats de copropriété</h5>
+            <h1>Choisir un GMAO selon vos besoins</h1>
+            <br>
+            <a class="btn-lg text-black btn-warning btn-rounded mt-4" role="button" href="/video_infos">Vidéo 3 min.</a>
+            <a class="btn-lg text-white btn-danger btn-rounded" role="button" href="/demo">Essai gratuit</a>
+        <div>
+        <div class="col-4">
+               </div>
+        </div>
+    </div>
+    <br>
+    <div class="row col-12 mt-3">
+        <div class="col-7">
+            <p>Vous avez en main le carnet d’entretien du consultant et vous devez maintenant organiser la gestion d’entretien
+                de votre immeuble? Un système GMAO (Gestion de Maintenance Assisté par Ordinateur) devient alors un outil primordial.
+                Voici un mini-guide qui vous aidera à faire les bons choix de moyens pour atteindre
+                cet objectif.</p>
+            <p><b>Une question de taille d’immeuble</b></p>
+            <p>La figure 1 illustre clairement que le nombre d’unités privatives est un facteur déterminant dans le
+                choix d’un GMAO. Il tient compte à la fois de l’effort requis et des ressources disponibles pour faire
+                le suivi de l’entretien.</p>
+            <p>Les petites copropriétés de moins de 15 unités peuvent utiliser le système comptable en place accompagné
+                d’un système de classification de factures permettant de suivre l’historique du bâtiment.</p>
+            <p>Pour les copropriétés ayant jusqu’à 30 unités, le système papier devient un peu lourd et ralentit
+                la prise de décision. Un fichier Excel maintenu à jour par un copropriétaire attitré à cette tâche offre
+                une solution accessible plus rapidement aux administrateurs. Par contre, notez que le fichier Excel ne
+                peut être partagé par les différents intervenants et que les erreurs de saisie sont à surveiller.</p>
+            <p>Les plus grands immeubles ayant plus de 30 unités privatives ont souvent un employé et un gestionnaire.
+                Ceux-ci requièrent un GMAO qui peut se partager entre les différents usagers. Parmi les systèmes disponibles
+                gratuitement aux administrateurs se trouve Google Sheets, un logiciel permettant d’utiliser des formulaires
+                partagés sur l’Internet pour la saisie de tickets et pour compiler les données sur un fichier
+                de type Excel tel qu'illustré à la figure 2.</p>
+            <p><b>Google Sheets vs. logiciel spécialisé</b></p>
+            <p>Si vous décidez d’opter pour Google Sheets pour gérer votre entretien, soyez attentifs aux points suivants:</p>
+            <ul>
+                <li>Les fonctionnalités sont limitées par Google et leurs mises à jour pourraient modifier votre configuration</li>
+                <li>Le paramétrage des fonctionnalités n’est pas possible</li>
+                <li>La vérification de la saisie de données est limitée ce qui peut affecter la validité des informations servant
+                aux analyses</li>
+                <li>Les données saisies dans Google Sheets peuvent être altérées involontairement par un usager autorisé</li>
+                <li>Aucune configuration n’est offerte aux copropriétés: vous devez créer votre propre environnement</li>
+             </ul>
+        </div>
+        <div class="col-5">
+            <img  class="img-fluid mb-5" src="../static/images_publiques/Choix_GMAO.jpg"/>
+            <img class="img-fluid mt-5 mb-4" src="../static/images_publiques/GoogleSheetsScreenShot.jpg"/>
+            <p><small><b>Figure 2</b> - Exemple de GMAO avec Google Sheets/Forms</small></p>
+        </div>
+    </div>
+    <br>
+    <div class="row col-12">
+        <div class="col-7">
+            <p><b>Enjeux traités par un GMAO</b></p>
+            <p>Plusieurs défis se présentent aux membres de conseil d’administration dont les principaux
+                sont énumérés dans la figure 1. Un système de Gestion de Maintenance Assisté par Ordinateur (GMAO)
+                contribue de manière importante à faire face à ces enjeux.</p>
+            <img  class="img-fluid mx-8" src="../static/Tableau_Enjeux.jpg"/>
+        </div>
+        <div class="col-5">
+            <img  class="img-fluid" src="../static/Enjeux.jpg"/>
+        </div>
+    </div>
+    <br>
+    <div class="row col-12 mt-4">
+        <div class="col-7">
+            <p><b>Le ticket au centre du processus d'entretien</b></p>
+            <p>Tous les systèmes de gestion de l’entretien (GMAO) ont une composante primordiale afin de suivre le processus d’entretien:
+                le ticket ou bon de travail. Celui-ci contient les informations vitales requises pour l’exécution du travail et pour former
+                l’historique des travaux d’entretien de l’immeuble. La figure 1 affiche les étapes du processus.</p>
+            <p> Les tickets alimentent aussi le tableau de bord du système permettant aux administrateurs de voir en un clin d’œil
+                ce qui se passe dans le système.</p>
+            <p><b>Éléments-clés d’un ticket</b></p>
+            <p>La fiqure 2 illustre les éléments principaux qui composent un ticket. À retenir particulièrement:</p>
+            <ul>
+                    <li>Intervenants: concierge, copropriétaire ou fournisseur</li>
+                    <li>Priorité: distinguer un travail qui est critique à l’opération de l’immeuble d’une activité routinière
+                    ayant un faible impact</li>
+                    <li>Catégorie d’équipement: la classification des catégories devrait se conformer à celle utilisée dans le
+                    carnet d’entretien soumis par le technicien en bâtiment</li>
+                    <li>Identifiant d’équipement: ceci permet de distinguer parmi plusieurs équipements identiques et de savoir
+                    si un équipement a été remplacé</li>
+                    <li>Type de travail: différencier les activités de réparation de celles d’entretien préventif ou de fonds
+                    de prévoyance ou d’améliorations</li>
+                    <li>Description du travail: permet de suivre en détail le travail effectué</li>
+                    <li>Statut: l’étape à laquelle se trouve le ticket dans le processus d’entretien</li>
+            </ul>
+            <b>Intégration de la facturation</b>
+            <p>Une des particularités du secteur de la copropriété est la dépendance presque complète envers les fournisseurs
+                pour l’accomplissement des tâches d’entretien. Il devient alors primordial de pouvoir intégrer les factures
+                des fournisseurs dans le système de gestion d’entretien (GMAO) afin de tenir compte des coûts de main d’œuvre
+                et de matériel applicables à chaque équipement de l’immeuble.</p>
+            <br>
+            <a class="btn btn-primary btn-rounded mb-3" role="button" href="{{ url_for('bp_public.demande_info') }}">Pour en savoir plus</a>
+        </div>
+        <div class="col-5">
+            <img  class="img-fluid my-5" src="../static/Processus_ticket.jpg"/>
+            <img  class="img-fluid my-5" src="../static/Elements_ticket.jpg"/>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

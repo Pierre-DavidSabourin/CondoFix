@@ -1,0 +1,278 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<script>
+function addDays(days) {
+    var current = new Date();
+    current.setDate(current.getDate()+days);
+    return current.toISOString().slice(0,10);
+}
+function PriorityChange() {
+  var x = document.getElementById("priorite_select").value;
+  if (x==1) {
+  var date_prevue=addDays(0);
+  document.getElementById("date").value = date_prevue;
+}
+  if (x==2) {
+  var date_prevue=addDays(2);
+  document.getElementById("date").value = date_prevue;
+}
+if (x==3) {
+  var date_prevue=addDays(5);
+  document.getElementById("date").value = date_prevue;
+}
+if (x==4) {
+  var date_prevue=addDays(15);
+  document.getElementById("date").value = date_prevue;
+}
+}
+//pour permettre le choix d'aucun tag
+function hide_tag_1() {
+    if (document.getElementById("tag_select").style.display == 'none') {
+        (document.getElementById("tag_select").style.display = 'block');
+    } else {
+        document.getElementById("tag_select").style.display = 'none';
+
+    }
+}
+
+
+//formater liste à partir de JSON
+var categ_listing=JSON.parse('{{ list_categ_avec_tags|safe }}');
+var equip_listing=JSON.parse({{ list_equip|tojson}});
+
+function intervenantChange() {
+
+// valeur de l'option choisie
+var x = document.getElementById("intervenant_select").value;
+var a = x.replace('(','');
+var b = a.replace(')','')
+var z = b.split(',');
+
+//sélection de la catégorie parmi la liste déroulante
+document.getElementById("categ_select").value = new Number(z[1]);
+
+//trouver index de la catégorie choisie
+var idx=categ_listing.findIndex(function (element) {
+    return element == z[1];
+});
+//créer la liste des équipements pour la catégorie correspondante à l'intervenant
+cList = equip_listing[idx];
+// get the tag select element via its known id
+var cSelect = document.getElementById("tag_select");
+// remove the current options from the tag select
+var len=cSelect.options.length;
+while (cSelect.options.length > 0) {
+cSelect.remove(0);
+}
+var newOption;
+// create new options
+for (var i=0; i<cList.length; i++) {
+newOption = document.createElement("option");
+newOption.value = cList[i][0];  // assumes option string and value are the same
+newOption.text=cList[i];
+// add the new option
+try {
+cSelect.add(newOption);  // this will fail in DOM browsers but is needed for IE
+}
+catch (e) {
+cSelect.appendChild(newOption);
+}
+}
+}
+
+function categoryChange() {
+
+// valeur de l'option choisie
+var x = document.getElementById("categ_select").value;
+//trouver index de la catégorie choisie
+var idx=categ_listing.findIndex(function (element) {
+    return element ==x;
+});
+//créer la liste des équipements pour la catégorie choisie
+cList = equip_listing[idx];
+// get the tag select element via its known id
+var cSelect = document.getElementById("tag_select");
+// remove the current options from the tag select
+var len=cSelect.options.length;
+while (cSelect.options.length > 0) {
+cSelect.remove(0);
+}
+var newOption;
+// create new options
+for (var i=0; i<cList.length; i++) {
+newOption = document.createElement("option");
+newOption.value = cList[i][0];  // assumes option string and value are the same
+newOption.text=cList[i];
+// add the new option
+try {
+cSelect.add(newOption);  // this will fail in DOM browsers but is needed for IE
+}
+catch (e) {
+cSelect.appendChild(newOption);
+}
+}
+}
+</script>
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_tickets.ajout_ticket') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-8 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Nouveau ticket</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Intervenant</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="intervenant" id="intervenant_select" onchange="intervenantChange();"
+                            data-width="100%" autofocus="autofocus" required>
+                            <option hidden value="">Choisir..</option>
+                            {% for item in liste_intervenants %}
+                            <option value="{{ item[0],item[2] }}">{{ item[1] }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Saisir le nom du fournisseur si l'intervenant est "autre"</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-institution"></i></span>
+                               </div>
+                               <input type="text" class="form-control border-right-0" name="intervenant_autre"
+                                      aria-label="intervenant_autre" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Priorité</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" id="priorite_select" name="priorite" onchange="PriorityChange();" data-width="100%" autofocus="autofocus" required>
+                                <option hidden value="">Priorité (délai)</option>
+                                <option value="1">Critique (4 heures)</option>
+                                <option value="2">Élevée (48 heures)</option>
+                                <option value="3">Moyenne (5 jours)</option>
+                                <option value="4">Non-prioritaire (15 jours)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Date prévue</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_prevue" id="date" placeholder="Date de l'entretien"
+                                  value="" aria-label="date_prevue" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Catégorie</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="categorie" id="categ_select" onchange="categoryChange();"
+                                    data-width="100%" autofocus="autofocus" required>
+                            <option hidden value="">Choisir..</option>
+                            {% for item in liste_categories %}
+                            <option value="{{ item[0] }}">{{ item[1] }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% if version==1 %}
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Tag</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-tag"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="tag" id="tag_select"  data-width="100%" autofocus="autofocus">
+                                <option hidden value=""></option>
+                            </select>
+                        </div>
+                        <div class="form-group form-inline justify-content-between mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" onchange="hide_tag_1();" name="aucun_tag" value="1" id="no_tag">
+                                <label class="form-check-label" for="aucun_tag">Aucun tag</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" name="multi_tags" id="multi_tag">
+                                <label class="form-check-label" for="multitags">Multitags</label>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="mb-0"><small></small></p>
+                    {% endif %}
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Type de travail</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" id="type_select" name="type_travail" data-width="100%" autofocus="autofocus" required>
+                                {% for item in liste_types_travail %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Emplacement</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-map-marker"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="emplacement" placeholder="Lieu de l'entretien"
+                                  aria-label="emplacement" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p class="mb-0"><small>Description</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                            </div>
+                            <textarea class="form-control border-right-0" maxlength="200" name="desc_travail" rows="3"
+                                      placeholder="Description du travail prévu" aria-label="desc_travail" autofocus="autofocus" required></textarea>
+                         </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Heures estimées</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="0.5" name="hres_est" placeholder="Temps estimé pour le travail"
+                                  aria-label="hres_est" autofocus="autofocus" required> </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn bg-steel text-white float-right mt-4 mb-2">Soumettre</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+
+{% endblock content %}

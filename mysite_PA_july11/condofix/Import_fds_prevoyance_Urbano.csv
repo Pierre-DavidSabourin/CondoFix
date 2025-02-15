@@ -1,0 +1,108 @@
+RéfAnalyse,CodeUniformat,RefCategorie,RefGroupe Uniformat,TypeMtceRempl,Description,Valeur actuelle de l'intervention,% assumés par la copropriété ,Valeur actuelle assumée par la copropriété ,Année de la première intervention planifiée,Cycle normal d'intervention,Inflation 5 ans,Inflation 6-15 ans,Inflation plus 15 ans
+1.1.1 M1,G1011,20,7,1,Provision pour colmater les fissures et pour réparer le revêtement de chaussée en béton bitumineux. ,20093,1,20093,2028,12,0.027,0.027,0.027
+1.1.1 R1,G1011,20,7,2,Appliquer une nouvelle couche d'asphalte sur les surfaces du revêtement de chaussée en béton bitumineux. ,54250,1,54250,2040,24,0.027,0.027,0.027
+1.1.1 R2,G1011,20,7,2,Refaire l’infrastructure et remplacer le revêtement de chaussée en béton bitumineux.,116537,1,116537,2066,50,0.027,0.027,0.027
+1.1.2 M1,G1021,20,7,1,Réparer une partie des bordures en béton coulé sur place. ,16443,1,16443,2040,25,0.027,0.027,0.027
+1.1.2 R1,G1021,20,7,2,Remplacer les bordures en béton coulé sur place.,49828,1,49828,2066,50,0.027,0.027,0.027
+1.2.1 M1,G2011,20,7,1,Colmater les fissures et réparer les surfaces du revêtement des voies piétonnières en béton. ,43832,1,43832,2040,25,0.027,0.027,0.027
+1.2.1 R1,G2011,20,7,2,Refaire les infrastructures et le revêtement des voies piétonnières en béton. ,113698,1,113698,2066,50,0.027,0.027,0.027
+1.2.2 M1,G2013,20,7,1,Niveler et replacer une partie des pièces du revêtement des voies piétonnières en pavés imbriqués.,10019,1,10019,2040,25,0.027,0.027,0.027
+1.2.2 R1,G2013,20,7,2,Refaire les infrastructures et le revêtement des voies piétonnières en pavés imbriqués. ,29778,1,29778,2066,50,0.027,0.027,0.027
+1.3.1 R1,G3017,21,7,2,Provision pour réparer des pièces en aluminium et pour redresser des sections de la clôture en aluminium émaillé.,13283,1,13283,2031,15,0.027,0.027,0.027
+1.3.1 R2,G3017,21,7,2,Remplacer la clôture en aluminium émaillé.,39848,1,39848,2066,50,0.027,0.027,0.027
+1.3.2 R1,G3018,21,7,2,Remplacer la clôture en acier galvanisé enduit d’un émail de poudre de polyester.,4140,1,4140,2066,50,0.027,0.027,0.027
+1.3.3 R1,G3022,21,7,2,Provision pour réparer et pour consolider une partie des murets de soutènement en blocs modulaires de béton. ,26439,1,26439,2031,15,0.027,0.027,0.027
+1.3.3 R2,G3022,21,7,2,Remplacer les murets en blocs modulaires de béton. ,63452,1,63452,2066,50,0.027,0.027,0.027
+1.3.4 M1,G3025,20,7,1,Colmater les fissures et réparer une partie des surfaces du mur de soutènement en béton coulé sur place.,5503,1,5503,2041,15,0.027,0.027,0.027
+1.3.4 R1,G3025,21,7,2,Refaire le mur de soutènement en béton coulé sur place.,40354,1,40354,2066,50,0.027,0.027,0.027
+1.4.1 M1,G4021,21,7,1,Provision pour élaguer ou pour abattre des arbres et pour restaurer les aménagements paysagers.,11500,1,11500,2023,7,0.027,0.027,0.027
+1.4.1 R1,G4021,21,7,2,Remplacer les aménagements paysagers situés au-dessus de l’enceinte du garage du deuxième étage.,174079,1,174079,2066,50,0.027,0.027,0.027
+1.4.2 R1,G4051,21,7,2,Restaurer ou remplacer la structure en pièces de maçonnerie du panneau de signalisation.,20303,1,20303,2056,40,0.027,0.027,0.027
+1.5.1 M1,G5031,22,7,1,Restaurer les infrastructures et le revêtement de chaussée au périmètre des puisards et des drains.,8970,1,8970,2028,12,0.027,0.027,0.027
+1.5.1 R1,G5031,22,7,2,Remplacer une partie des puisards.,32890,1,32890,2066,60,0.027,0.027,0.027
+1.5.2 R1,G5034,22,7,2,Remplacer une partie des conduits des réseaux enfouis.,81213,1,81213,2066,50,0.027,0.027,0.027
+1.6.1 R1,G6022,13,7,2,Remplacer les appareils d’éclairage extérieurs.,38583,1,38583,2051,35,0.027,0.027,0.027
+2.1.1 M1,A1011,1,1,1,Provision périodique pour sceller les fissures des murs de fondation.,3163,1,3163,2026,10,0.027,0.027,0.027
+2.2.1 M1,A3012,1,1,1,"Provision pour sceller les joints et les fissures, pour appliquer un enduit de scellement sur les dalles sur sol en béton des garages et pour restaurer le marquage de la chaussée.",47196,1,47196,2030,7,0.027,0.027,0.027
+2.2.2 R1,A3021,20,1,2,Remplacer les caissons des fosses de retenue en polyéthylène des garages.,20873,1,20873,2037,25,0.027,0.027,0.027
+2.3.1 R1,A4011,20,1,2,Restaurer le complexe d’étanchéité de la surface de convergence du garage du deuxième étage.  ,10844,1,10844,2020,5,0.027,0.027,0.027
+2.3.1 R2,A4011,20,1,2,Restaurer le complexe d’étanchéité de la surface de circulation du garage du deuxième étage.,14459,1,14459,2025,10,0.027,0.027,0.027
+2.3.1 R3,A4011,20,1,2,Restaurer une partie de la dalle en béton et de la membrane en polyuréthane des espaces de stationnement du garage du deuxième étage.,46992,1,46992,2030,15,0.027,0.027,0.027
+2.3.2 R1,A4031,20,1,2,Remplacer les drains de plancher de la dalle structurale du garage du deuxième étage. ,4301,1,4301,2040,25,0.027,0.027,0.027
+2.3.3 M1,A4091,1,1,1,"Faire effectuer, par un professionnel, la vérification approfondie des dalles structurales des garages. ",7475,1,7475,2019,5,0.027,0.027,0.027
+2.4.1 R1,A5011,20,1,2,Remplacer la membrane d’étanchéité de la toiture en tréfonds qui surmonte l’enceinte du garage du deuxième étage. ,710614,1,710614,2066,50,0.027,0.027,0.027
+2.5.2 R1,A6031,20,1,2,Remplacer les portes coupe-feu sollicitées des garages.,15180,1,15180,2051,35,0.027,0.027,0.027
+3.1.1 R1,B1023,3,2,2,Restaurer une partie des pontages en béton des balcons en surplomb.,243639,1,243639,2046,30,0.027,0.027,0.027
+3.1.2 R1,B1033,3,2,2,Remplacer les joints de scellement situés à la rencontre du mur de maçonnerie par rapport au pontage en béton des balcons en surplomb.,6926,1,6926,2031,15,0.027,0.027,0.027
+3.1.3 R1,B1034,3,2,2,"Remplacer les planches en aluminium des balcons situés au 10e, 11e et 12e étage. ",146234,1,146234,2056,40,0.027,0.027,0.027
+3.2.1 M1,B1052,3,2,1,Niveler et replacer les surfaces en dalles modulaires de béton des terrasses au sol. ,27540,1,27540,2041,25,0.027,0.027,0.027
+3.2.1 R1,B1052,3,2,2,Remplacer les infrastructures et les dalles modulaires de béton des terrasses au sol.,137695,1,137695,2066,50,0.027,0.027,0.027
+3.3.1 R1,B1071,3,2,2,Remplacer les dalles modulaires en béton des terrasses aménagées sur toiture. ,16192,1,16192,2056,40,0.027,0.027,0.027
+3.4.1 M1,B1084,3,2,1,Restaurer les garde-corps en aluminium émaillé et en panneaux de verre des balcons.,102465,1,102465,2041,25,0.027,0.027,0.027
+4.1.1 R1,B2011,4,2,2,Restaurer les surfaces courantes du revêtement de maçonnerie. ,46021,1,46021,2027,10,0.027,0.027,0.027
+4.1.3 R1,B2015,4,2,2,Restaurer les joints de scellement et corriger les pentes des allèges en aluminium émaillé des murs pare-pluie. ,25300,1,25300,2027,10,0.027,0.027,0.027
+4.1.4 R1,B2019,4,2,2,Vérifier et corriger le scellement des linteaux structuraux. ,12650,1,12650,2027,10,0.027,0.027,0.027
+4.2.1 R1,B2031,4,2,2,Restaurer les surfaces du revêtement en enduit acrylique (SIFE). ,44529,1,44529,2027,10,0.027,0.027,0.027
+4.2.1 R2,B2031,4,2,2,Restaurer la couleur du revêtement en enduit acrylique (SIFE). ,100188,1,100188,2037,20,0.027,0.027,0.027
+4.3.1 R1,B2043,4,2,2,Remplacer le revêtement en clin d’aluminium.,15180,1,15180,2056,40,0.027,0.027,0.027
+4.4.1 R1,B2071,6,2,2,Provision pour restaurer les murs-rideaux. ,31309,1,31309,2056,40,0.027,0.027,0.027
+4.5.1 M1,B2091,4,2,1,Provision pour faire vérifier les façades par un professionnel. ,17250,1,17250,2026,5,0.027,0.027,0.027
+5.1.1 M1,B3032,5,2,1,Provision pour restaurer une partie de la membrane d’étanchéité en bitume élastomère de la toiture principale.,34645,1,34645,2029,13,0.027,0.031,0.034
+5.1.1 R1,B3032,5,2,2,Restaurer ou remplacer la membrane d’étanchéité en bitume élastomère de la toiture principale.,153763,1,153763,2041,25,0.027,0.031,0.034
+5.2.1 M1,B3042,5,2,1,Provision pour restaurer une partie des membranes d’étanchéité en bitume élastomère des toitures des terrasses des deuxième et troisième étages.,2538,1,2538,2036,20,0.027,0.031,0.034
+5.2.1 R1,B3042,5,2,2,Restaurer ou remplacer les membranes d’étanchéité en bitume élastomère des toitures des deuxième et troisième étages. ,18613,1,18613,2056,40,0.027,0.031,0.034
+6.1.1 R1,B4012,6,2,2,Remplacer les fenêtres à cadres en aluminium exposées aux intempéries et aux rayons solaires. ,541238,1,541238,2056,40,0.027,0.027,0.027
+6.1.1 R2,B4012,6,2,2,Remplacer les fenêtres à cadres en aluminium abritées des intempéries et des rayons solaires. ,324743,1,324743,2061,50,0.027,0.027,0.027
+6.1.2 R1,B4015,6,2,2,Provision pour restaurer les fenêtres et les portes (murs-rideaux à panneaux). ,36952,1,36952,2056,40,0.027,0.027,0.027
+6.2.1 R1,B4053,6,2,2,Remplacer les battants en aluminium de la porte de l’entrée principale. ,12650,1,12650,2056,40,0.027,0.027,0.027
+6.2.2 R1,B4062,6,2,2,Remplacer les portes d’issue en acier. ,23000,1,23000,2066,50,0.027,0.027,0.027
+6.2.3 R1,B4072,6,2,2,Remplacer les portes élévatrices articulées des garages.,12650,1,12650,2043,27,0.027,0.027,0.027
+6.3.1 R1,B4081,6,2,2,Provision pour remplacer les panneaux de verre scellés défectueux.,57558,1,57558,2026,10,0.027,0.027,0.027
+6.3.2 R1,B4092,6,2,2,Remplacer les joints de scellement du périmètre des portes et des fenêtres exposées au soleil. ,55103,1,55103,2027,10,0.027,0.027,0.027
+6.3.2 R2,B4092,6,2,2,Remplacer les joints de scellement du périmètre des portes et des fenêtres situées sur les façades ombragées ou abritées des intempéries. ,55103,1,55103,2032,15,0.027,0.027,0.027
+8.1.2 M1,C2023,6,2,1,Restaurer le fini des battants et des cadres des portes des unités d’habitation.,15698,1,15698,2046,30,0.027,0.027,0.027
+8.1.3 M1,C2032,6,2,1,Restaurer le fini des battants et des cadres des portes des locaux de service.,966,1,966,2026,10,0.027,0.027,0.027
+8.1.3 R1,C2032,6,2,2,Restaurer ou remplacer une partie des pièces de quincaillerie des portes des locaux de service.,4140,1,4140,2056,40,0.027,0.027,0.027
+8.1.4 M1,C2042,6,2,1,Restaurer le fini des battants et des cadres des portes des issues.,1932,1,1932,2026,10,0.027,0.027,0.027
+8.1.4 R1,C2042,6,2,2,Restaurer ou remplacer une partie des pièces de quincaillerie des portes des issues.,10019,1,10019,2046,30,0.027,0.027,0.027
+8.2.1 M1,C3011,8,3,1,Restaurer le fini des murs en panneaux de gypse peints des espaces communs accessibles. ,43470,1,43470,2026,10,0.027,0.027,0.027
+8.2.2 M1,C3021,8,3,1,Restaurer le fini des plafonds en panneaux de gypse peints des espaces communs accessibles.,13234,1,13234,2036,20,0.027,0.027,0.027
+8.2.3 M1,C3031,8,3,1,Remplacer les tapis des corridors communs.,64584,1,64584,2046,30,0.027,0.027,0.027
+8.3.1 M1,C4011,7,3,1,Peindre les murs et les plafonds des cages d’escalier des issues.,8050,1,8050,2041,25,0.027,0.027,0.027
+8.3.2 M1,C4031,7,3,1,Peindre les surfaces des limons et des garde-corps des cages d’escalier des issues.,19481,1,19481,2041,25,0.027,0.027,0.027
+8.4.1 M1,C5011,8,3,1,Restaurer les finis des locaux communs.,28750,1,28750,2036,20,0.027,0.027,0.027
+9.1.1 R1,D1011,9,4,2,Moderniser les ascenseurs. ,354384,1,354384,2046,30,0.023,0.02,0.015
+9.2.1 R1,D1021,9,4,2,Provision pour restaurer les cabines des ascenseurs.,36915,1,36915,2056,40,0.023,0.02,0.015
+9.3.1 M1,D1031,9,4,1,Faire vérifier la solidité des ancrages du système d’entretien des façades de la tour d’habitation.,4600,1,4600,2021,5,0.023,0.02,0.015
+10.1.1 R1,D2021,10,4,2,Remplacer les pompes et les variateurs de fréquence du réseau de distribution d’eau domestique.,34500,1,34500,2041,25,0.023,0.02,0.015
+10.1.2 M1,D2022,22,7,1,Provision pour nettoyer les conduits communs du réseau de drainage sanitaire.,9200,1,9200,2026,10,0.023,0.02,0.015
+10.1.3 R1,D2027,10,4,2,Provision pour remplacer les équipements de la centrale de production d’eau chaude domestique.   ,47438,1,47438,2026,10,0.023,0.02,0.015
+10.1.5 M1,D2091,10,4,1,Provision quinquennale pour remplacer des composants des réseaux de plomberie. ,5750,1,5750,2022,5,0.023,0.02,0.015
+10.2.1 R1,D3023,11,4,2,Remplacer les appareils de chauffage des garages.,25530,1,25530,2041,25,0.023,0.02,0.015
+10.2.2 R1,D3033,11,4,2,Provision pour remplacer une partie des échangeurs de chaleur du réseau d’eau mitigée.,220831,1,220831,2036,20,0.023,0.02,0.015
+10.2.3 R1,D3042,11,4,2,Remplacer des composants de l’unité de mise sous pression. ,17250,1,17250,2031,15,0.023,0.02,0.015
+10.2.5 R1,D3046,11,4,2,Remplacer les registres des extracteurs d’air des unités d’habitation.,32232,1,32232,2056,40,0.023,0.02,0.015
+10.2.6 R1,D3047,11,4,2,Remplacer les composants des systèmes d’extraction des gaz des garages.,12650,1,12650,2046,30,0.023,0.02,0.015
+10.2.7 R1,D3051,11,4,2,Provision pour remplacer une partie des appareils de climatisation des locaux communs. ,6900,1,6900,2028,12,0.023,0.02,0.015
+10.2.8 M1,D3091,11,4,1,"Provision quinquennale pour remplacer des composants des systèmes de ventilation, de climatisation et de chauffage. ",5750,1,5750,2023,5,0.023,0.02,0.015
+10.3.1 R1,D4011,12,4,2,Provision pour remplacer la pompe et les soupapes du réseau de gicleurs.  ,28750,1,28750,2051,35,0.023,0.02,0.015
+10.4.1 R1,D5011,13,4,2,Provision pour remplacer une partie des transformateurs. ,14887,1,14887,2056,40,0.023,0.02,0.015
+10.4.11 R1,D5072,13,4,2,Remplacer le panneau d’interphone.,10465,1,10465,2041,25,0.023,0.02,0.015
+10.4.12 R1,D5073,13,4,2,Remplacer une partie des composants du réseau de surveillance par caméras et de contrôle de l’accès.,9660,1,9660,2026,10,0.023,0.02,0.015
+10.4.13 M1,D5091,13,4,1,Provision quinquennale pour remplacer des composants du réseau d’électricité.,5750,1,5750,2024,5,0.023,0.02,0.015
+10.4.2 R1,D5021,13,4,2,Remplacer les appareils d’éclairage des garages et des locaux techniques.,50094,1,50094,2041,25,0.023,0.02,0.015
+10.4.3 R1,D5022,13,4,2,Remplacer les appareils d’éclairage des issues. ,13915,1,13915,2046,30,0.023,0.02,0.015
+10.4.5 R1,D5031,12,4,2,Remplacer le panneau d'alarme incendie. ,11512,1,11512,2036,20,0.023,0.02,0.015
+10.4.6 R1,D5032,12,4,2,Provision pour remplacer une partie des composants du réseau de détection d’incendie. ,8441,1,8441,2031,15,0.023,0.02,0.015
+10.4.8 R1,D5061,13,4,2,Remplacer le groupe électrogène. ,140760,1,140760,2061,45,0.023,0.02,0.015
+10.4.9 R1,D5063,13,4,2,Remplacer le réservoir de mazout (remplacement préventif).,5750,1,5750,2046,30,0.023,0.02,0.015
+11.1.1 M1,E1041,14,5,1,Provision pour remplacer une partie des équipements du centre de conditionnement physique.,11500,1,11500,2026,10,0.027,0.027,0.027
+11.1.2 R1,E1051,14,5,2,Remplacer le compacteur à déchets.,11500,1,11500,2046,30,0.027,0.027,0.027
+11.2.1 M1,E3011,15,5,1,Provision pour remplacer une partie des pièces d’ameublement des locaux communs.,23000,1,23000,2036,20,0.027,0.027,0.027
+11.3.1 M1,E4011,15,5,1,Remplacer les pièces d’ameublement de la terrasse commune.,5750,1,5750,2026,10,0.027,0.027,0.027
+12.1.1 R1,F1011,17,6,2,Provision pour restaurer le bassin de la piscine.,18975,1,18975,2026,10,0.027,0.027,0.027
+12.1.1 R2,F1011,17,6,2,Remplacer le bassin de la baignoire à remous.,17250,1,17250,2031,15,0.027,0.027,0.027
+12.1.2 R1,F1031,17,6,2,Remplacer les carreaux de céramique de la plage du centre aquatique. ,62137,1,62137,2046,30,0.027,0.027,0.027
+12.1.3 R1,F1041,17,6,2,Provision pour remplacer une partie des équipements de traitement et de filtration de l’eau des bassins du centre aquatique.,13800,1,13800,2026,10,0.027,0.027,0.027
+12.1.4 R1,F1051,11,4,2,Remplacer l’équipement de traitement de l’air de l’enceinte du centre aquatique.,69575,1,69575,2041,25,0.027,0.027,0.027
+12.1.5 R1,F1061,17,6,2,Restaurer les finis de l’enceinte du centre aquatique et les vestiaires.,37950,1,37950,2041,25,0.027,0.027,0.027

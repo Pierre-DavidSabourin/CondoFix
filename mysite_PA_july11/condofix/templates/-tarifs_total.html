@@ -1,0 +1,120 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Tarifs pour modules d'entretien CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="carnet d'entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3ZZ8SZVD5E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3ZZ8SZVD5E');
+</script>
+<body>
+<div class="container-fluid col-md-8 mt-4">
+    <form action="{{ url_for('bp_public.calcul_tarifs') }}" method=post class="form-horizontal" role="form">
+    <div class="row">
+        <div class="col-12 text-center">
+            <h1>Tarifs</h1>
+            <h6>CondoFix représente moins de 1% du budget d'opération de votre syndicat!</h6>
+        </div>
+    </div>
+    <div class="container">
+            <div class="row my-4">
+                <div class="col-12 mr-0 pr-0">
+                    <div class="row">
+                        <div class="col-12 col-lg-8 col-sm-8 mt-1">
+                            <p class="my-1">Portes</p>
+                            <div class="input-group">
+                                <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-home"></i></span>
+                                </div>
+                                <input type="number" class="form-control border-right-0" name="nbre_portes"  placeholder="Nombre d'unités privatives"
+                                      value= "{{ fill_visiteur [3] }}" aria-label="nbre_portes" autofocus="autofocus" required>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-sm-4 mt-1">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 col-lg-12 col-sm-12 mt-1">
+                            <div class="form-group form-inline justify-content-between my-0">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"  name="condofix" checked>
+                                    <label class="form-check-label" for="condofix">Plateforme CondoFix</label>
+                                </div>
+                            </div>
+                            <div class="form-group form-inline justify-content-between my-0">
+                                <div class="form-check">
+                                    {% if (fill_choix[1] ==0): %}
+                                        <input type="checkbox" class="form-check-input"  name="portail">
+                                    {% else %}
+                                        <input type="checkbox" class="form-check-input"  name="portail" checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="portail">Portail des copropriétaires</label>
+                                </div>
+                            </div>
+                            <div class="form-group form-inline justify-content-between my-0">
+                                <div class="form-check">
+                                    {% if (fill_choix[2] ==0): %}
+                                        <input type="checkbox" class="form-check-input"  name="rez">
+                                    {% else %}
+                                        <input type="checkbox" class="form-check-input"  name="rez" checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="rez">Module de réservations</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                            <div class="col-12  mt-1">
+                                <button type="submit" class="btn bg-warning text-dark float-left my-2"><b>Calculer total</b></button>
+                                <table class="table small table-striped">
+                                  <thead>
+                                    <tr>
+                                      <th scope="col"></th>
+                                      <th class="text-center" scope="col">Tarif promotionnel* $/mois</th>
+                                      <th class="text-center" scope="col">Tarif régulier $/mois</th>
+                                    </tr>
+                                  </thead>
+                                    {% for item in fill_tarifs %}
+                                    <tr>
+                                      <th scope="row">{{ item[0] }}</th>
+                                      <td class="text-center">{{ item[1] }}</td>
+                                      <td class="text-center">{{ item[2] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                    </div>
+                    <p><small>* Les tarifs promotionnels s'appliquent durant la première année. Tous les tarifs sont affichés en $ CAD avant taxes.
+                    Payable au début du mois par Interac ou par transfert bancaire.</small></p>
+                    <p><small>Escompte additionnelle de 5% pour un seul paiement annuel. </small></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+{% endblock content %}

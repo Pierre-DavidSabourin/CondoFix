@@ -1,0 +1,79 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Règlementation du carnet d'entretien en copropriété</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="carnet d'entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3ZZ8SZVD5E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3ZZ8SZVD5E');
+</script>
+<body>
+<div class="container">
+    <div class="row mb-4">
+            <div class="col-lg-5 col-sm-5 col-12 mb-2 pr-0">
+                <img style="width: 80%;" src="../static/images_publiques/Animate_GIF_Coupe.gif"/>
+            </div>
+            <div class="col-lg-7 col-sm-7 col-12 mr-0 pr-0">
+                <div class="mb-5">
+                    <h1>Gérez le carnet d'entretien de copropriété avec confiance</h1>
+                    <p>Les nombreuses composantes de votre immeuble requièrent un suivi constant afin de s'assurer que les dépenses
+                        d'entretien soient sous contrôle. <b>CondoFix</b> répond à ce besoin avec un système intuitif et
+                        facile à utiliser pour les administrateurs et les gestionnaires de syndicat.</p>
+                </div>
+                <p class="my-2"><a  href="{{ url_for('bp_public.comptable') }}">Pourquoi votre système comptable ne suffit plus</a></p>
+                <a href="{{ url_for('bp_public.agenda') }}">La gestion d'entretien selon la taille de la copropriété</a>
+
+            </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-12">
+            <a class="btn-lg btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+            <a class="btn-lg text-black btn-warning btn-rounded mx-2 my-4" role="button" href="/video_infos">Vidéo 3 min.</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div>
+            <h1>Le carnet d'entretien fait maintenant partie des obligations de la copropriété</h1>
+            <h4>Le gouvernement du Québec a tout récemment finalisé la réglementation quant au carnet d'entretien, au fonds de prévoyance et
+                à l'attestation à fournir lors de la vente d'une unité privative. Cliquez
+                <a href="../static/images_publiques/Reglement_Loi_16.pdf" target="_blank"><b>ici</b></a>
+                pour accéder au projet de loi qui devrait entrer en vigueur le 26 octobre 2024.</h4>
+            </div>
+        </div>
+    </div>
+    <div class="row my-4">
+            <div class="container  col-lg-4 col-sm-3 col-12 bg-secondary text-white rounded text-center mb-2">
+                <img  class="img-fluid my-4" src="../static/images_publiques/Bienvenue_4.png"/>
+            </div>
+            <div class="col-lg-8 col-sm-9 col-12 mr-0 pr-0">
+                <div class="col-12">
+                    <h3>La plateforme CondoFix est conforme à la nouvelle réglementation de la loi 16:</h3>
+                    <ul>
+                        <li>chaque équipement est inventorié dans le système selon la norme Uniformat II</li>
+                        <li>chaque bon de travail (ticket) inclut la description de chaque activité permettant d'établir la fréquence
+                            des interventions et le calendrier des interventions</li>
+                        <li>les membres du conseil d'administration et le gestionnaire ont entièrement le contrôle de la planification de l'entretien</li>
+                        <li>les copropriétaires ont accès au système pour consulter la documentation des entretiens complétés et des rapports d'expertise</li>
+                    </ul>
+                <a class="btn btn-primary btn-rounded mb-3" role="button" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+                </div>
+            </div>
+
+    </div>
+</div>
+</body>
+{% endblock content %}

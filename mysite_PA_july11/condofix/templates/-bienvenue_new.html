@@ -1,0 +1,162 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, carnet d'entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3ZZ8SZVD5E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-3ZZ8SZVD5E');
+</script>
+<body >
+<style>
+    html, body {
+  height: 100%;
+}
+.container, .row.justify-content-center.align-items-center {
+  flex: 1; /* additionally, equal width */
+}
+  height: 100%;
+  min-height: 100%;
+}
+video {
+  width: 100%;
+  height: auto;
+}
+</style>
+<div class="container">
+    <div class="col-12 mt-4">
+        <div class="row bg-steel mb-4">
+            <div class="col-md-6 col-xs-12 mb-4 mr-0 pr-0">
+                    <div class="my-4">
+                        <h1 class="text-white my-3">Tirez le maximum du carnet d'entretien de copropriété</h1>
+                        <p class="text-white mb-3 pr-2">La récente réglementation de la loi 16 exige que les informations détaillées de tous les travaux soient consignées au carnet d'entretien.
+                            <br><b>CondoFix</b> répond à cette exigence avec un système intuitif et
+                                facile à utiliser pour les administrateurs et les gestionnaires de syndicat.</p>
+                    </div>
+                <a class="btn-sm btn-warning btn-rounded my-5" role="button" href="{{ url_for('bp_public.produits') }}"><b>Voir nos offres</b></a>
+                <br>
+            </div>
+            <div class="col-md-6 col-xs-12">
+                <div class="my-4">
+                    <video width="100%" controls autoplay loop muted playsinline>
+                      <source src="../static/images_publiques/VideoHomePage.mp4" type="video/mp4" />
+                    </video>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6 col-xs-12" style="padding: 10px; border: 1px solid black;">
+                <div class="col-12">
+                    <img  class="img-fluid float-right mb-2" src="../static/images_publiques/photo_Urbano.jpg"/>
+                </div>
+                <div class="col-12">
+                    <span class="heading"><i>Très satisfait</i></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                </div>
+                <br>
+                <div class="col-12">
+                        <h6>"CondoFix permet aux administrateurs de faire un suivi détaillé des activités d'entretien de notre copropriété
+                        tout en offrant aux copropriétaires un portail pour consulter la documentation du syndicat ainsi que l'état du budget d'entretien
+                        et du fonds de prévoyance.</h6>
+                        <h6>Nous sommes très satisfaits des performances du logiciel et du processus d'implantation."</h6>
+                        <br>
+                        <p class="mb-0">Alain Dubois, administrateur responsable de l'entretien</p>
+                        <i>Syndicat des copropriétaires Urbano</i>
+
+                </div>
+            </div>
+            <div class="col-md-6 col-xs-12" style="padding: 10px; border: 1px solid black;">
+                <div class="col-12">
+                    <img  class="img-fluid float-right mb-2" src="../static/images_publiques/urbano-condos-foins.jpg"/>
+                </div>
+                <div class="col-12">
+                    <span class="heading"><i>Très facile à utiliser</i></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star checked" style="color:orange"></span>
+                    <span class="fa fa-star-half-o" style="color:orange"></span>
+                </div>
+                <br>
+                <div class="col-12">
+                        <h6>"Au moment où j’étais coprésidente du CA du syndicat de copropriété,
+                            nous avons choisi d’implanter CondoFix pour la gestion de l’entretien de notre copropriété, car il répondait
+                            très bien à nos besoins. Le logiciel est simple d’utilisation tout en fournissant les données vitales
+                            pour notre carnet d’entretien et notre fonds de prévoyance."</h6>
+                        <br>
+                        <p class="mb-0">Colette Deaudelin, présidente sortante</p>
+                        <i>Syndicat d'une copropriété de 91 unités</i>
+
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <br>
+                <div class="row">
+                    <div class="col-4">
+                        <img  class="img-fluid" src="../static/images_publiques/MemoireCollective.png"/>
+                    </div>
+                    <div class="col-8">
+                        <h4>Développer sa mémoire collective</h4>
+                        <p>Les conseils d'administration de copropriété connaissent un roulement assez élevé de leurs administrateurs ce qui présente des défis importants
+                            quant à la rétention de l'historique des réparations en vue de prendre des décisions éclairées.</p>
+                        <p>Ainsi, CondoFix agit comme <b>mémoire collective</b> des activités effectuées sur les différents équipements pour les futurs administrateurs et gestionnaires.
+                        </p>
+                    </div>
+                </div>
+                <div class="row">
+                    <p>Le système de gestion d'entretien CondoFix fut développé au Québec par un administrateur de copropriété:</p>
+                    <ul>
+                        <li>système éprouvé dans une grande copropriété avec des équipements complexes</li>
+                        <li>tient compte de la réglementation et des particularités du Québec</li>
+                        <li>accès aux copropriétaires pour consulter la documentation, les contacts, l'état du fonds de prévoyance et la situation budgétaire</li>
+                        <li>les réservations peuvent aussi être affichées pour les copropriétaires (module optionnel)</li>
+                    </ul>
+                </div>
+                <div class="row">
+                    <div class="col-6 mt-3" style="padding: 10px; border: 1px solid black;">
+                        <p><b>Comparez CondoFix avec d'autres fournisseurs de logiciel:</b></p>
+                        <style>
+                        .image {
+                        display: inline-block;
+                        }
+
+                        </style>
+
+                        <!-- Begin SF Tag -->
+                        <div class="sf-root" data-id="3526123" data-badge="customers-love-us-white" data-variant-id="sf" style="width:125px; display: inline-block;">
+                            <a href="https://sourceforge.net/software/product/CondoFix/" target="_blank">CondoFix Reviews</a>
+                        </div>
+                        <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=3526123&variant_id=sf';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
+                        </script>
+                        <!-- End SF Tag -->
+                        <a href="https://www.capterra.com/p/237116/CondoFix/">
+                        <img  class="img-fluid inline-block" style="display: inline-block" src="../static/images_publiques/Capterra_logo.png">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <a class="btn btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

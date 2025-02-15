@@ -1,0 +1,283 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<script>
+//pour permettre le choix d'aucun tag
+function hide_tag_1() {
+    if (document.getElementById("tag_select").style.display == 'none') {
+        (document.getElementById("tag_select").style.display = 'block');
+    } else {
+        document.getElementById("tag_select").style.display = 'none';
+
+    }
+}
+</script>
+<script>
+function categoryChange() {
+
+//formater liste à partir de JSON
+var categ_listing=JSON.parse('{{ list_categ_avec_tags|safe }}');
+var equip_listing=JSON.parse({{ list_equip|tojson}});
+
+// valeur de l'option choisie
+var x = document.getElementById("categ_select").value;
+//trouver index de la catégorie choisie
+var idx=categ_listing.findIndex(function (element) {
+    return element ==x;
+});
+//créer la liste des équipements pour la catégorie choisie
+cList = equip_listing[idx];
+// get the tag select element via its known id
+var cSelect = document.getElementById("tag_select");
+// remove the current options from the tag select
+var len=cSelect.options.length;
+while (cSelect.options.length > 0) {
+cSelect.remove(0);
+}
+var newOption;
+// create new options
+for (var i=0; i<cList.length; i++) {
+newOption = document.createElement("option");
+newOption.value = cList[i][0];  // assumes option string and value are the same
+newOption.text=cList[i];
+// add the new option
+try {
+cSelect.add(newOption);  // this will fail in DOM browsers but is needed for IE
+}
+catch (e) {
+cSelect.appendChild(newOption);
+}
+}
+}
+</script>
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_fonds_prevoyance.modif_intervention',id_interv=fill_interv [0][17]) }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Modification d'intervention</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Référence de l'analyse</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                           </div>
+                           <input type="text" class="form-control border-right-0" name="ref_anal" placeholder="Numéro de référence"
+                                  value="{{ fill_interv [0][6] }}" aria-label="ref_analyse" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Code Uniformat du consultant</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                           </div>
+                           <input type="text" class="form-control border-right-0" name="code_uniformat" placeholder="Code Uniformat de l'élément"
+                                  value="{{ fill_interv [0][7] }}" aria-label="code_uniformat" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p class="mb-0"><small>Description de l'intervention</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                               </div>
+                               <textarea class="form-control border-right-0" maxlength="200" name="desc_travail" rows="3"
+                                      placeholder="Description de l'intervention prévue" aria-label="desc_travail"
+                                         autofocus="autofocus" required>{{ fill_interv [0][3] }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Intervenant</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                           </div>
+                           <select class="form-control flex-grow-1" name="interv" id="interv_select" data-width="100%" autofocus="autofocus" required>
+                                <option hidden value="">Choisir un intervenant..</option>
+                                {% for item in liste_intervenants %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                           </select>
+                            <script>
+                                function selectElement(id, valueToSelect) {
+                                    let element = document.getElementById(id);
+                                    element.value = valueToSelect;
+                                }
+                                selectElement("interv_select","{{ fill_interv [0][1] }}")
+                            </script>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Type d'intervention</small></p>
+                        <div class="input-group mb-2 pr-1">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-cog"></i></span>
+                               </div>
+                               <select class="form-control flex-grow-1" name="type" id="type_select" data-width="100%" autofocus="autofocus" required>
+                               <option hidden value="">Choisir..</option>
+                               <option value="1">Maintenance</option>
+                               <option value="2">Remplacement</option>
+                               </select>
+                                <script>
+                                    function selectElement(id, valueToSelect) {
+                                        let element = document.getElementById(id);
+                                        element.value = valueToSelect;
+                                    }
+                                    selectElement("type_select","{{ fill_interv [0][4] }}")
+                                </script>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Catégorie</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                           </div>
+                           <select class="form-control flex-grow-1" name="categ" id="categ_select" data-width="100%"
+                                   autofocus="autofocus" onchange="categoryChange();" required>
+                                <option hidden value="">Choisir..</option>
+                                {% for item in liste_categories %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                           </select>
+                           <script>
+                                function selectElement(id, valueToSelect) {
+                                    let element = document.getElementById(id);
+                                    element.value = valueToSelect;
+                                }
+                                selectElement("categ_select","{{ fill_interv [0][2] }}")
+                           </script>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Tag</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-tag"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="tag" id="tag_select"  data-width="100%" autofocus="autofocus">
+                                <option hidden value="">Choisir..</option>
+                            {% for item in liste_equip_en_cours %}
+                            <option value="{{ item[0] }}">{{ item[0] }} {{ item[1] }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                        <script>
+                            function selectElement(id, valueToSelect) {
+                                let element = document.getElementById(id);
+                                element.value = valueToSelect;
+                            }
+                            selectElement("tag_select","{{ tag_id }}")
+                        </script>
+                        <div class="form-group form-inline justify-content-between mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" onchange="hide_tag_1();" name="aucun_tag" value="1" id="no_tag">
+                                <label class="form-check-label" for="aucun_tag">Aucun tag</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Valeur actuelle de l'intervention</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" step="1" name="valeur_act" placeholder="Coût total pour l'élément"
+                                  value="{{ fill_interv [0][8] }}" aria-label="valeur_act" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Part de la copropriété</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" step="10" max="100" name="part_coprop" placeholder="Part payée par le syndicat"
+                                  value="{{ fill_interv [0][19] }}" aria-label="part_coprop" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Fréquence en années</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" step="1" name="freq" placeholder="Fréquence en années"
+                                  value="{{ fill_interv [0][9] }}" aria-label="freq" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Prochaine intervention (année)</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" step="1" min=2000 max="2100" name="proch_annee"
+                                  value="{{ fill_interv [0][11] }}" placeholder="Année prévue (intervention)" aria-label="proch_annee" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Taux d'inflation (5 ans)</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" step="0.01" max="20" name="taux_0_5ans" placeholder="Taux annuel- premiers 5 ans"
+                                  value="{{ fill_interv [0][20] }}" aria-label="taux_0_5ans autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Taux d'inflation (6 à 15 ans)</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" step="0.01" max="20" name="taux_6_15ans" placeholder="Taux annuel- 6 à 15 ans"
+                                  value="{{ fill_interv [0][21] }}" aria-label="taux_6_15ans" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Taux d'inflation (+ 15 ans)</small></p>
+                        <div class="input-group mb-2">
+                           <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                           </div>
+                           <input type="number" class="form-control border-right-0" step="0.01" max="20" name="taux_15ans" placeholder="Taux annuel- plus de 15 ans"
+                                  value="{{ fill_interv [0][22] }}" aria-label="taux_15ans autofocus=" autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <div class="form-check">
+                        {% if (fill_interv [0][16] ==0): %}
+                            <input type="checkbox" class="form-check-input"  name="actif">
+                        {% else %}
+                            <input type="checkbox" class="form-check-input"  name="actif" checked>
+                        {% endif %}
+                            <label class="form-check-label" for="actif">Actif</label>
+                    </div>
+                    <button type="submit" class="btn bg-steel text-white float-right mb-1">Soumettre</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

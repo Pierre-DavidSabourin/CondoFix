@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Permet le bon layout de la table incluant triage et formatage : -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+</head>
+<div class="text-center" >
+    <h4>Modification d'usager</h4>
+</div>
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_central.usager_modif', ident_usager=liste_usager[0][0]) }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-secondary text-white rounded">
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <label for="usager_idclient"><b>ID du client</b></label>
+                    <input class="form-control form-control-sm" type="number" value= "{{ liste_usager[0][1] }}" name="usager_idclient" style="width:50px" autofocus="autofocus">
+                </div>
+                    <select class="form-control form-control-sm mt-3 mb-2" id="type_usager" name="usager_type" required>
+                    <option hidden>Type d'usager</option>
+                    <option value="1">Administrateur de système</option>
+                    <option value="2">Gestionnaire</option>
+                    <option value="3">Intervenant</option>
+                    <option value="4">Administrateur de syndicat</option>
+                    <option value="5">Copropriétaire</option>
+                </select>
+                <script>
+                    function setSelectedIndex(s, i)
+                    {
+                    s.options[i].selected = true;
+                    return;
+                    }
+                    setSelectedIndex(document.getElementById("type_usager"),"{{ liste_usager[0][3] }}");
+                </script>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="usager_nom"><b>Nom de l'usager</b></label>
+                    <input class="form-control form-control-sm" type="text" value= "{{ liste_usager[0][2] }}" name="usager_nom" autofocus="autofocus">
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="usager_email"><b>Email</b></label>
+                    <input class="form-control form-control-sm" type="email" value= "{{ liste_usager[0][4] }}" name="usager_email" autofocus="autofocus">
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="usager_motpasse"><b>Mot de passe</b></label>
+                    <input class="form-control form-control-sm" type="text" value= "{{ liste_usager[0][5] }}" name="usager_motpasse" autofocus="autofocus">
+                    <button type="submit" class="btn btn-primary btn-success float-right mb-3" name="btn_enreg">Soumettre</button>
+                </div>
+                <div class="form-check">
+                    {% if (liste_usager[0][6] ==0): %}
+                    <input type="checkbox" class="form-check-input"  name="actif">
+                    {% else %}
+                    <input type="checkbox" class="form-check-input"  name="actif" checked>
+                    {% endif %}
+                    <label class="form-check-label" for="actif">Actif</label>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

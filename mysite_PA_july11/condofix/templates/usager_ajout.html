@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Permet le bon layout de la table incluant triage et formatage : -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+            integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+            crossorigin="anonymous"></script>
+</head>
+<div class="text-center" >
+            <h4>Nouvel usager</h4>
+</div>
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_central.usager_ajout') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-secondary text-white rounded">
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <label for="IDclient"><b>ID du client</b></label>
+                    <input class="form-control form-control-sm" type="number" style="width: 50px" name="usager_idclient" autofocus="autofocus">
+                </div>
+                <select class="form-control form-control-sm mt-3 mb-2" name="usager_type" required>
+                    <option hidden>Type d'usager</option>
+                    <option value="1">Administrateur de système</option>
+                    <option value="2">Gestionnaire</option>
+                    <option value="3">Intervenant</option>
+                    <option value="4">Administrateur de syndicat</option>
+                    <option value="5">Copropriétaire</option>
+                </select>
+                <!--                <form class="form-horizontal" role="form">-->
+                <div class="form-group form-inline justify-content-between">
+                    <label for="usager_nom"><b>Nom de l'usager</b></label>
+                    <input class="form-control form-control-sm" type="text" name="usager_nom" autofocus="autofocus">
+                    <!--                </form>-->
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="usager_email"><b>Email</b></label>
+                    <input class="form-control form-control-sm" type="email" name="usager_email" autofocus="autofocus">
+                    <!--                </form>-->
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="usager_motpasse"><b>Mot de passe</b></label>
+                    <input class="form-control form-control-sm" type="text" name="usager_motpasse" autofocus="autofocus">
+                    <!--                </form>-->
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="actif">
+                    <label class="form-check-label" for="actif">Actif</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-success float-right mb-3" name="btn_enreg">Soumettre</button>
+            </div>
+            <br>
+    </form>
+</div>
+</body>

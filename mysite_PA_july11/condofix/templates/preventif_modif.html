@@ -1,0 +1,319 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+<script>
+function categoryChange() {
+
+//formater liste à partir de JSON
+var categ_listing=JSON.parse('{{ list_categ_avec_tags|safe }}');
+var equip_listing=JSON.parse({{ list_equip|tojson}});
+
+// valeur de l'option choisie
+var x = document.getElementById("categ_select").value;
+//trouver index de la catégorie choisie
+var idx=categ_listing.findIndex(function (element) {
+    return element ==x;
+});
+//créer la liste des équipements pour la catégorie choisie
+cList = equip_listing[idx];
+// get the tag select element via its known id
+var cSelect = document.getElementById("tag_select");
+// remove the current options from the tag select
+var len=cSelect.options.length;
+while (cSelect.options.length > 0) {
+cSelect.remove(0);
+}
+var newOption;
+// create new options
+for (var i=0; i<cList.length; i++) {
+newOption = document.createElement("option");
+newOption.value = cList[i][0];  // assumes option string and value are the same
+newOption.text=cList[i];
+// add the new option
+try {
+cSelect.add(newOption);  // this will fail in DOM browsers but is needed for IE
+}
+catch (e) {
+cSelect.appendChild(newOption);
+}
+}
+}
+</script>
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_preventif.preventif_modif',ident_preventif=liste_preventif[0][0]) }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-8 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Modification d'entretien planifié</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Intervenant</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="ident_intervenant" id="intervenant_select" data-width="100%" autofocus="autofocus" required>
+                            <option hidden value="">Choisir..</option>
+                            {% for item in liste_intervenants %}
+                            <option value="{{ item[0] }}">{{ item[1] }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                        <script>
+                            function selectElement(id, valueToSelect) {
+                                let element = document.getElementById(id);
+                                element.value = valueToSelect;
+                            }
+                            selectElement("intervenant_select","{{ liste_preventif[0][4] }}");
+                        </script>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Prochain entretien (1er du mois)</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                               </div>
+                               <input type="date" class="form-control border-right-0" value="{{ liste_preventif[0][8] }}" name="date_proch"
+                                      aria-label="date_proch" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Catégorie</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="categorie" id="categ_select" onchange="categoryChange();" data-width="100%" autofocus="autofocus" required>
+                            <option hidden value="">Choisir..</option>
+                            {% for item in liste_categories %}
+                            <option value="{{ item[0] }}">{{ item[1] }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <script>
+                        function selectElement(id, valueToSelect) {
+                                    let element = document.getElementById(id);
+                                    element.value = valueToSelect;
+                                }
+                                selectElement("categ_select","{{ liste_preventif[0][6] }}");
+                    </script>
+                    {% if version==1 %}
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Tag</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="tag" id="tag_select"  data-width="100%" autofocus="autofocus">
+                                <option hidden value="">Choisir..</option>
+                            {% for item in liste_equip_en_cours %}
+                            <option value="{{ item[0] }}">{{ item[0] }} {{ item[1] }}</option>
+                            {% endfor %}
+                            </select>
+                        </div>
+                        <script>
+                            function hide_tag() {
+                                if (document.getElementById("tag_select").style.display == 'none') {
+                                    (document.getElementById("tag_select").style.display = 'block');
+                                } else {
+                                    document.getElementById("tag_select").style.display = 'none';
+                                }
+                            }
+                            function selectElement(id, valueToSelect) {
+                                let element = document.getElementById(id);
+                                element.value = valueToSelect;
+                            }
+                            selectElement("tag_select","{{ tag_id }}")
+                        </script>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" onchange="hide_tag();" name="aucun_tag" value="1" id="no_tag">
+                            <label class="form-check-label" for="aucun_tag">Aucun tag</label>
+                        </div>
+                    </div>
+                    {% else %}
+                    {% endif %}
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Type de travail</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" id="type_select" name="type_travail" data-width="100%" autofocus="autofocus" required>
+                            <option hidden value="">Choisir..</option>
+                            <option value="1">Entretien et réparations</option>
+                            <option value="2">Fonds de prévoyance</option>
+                            <option value="3">Préventif</option>
+                            </select>
+                        </div>
+                        <script>
+                            function selectElement(id, valueToSelect) {
+                                let element = document.getElementById(id);
+                                element.value = valueToSelect;
+                            }
+                            selectElement("type_select","{{ liste_preventif[0][10] }}");
+                        </script>
+                        <p class="mb-0"><small>Emplacement</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-map-marker"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="emplacement" placeholder="Lieu de l'entretien"
+                                  value="{{ liste_preventif[0][2] }}" aria-label="codeGL" autofocus="autofocus" required>
+                        </div>
+                        <p class="mb-0"><small>Référence</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="reference" placeholder="Numéro carnet d'entretien"
+                                  value="{{ liste_preventif[0][9] }}" aria-label="reference" autofocus="autofocus">
+                        </div>
+                        <p class="mb-0"><small>Heures estimées</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" step="0.5" class="form-control border-right-0" name="hres_est" placeholder="Nombre d'heures estimées"
+                                  value="{{ liste_preventif[0][3] }}" aria-label="hres_est" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Fréquence (années)</small></p>
+                        <div class="input-group mb-4">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" step="1" class="form-control border-right-0" name="freq" placeholder="Fréquence en années"
+                                  value="{{ liste_preventif[0][7] }}" aria-label="freq" autofocus="autofocus" required>
+                        </div>
+                        <div class="control-group">
+                            <div class="controls span2">
+                                <label class="checkbox">
+                                {% if (liste_preventif[0][11] ==0): %}
+                                <input type="checkbox" name="Janv"> Janvier
+                                {% else %}
+                                <input type="checkbox" name="Janv" checked> Janvier
+                                {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][12] ==0): %}
+                                    <input type="checkbox" name="Fev"> Février
+                                    {% else %}
+                                    <input type="checkbox" name="Fev" checked> Février
+                                    {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][13] ==0): %}
+                                    <input type="checkbox" name="Mars"> Mars
+                                    {% else %}
+                                    <input type="checkbox" name="Mars" checked> Mars
+                                    {% endif %}
+                                </label>
+                            </div>
+                            <div class="controls span2">
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][14] ==0): %}
+                                    <input type="checkbox" name="Avril"> Avril
+                                    {% else %}
+                                    <input type="checkbox" name="Avril" checked> Avril
+                                    {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][15] ==0): %}
+                                    <input type="checkbox" name="Mai"> Mai
+                                    {% else %}
+                                    <input type="checkbox" name="Mai" checked> Mai
+                                    {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][16] ==0): %}
+                                    <input type="checkbox" name="Juin"> Juin
+                                    {% else %}
+                                    <input type="checkbox" name="Juin" checked> Juin
+                                    {% endif %}
+                                </label>
+                            </div>
+                            <div class="controls span2">
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][17] ==0): %}
+                                    <input type="checkbox" name="Juil"> Juillet
+                                    {% else %}
+                                    <input type="checkbox" name="Juil" checked> Juillet
+                                    {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][18] ==0): %}
+                                    <input type="checkbox" name="Aout"> Août
+                                    {% else %}
+                                    <input type="checkbox" name="Aout" checked> Août
+                                    {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][19] ==0): %}
+                                    <input type="checkbox" name="Sept"> Septembre
+                                    {% else %}
+                                    <input type="checkbox" name="Sept" checked> Septembre
+                                    {% endif %}
+                                </label>
+                            </div>
+                            <div class="controls span2">
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][20] ==0): %}
+                                    <input type="checkbox" name="Oct"> Octobre
+                                    {% else %}
+                                    <input type="checkbox" name="Oct" checked> Octobre
+                                    {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][21] ==0): %}
+                                    <input type="checkbox" name="Nov"> Novembre
+                                    {% else %}
+                                    <input type="checkbox" name="Nov" checked> Novembre
+                                    {% endif %}
+                                </label>
+                                <label class="checkbox">
+                                    {% if (liste_preventif[0][22] ==0): %}
+                                    <input type="checkbox" name="Dec"> Décembre
+                                    {% else %}
+                                    <input type="checkbox" name="Dec" checked> Décembre
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p class="mb-0"><small>Description</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                            </div>
+                            <textarea class="form-control border-right-0" maxlength="200" name="description" rows="3"
+                                      aria-label="description" autofocus="autofocus" required>{{ liste_preventif[0][1] }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn bg-steel text-white float-right mb-2">Soumettre</button>
+            </div>
+    </form>
+</div>
+</body>
+
+{% endblock content %}

@@ -1,0 +1,125 @@
+{% extends "proprios_layout.html" %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Permet le bon layout de la table incluant triage et formatage : -->
+    <link rel="stylesheet" href="../static/DataTables/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire' de datatables : -->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.3.0/Chart.min.js"></script>
+</head>
+<body>
+<style>
+    h4 {
+  margin: 1px;
+}
+</style>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-8">
+            <div class="wrapper">
+                <h4>Solde et dépenses prévues du fonds de prévoyance</h4>
+                <p><small>En $ actualisés. Détails des paramètres affichés à droite du graphique.</small></p>
+                <canvas id="line-chart" width="800" height="400"></canvas>
+            </div>
+            <script>
+              //console.log({{labels|tojson}});
+              //console.log({{values_1|tojson}});
+              new Chart(document.getElementById("line-chart"), {
+                  type: 'line',
+                  data: {
+                    labels: {{labels}},
+                    datasets: [
+                      {
+                      label: 'Dépenses             ',
+                      borderColor: "#caf270",
+                      fill: false,
+                      pointStyle: "line",
+                      data: {{ values_1|tojson }},
+                    }, {
+                      label: 'Solde             ',
+                      borderColor: "#45c490",
+                      fill: false,
+                      pointStyle: "line",
+                      data: {{ values_2|tojson }},
+                    },
+                    ]
+                  },
+                  options: {
+                       legend: { display: true,
+                       position: 'bottom',
+                       labels: {usePointStyle: true},
+                       textAlign: 'left',
+                       symbolWidth: 40
+                },
+                title: {
+                  display: false,
+                  text: 'Predicted world population (millions) in 2050'
+                },
+                    responsive: false
+                  }
+                  });
+            </script>
+        </div>
+        <div class="col-sm-4">
+            <form action="{{ url_for('bp_fonds_prevoyance.calcul_solde',args=('scenario','coproprios')) }}" method=post class="form-horizontal" role="form">
+            <h6>Dépenses après {{ fill_champs[0] }} : {{ fill_champs[1] }}</h6>
+            <p><small>En $ actualisés.{{ fill_champs[2] }} interventions prévues aux 25 années suivantes.</small></p>
+            <div class="container col-md-12 bg-form-bground p-2 rounded">
+                <div class="mt-0 mb-3 text-center">
+                    <b>MODÉLISATION</b></>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                     <label for="contribution"><small>Contribution annuelle au début</small></label>
+                     <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                        </div>
+                        <input class="form-control form-control-sm" type="number" value="{{ fill_champs[3] }}" step= 100 style="width:90px;" name="contribution" autofocus="autofocus">
+                     </div>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="taux_croiss_contrib"><small>Croissance annuelle de contribution</small></label>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                        </div>
+                        <input class="form-control form-control-sm" type="number" value="{{ fill_champs[4] }}" step= 0.01 style="width:90px;" name="taux_croiss_contrib" autofocus="autofocus">
+                    </div>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="taux_inflation"><small>Taux moyen d'inflation*</small></label>
+                    <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                       </div>
+                       <input class="form-control form-control-sm" type="number" value="{{ fill_champs[5] }}" step= 0.01 style="width:90px;" name="taux_inflation" autofocus="autofocus">
+                    </div>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label for="taux_rendement"><small>Rendement** sur placements</small></label>
+                    <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                       </div>
+                    <input class="form-control form-control-sm" type="number" value="{{ fill_champs[6] }}" step= 0.01 style="width:90px;" name="taux_rendement" autofocus="autofocus">
+                    </div>
+                </div>
+                <button type="submit" class="btn bg-steel text-white float-right">Soumettre</button>
+                <br><br>
+                </div>
+                <a class="btn btn-dark text-white btn-rounded my-1" role="button" href="{{ url_for('bp_fonds_prevoyance.calcul_solde',args=('ajuste','coproprios')) }}">Afficher les données ajustées</a>
+                <p><small>* Pondéré selon le type d'intervention.
+                    <br>** Pondéré entre placements à court et à long terme.</small></p><br>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

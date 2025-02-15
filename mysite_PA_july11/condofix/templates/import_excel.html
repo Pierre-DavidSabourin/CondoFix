@@ -1,0 +1,47 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<div class="text-center" >
+            <h2>Importation Excel</h2><h6>(fonds de prévoyance et carnet d'entretien)</h6>
+</div>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<body>
+<div class="list-group">
+    <form>
+<!--    <form action="{{ url_for('bp_documentation.doc_ajout') }}" method=post enctype="multipart/form-data" class="form-horizontal" role="form">-->
+<!-- -->
+        <div class="row">
+            <div class="container col-md-6 bg-secondary text-white rounded">
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <label for="Importer vers"><b>Importer vers</b></label>
+                    <select class="form-control form-control-sm mb-3" id="doc_type" name="type_doc" style="width:350px" required>
+                        <option value='' hidden>Choisir..</option>
+                        <option value="" >Table des interventions de l'analyse du fonds de prévoyance</option>
+                        <option value="" >Calendrier automatisé d'entretien: activités de maintenance du fonds (analyse) </option>
+                        <option value="" >Calendrier automatisé d'entretien: activités du carnet d'entretien</option>
+                    </select>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <p>ATTENTION! Le fichier téléchargé devra être formaté tel que spécifié afin d'assurer l'intégralité des données. </p>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                        <label><b>Téléchargement</b></label>
+                        <div class="custom-file">
+                            <div style="position:relative;">
+                            <input type="file" name="fichier" id="fichier_upload" required>
+                        </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-success float-right mb-3">Soumettre</button>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

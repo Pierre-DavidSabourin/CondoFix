@@ -1,0 +1,8 @@
+POUR BLOG:
+cd C:\Users\DOnal\AppData\Local\Programs\Python\Python310\Scripts\source
+
+POUR AIDE:
+cd C:\Users\DOnal\Documents\Projets Programmation\mysite_PA_july11\venv\Scripts
+
+make clean
+make html

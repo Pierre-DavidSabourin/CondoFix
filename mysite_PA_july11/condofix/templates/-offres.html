@@ -1,0 +1,314 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Modules de la plateforme d'entretien CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, carnet d'entretien, carnet entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+<style>
+.anchor{
+  scroll-margin-top: 80px;
+}
+</style>
+
+
+</head>
+<body>
+<div class="container-fluid mt-2 pt-4 pb-5">
+  <div class="card mt-1 mx-5">
+      <div class="card-body">
+        <!-- Basic Plan -->
+        <div class="row align-items-center">
+          <div class="col-12 col-md-4">
+            <h4 class="text-dark">
+              Plateforme CondoFix
+            </h4>
+            <div class="text-secondary-d1 text-120">
+              <H6 class="text-danger">Rabais promotionnel de 35% applicable!</H6>
+              <span class="ml-n15 align-text-bottom text-180"><b>20$ par mois + 1,00$/porte </b></span>
+            </div>
+          </div>
+
+          <ul class="list-unstyled mb-0 col-12 col-md-4 text-dark-l1 text-90 text-left my-4 my-md-0">
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Carnet d'entretien complet</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Saisie assistée des factures</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Gestion des équipements</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Suivi du fonds de prévoyance</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Registre des documents du syndicat</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Aide (en ligne/courriel)</span></li>
+          </ul>
+
+          <div class="col-12 col-md-4 text-center">
+            <a class="btn btn-danger btn-rounded mb-3" role="button" href="{{ url_for('bp_public.tarifs', produit=1) }}">Calculer tarif</a>
+            <a href="#ancre_1" class="f-n-hover btn btn-dark btn-raised px-4 py-25 w-75 text-600">Détails</a>
+          </div>
+        </div>
+      </div>
+  </div>
+  <div class="card mt-3 mx-5">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-12 col-md-4">
+            <h4 class="text-dark">
+              Portail des copropriétaires
+            </h4>
+            <div class="text-secondary-d1 text-120">
+              <H6 class="text-danger">Rabais promotionnel de 35% applicable!</H6>
+              <span class="ml-n15 align-text-bottom text-180"><b>ajouter 0.75$/porte </b></span>
+            </div>
+          </div>
+          <ul class="list-unstyled mb-0 col-12 col-md-4 text-dark-l1 text-90 text-left my-4 my-md-0">
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Accès au registre de documents</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Envoi de signalements</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">État du fonds de prévoyance</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Suivi du budget d'entretien</span></li>
+          </ul>
+          <div class="col-12 col-md-4 text-center">
+            <a href="#ancre_2" class="f-n-hover btn btn-dark btn-raised px-4 py-25 w-75 text-600">Détails</a>
+          </div>
+        </div>
+      </div>
+  </div>
+  <div class="card mt-3 mx-5">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-12 col-md-4">
+            <h4 class="text-dark">
+              Module de réservations
+            </h4>
+            <div class="text-secondary-d1 text-120">
+              <span class="ml-n15 align-text-bottom text-180"><b>ajouter 0.65$/porte </b></span>
+            </div>
+          </div>
+          <ul class="list-unstyled mb-0 col-12 col-md-4 text-dark-l1 text-90 text-left my-4 my-md-0">
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Gérez l'accès à vos ressources</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Facile d'utilisation</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Horaires paramétrables</span></li>
+            <li><i class="fa fa-check text-success-m2 text-110 mr-2 mt-1"></i><span class="text-110">Prérequis: portail des copropriétaires</span></li>
+          </ul>
+          <div class="col-12 col-md-4 text-center">
+            <a href="#ancre_3" class="f-n-hover btn btn-dark btn-raised px-4 py-25 w-75 text-600">Détails</a>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+<div class="container mt-3">
+  <div class="form-group form-inline justify-content-between">
+      <h2 class="anchor mb-3" id="ancre_1">Plateforme CondoFix</h2>
+      <a class="btn btn-danger btn-rounded" role="button" href="{{ url_for('bp_public.tarifs', produit=1) }}">Calculer tarif</a>
+  </div>
+  <div class="row">
+      <div class="card-group">
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-book fa-3x text-center my-2"  aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Carnet d'entretien complet</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">CondoFix rend votre syndicat conforme aux règlements de la loi 16.</p>
+            <ul>
+            <li>Registre historique des entretiens</li>
+            <li>Gestion automatisée des interventions</li>
+            <li>Suivi des bons de travail (tickets)</li>
+            <li>Tableau de bord des administrateurs</li>
+            <li>Suivi des dépenses d'entretien par rapport au budget</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-file-text fa-3x text-center my-2"  aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Saisie assistée des factures</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">CondoFix tient compte des coûts d'entretien pour chaque intervention.</p>
+            <ul>
+            <li>Photographiez/téléchargez vos factures</li>
+            <li>Lecture avec technologie OCR qui accélère la saisie</li>
+            <li>Numérisation pour trouver rapidement toutes vos factures</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-cog fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Gestion des équipements</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Les équipements les plus fréquemment entretenus sont signalés par CondoFix.</p>
+            <ul>
+            <li>Inventaire des équipements</li>
+            <li>Lien avec les interventions du fonds de prévoyance et du carnet d'entretien</li>
+            <li>Étiquettes disponibles pour identifier chaque équipement dans CondoFix</li>
+            </ul>
+          </div>
+        </div>
+     </div>
+  </div>
+  <div class="row">
+    <div class="card-group">
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-area-chart fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Fonds de prévoyance</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Le module tient compte de toutes les interventions requises selon l'analyse du consultant.</p>
+            <ul>
+              <li>Génération automatique du bon de travail pour chaque intervention selon l'année prévue</li>
+              <li>Modélisation du solde du fonds selon inflation, rendement des placements et croissance de contribution annuelle</li>
+              <li>Application des taux réels d'inflation et de rendement des obligations pour le calcul du solde prévu</li>
+              </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-file-pdf-o fa-3x text-center my-2"  aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Registre des documents</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Tous les documents requis pour le registre du syndicat peuvent être emmagasinés et affichés pour les administrateurs
+            et pour les copropriétaires (portail des copropriétaires requis)</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-info-circle fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Aide (en ligne/courriel)</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">La documentation de l'utilisateur CondoFix est constamment mise à jour en ligne pour faciliter
+              la navigation dans l'application. Support courriel assuré du lundi au vendredi de 9h à 16h30 avec délai de réponse maximum de
+              8 heures ouvrables.</p>
+          </div>
+        </div>
+      </div>
+  </div>
+  <div class="form-group form-inline justify-content-between mt-4">
+      <h2 class="anchor mb-3" id="ancre_2">Portail des copropriétaires</h2>
+      <a class="btn btn-danger btn-rounded" role="button" href="{{ url_for('bp_public.tarifs', produit=2) }}">Calculer tarif</a>
+  </div>
+  <div class="row">
+      <div class="card-group">
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-info-circle fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Partagez les données du syndicat</h5>
+          </div>
+          <div class="card-body">
+              <p class="card-text">Un pas de plus vers la transparence de votre syndicat.
+              Les copropriétaires peuvent accéder aux informations importantes avec un mot de passe.
+              </p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-file-text fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Accès au registre de documents</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Tous les documents du syndicat sont rendus disponibles aux copropriétaires avec un tableau facilitant la recherche
+              de document.</p>
+            <ul>
+            <li>Procès-verbaux et rapports de comité</li>
+            <li>Rapports d'inspection et de consultant</li>
+            <li>Plans et devis</li>
+            <li>Documents liés à l'assemblée générale annuelle</li>
+            <li>Bottin du syndicat</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-exclamation-circle fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Formulaire et gestion de signalements</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Les copropriétaires peuvent signaler des irrégularités ou des bris d'équipement aux administrateurs.</p>
+            <ul>
+            <li>Tableau de gestion des signalements pour les administrateurs</li>
+            <li>Génération automatique de bon de travail à partir d'un signalement</li>
+            <li>Alerte d'envoi de signalement</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-area-chart fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">État du fonds de prévoyance et du budget</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Tenir les copropriétaires informés de l'état des finances du syndicat est une activité importante
+              du conseil d'administration.</p>
+            <ul>
+            <li>Graphique affichant l'évolution du fonds de prévoyance et des dépenses afférentes</li>
+            <li>Suivi du budget d'entretien de l'immeuble</li>
+            <li>Affichage paramétrable des informations disponibles aux copropriétaires</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+  </div>
+  <div class="form-group form-inline justify-content-between  mt-4">
+      <h2 class="anchor mb-3" id="ancre_3">Module de réservations</h2>
+      <a class="btn btn-danger btn-rounded" role="button" href="{{ url_for('bp_public.tarifs', produit=3) }}">Calculer tarif</a>
+  </div>
+  <div class="row">
+      <div class="card-group">
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-building fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Gérez l'accès à vos ressources</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">CondoFix permet aux résidents de connaître la disponibilité des locaux et équipements de l'immeuble.</p>
+            <ul>
+            <li>Réservation d'ascenseur</li>
+            <li>Allocation de plages d'heures pour piscine et équipements</li>
+            <li>Horaire de la salle de réception</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-thumbs-up fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Facile d'utilisation</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">Les copropriétaires ont un portrait en temps réel de l'utilisation des ressources disponibles via le module
+              de réservations. Une réservation s'effectue en quelques clics seulement.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header text-center mx-2 mt-1">
+            <i class="fa fa-calendar fa-3x text-center my-2" aria-hidden="true" style="color:#0275d8"></i>
+            <h5 class="text-primary">Horaires paramétrables</h5>
+          </div>
+          <div class="card-body">
+            <p class="card-text">L'administrateur du système peut appliquer plusieurs contraintes à la disponibilité d'une ressource et
+              paramétrer les délais de réservation.</p>
+          </div>
+        </div>
+     </div>
+  </div>
+  <div class="row mt-5">
+    <p></p>
+  </div>
+  <div class="row mt-5">
+    <p></p>
+  </div>
+  <div class="row mt-5">
+    <p></p>
+  </div>
+</div>
+</body>
+
+{% endblock content %}
+

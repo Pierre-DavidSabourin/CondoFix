@@ -1,0 +1,191 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Modules de la plateforme d'entretien CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, carnet d'entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+
+<body >
+<style>
+    html, body {
+  height: 100%;
+}
+.container, .row.justify-content-center.align-items-center {
+  flex: 1; /* additionally, equal width */
+}
+  height: 100%;
+  min-height: 100%;
+}
+</style>
+<div class="container">
+    <script>
+        .rounded-xl {
+   border-radius: 1.5rem;
+}
+    </script>
+    <div class="col-12 mt-4">
+        <h3 class="text-center">Des produits qui répondent aux besoins des syndicats de copropriété</h3>
+        <div class="text-center">
+            <img class="img-fluid mx-2" src="../static/CheckmarkGreen.png" width="30" height="30" style="display:inline;"/><p style="display:inline;">Essai gratuit</p>
+            <img class="img-fluid mx-2" src="../static/CheckmarkGreen.png" width="30" height="30" style="display:inline;"/><p style="display:inline;">Aucune installation requise (100% Web)</p>
+            <img class="img-fluid mx-2" src="../static/CheckmarkGreen.png" width="30" height="30"style="display:inline;"/><p style="display:inline;">Évolutif: changez de produit en tout temps</p>
+        </div>
+        <div class="row mt-4">
+            <div class="container bg-primary text-white rounded-xl mx-2" style="width: 32%">
+                <br>
+                <H6 class="text-white text-center mb-0">CARNET</H6><H2 class="text-white text-center">ESSENTIEL</H2>
+                <p class="text-white text-center">Pour copropriétés ayant<br>moins d'équipements à entretenir</p>
+                <h4 class="text-white text-center">0,90$ par porte*</h4>
+                <ul class="text-small">
+                  <li style="font-size:13px">3 accès (administrateur/CA/employé)
+                  <li style="font-size:13px">Gestion des tickets (interventions)</li>
+                  <li style="font-size:13px">Calendrier d'entretien</li>
+                  <li style="font-size:13px">Génération automatique de tickets</li>
+                  <li style="font-size:13px">Historique des entretiens</li>
+                  <li style="font-size:13px">Exportation vers Excel</li>
+                  <li style="font-size:13px">Tableau de bord</li>
+                  <li style="font-size:13px">Rapport d’activité autogénéré</li>
+                  <li style="font-size:13px">Saisie des factures </li>
+                  <li style="font-size:13px">Analyse des dépenses ($) </li>
+                  <li style="font-size:13px">Aide (documentation/courriel)</li>
+                </ul>
+                <div class="text-center">
+                <p class="text-white"><small>* Plus tarif de base de 20$ par mois</small></p>
+                <a class="btn btn-warning btn-rounded mt-2 mb-3" role="button" href="{{ url_for('bp_public.tarifs',produit=1) }}"><b>Calculer mon tarif</b></a>
+                </div>
+            </div>
+            <div class="container bg-danger text-white rounded-xl mx-2" style="width: 32%">
+                <br>
+                <H6 class="text-white text-center mb-0">CARNET</H6><H2 class="text-white text-center">PLUS</H2>
+                <p class="text-center">Plusieurs équipements à entretenir<br>et interventions fréquentes</p>
+                <h4 class="text-white text-center">1,85$ par porte*</h4>
+                <p class="text-white text-center">Carnet ESSENTIEL plus:</p>
+                <ul class="text-small">
+                  <li style="font-size:13px">Accès copropriétaires via portail</li>
+                  <li style="font-size:13px">Gestion et inventaire des équipements</li>
+                  <li style="font-size:13px">Gestion du fonds de prévoyance</li>
+                  <li style="font-size:13px">Documents du syndicat</li>
+                  <li style="font-size:13px">Signalements et demandes de service</li>
+                  <li style="font-size:13px">Contacts du syndicat (bottin)</li>
+                  <li style="font-size:13px">Gestion du budget d’entretien</li>
+                  <li style="font-size:13px">Statistiques d’achalandage</li>
+                  <li style="font-size:13px">Sauvegarde des factures en pdf</li>
+                </ul>
+                <div class="text-center">
+                    <p class="text-white"><small>* Plus tarif de base de 20$ par mois</small></p>
+                    <a class="btn btn-warning btn-rounded mt-2 mb-3" role="button" href="{{ url_for('bp_public.tarifs',produit=2) }}"><b>Calculer mon tarif</b></a>
+                </div>
+            </div>
+            <div class="container  bg-steel white text-white rounded-xl mx-2" style="width: 32%">
+                <br>
+                <H6 class="text-white text-center mb-0">MODULE OPTIONNEL</H6><H2 class="text-white text-center">RÉSERVATIONS</H2>
+                <p class="text-center">Gérez l'utilisation de vos locaux et équipements par les copropriétaires</p>
+                <h4 class="text-white text-center">0,40$ par porte*</h4>
+                <ul class="text-small mt-3">
+                  <li style="font-size:13px">Environnement simple et intuitif</li>
+                  <li style="font-size:13px">Possibilité d'annuler une réservation</li>
+                  <li style="font-size:13px">Disponibilité et contraintes paramétrables</li>
+                  <li style="font-size:13px">Ressources facturables</li>
+                </ul>
+                <div class="text-center">
+                    <p class="text-white"><small>* Seulement disponible avec Carnet Plus</small></p>
+                    <a class="btn btn-success btn-rounded mt-2 mb-3" role="button" href="{{ url_for('bp_public.module_rez') }}"><b>Voir le module</b></a>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-between mt-3">
+            <table class="table table-striped small">
+              <thead>
+                <tr>
+                  <th scope="col"><b>FONCTIONNALITÉ</b></th>
+                  <th class= scope="col"><b>DESCRIPTION</b></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Gestion de tickets</th>
+                  <td>Suivre les activités d'entretien depuis la création d'un ticket jusqu'à la réception de la facture.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Calendrier d'entretien</th>
+                  <td>Planifier les interventions du carnet d'entretien et générer les tickets automatiquement au moment voulu.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Tableau de bord</th>
+                  <td>Afficher l'état d'avancement des tickets, les dépenses par catégorie, la situation budgétaire et davantage.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Documentation</th>
+                  <td>Afficher tous les documents touchant la copropriété tels que contrats, rapports, procès verbaux et autres.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Gestion des équipements</th>
+                  <td>Inventorier tous les équipements de l'immeuble afin de pouvoir leur attribuer les entretiens et évaluer leur état.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Gestion des intervenants</th>
+                  <td>Connaître en tout temps l'état des travaux confiés aux employés et aux fournisseurs.</td>
+               </tr>
+                <tr>
+                  <th scope="row">Budget d'entretien</th>
+                  <td>Suivre en temps réel l'évolution des dépenses d'entretien par catégorie par rapport au budget annuel.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Factures d'entretien</th>
+                  <td>Répertorier toutes les factures touchant l'entretien de l'immeuble et les exporter au grand livre comptable.</td>
+               </tr>
+               <tr>
+                  <th scope="row">Signalements</th>
+                  <td>Les copropriétaires peuvent transmettre aux administrateurs les demandes pour l'entretien ou autre service.</td>
+               </tr>
+                <tr>
+                  <th scope="row">Contacts</th>
+                  <td>Afficher un bottin de contacts aux copropriétaires (administrateurs, fournisseurs, etc.).</td>
+               </tr>
+                <tr>
+                  <th scope="row">Fonds de prévoyance</th>
+                  <td>Connaître et diffuser l'état actuel du fonds et l'impact de l'inflation réelle sur les projections de l'analyse du fonds.</td>
+               </tr>
+               <tr>
+                  <th scope="row">Réservations (optionnel)</th>
+                  <td>Offrir aux copropriétaires un outil permettant de réserver en ligne les salles et les équipements de l'immeuble.</td>
+                </tr>
+
+              </tbody>
+            </table>
+        </div>
+        <div class="row">
+            <div class="col-12 text-center mt-3" style="padding: 10px; border: 1px solid black;">
+                <p><b>Comparez CondoFix avec d'autres fournisseurs de logiciel:</b></p>
+                <style>
+                .image {
+                display: inline-block;
+                }
+
+                </style>
+
+                <!-- Begin SF Tag -->
+                <div class="sf-root" data-id="3526123" data-badge="customers-love-us-white" data-variant-id="sf" style="width:125px; display: inline-block;">
+                    <a href="https://sourceforge.net/software/product/CondoFix/" target="_blank">CondoFix Reviews</a>
+                </div>
+                <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=3526123&variant_id=sf';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
+                </script>
+                <!-- End SF Tag -->
+                <a href="https://www.capterra.com/p/237116/CondoFix/">
+                <img  class="img-fluid inline-block" style="display: inline-block" src="../static/Capterra_logo.png">
+                </a>
+            </div>
+        </div>
+        <a class="btn btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+    </div>
+</div>
+</body>
+{% endblock content %}

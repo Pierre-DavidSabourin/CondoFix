@@ -1,0 +1,82 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_categories.categorie_modif', ident_categorie=liste_categorie[0][0]) }}"
+          method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-4 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Modification de catégorie</h4>
+                </div>
+                <input type="hidden" name="ident_categorie" value="{{ liste_categorie[0][0] }}">
+                <p class="mb-0"><small>Description</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" value="{{ liste_categorie[0][2] }}" name="categorie_desc" placeholder="Description"
+                              aria-label="categorie_desc" autofocus="autofocus" required>
+                </div>
+                <p><small><b>Note:</b> la description de la catégorie ne sera pas modifiée</small></p>
+                <p class="mb-0"><small>Groupe</small></p>
+                <div class="input-group mb-2 pr-1">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                       </div>
+                       <select class="form-control flex-grow-1" name="groupe" id="groupe_select" data-width="100%" autofocus="autofocus" required>
+                        <option hidden value="">Choisir..</option>
+                        {% for item in liste_groupes %}
+                        <option value="{{ item[0] }}">{{ item[1] }}</option>
+                        {% endfor %}
+                        </select>
+                </div>
+                <script>
+                    function selectElement(id, valueToSelect) {
+                        let element = document.getElementById(id);
+                        element.value = valueToSelect;
+                    }
+                    selectElement("groupe_select","{{ liste_categorie[0][1] }}")
+                </script>
+                <h6><a href="../static/Classes_Uniformat.pdf" target="_blank" class="text-primary"><small>Classification de catégories par groupe Uniformat</small></a></h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Compte GL</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-tags"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="codeGL" value= "{{ liste_categorie[0][4] }}"
+                                   placeholder="Compte GL" aria-label="codeGL" autofocus="autofocus">
+                        </div>
+                    </div>
+                    {% if version==1 %}
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Budget annuel</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="1" name="budget" placeholder="Budget annuel"
+                                  value= "{{ liste_categorie[0][3] }}" aria-label="budget" autofocus="autofocus">
+                        </div>
+                    </div>
+                    {% else %}
+                    {% endif %}
+                </div>
+                <div class="form-group form-inline justify-content-between mt-3">
+                <div class="form-check">
+                    {% if (liste_categorie[0][5] ==0): %}
+                        <input type="checkbox" class="form-check-input"  name="actif">
+                    {% else %}
+                        <input type="checkbox" class="form-check-input"  name="actif" checked>
+                    {% endif %}
+                        <label class="form-check-label" for="actif">Actif</label>
+                </div>
+                    <button type="submit" class="btn bg-steel text-white float-right mb-1">Soumettre</button>
+                </div>
+            </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

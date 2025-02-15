@@ -1,0 +1,585 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="container col-md-8">
+    <div id="content">
+        <ul id="tabs" class="nav nav-tabs" data-tabs="tabs">
+            <li><a href="#tab_1" data-toggle="tab">Réglages&nbsp&nbsp&nbsp</a>
+            </li>
+            <li><a href="#tab_2" data-toggle="tab">Profil d'immeuble&nbsp&nbsp&nbsp</a>
+            </li>
+            <li><a href="#tab_3" data-toggle="tab">Salaires/honoraires&nbsp&nbsp&nbsp</a>
+            </li>
+            </li>
+            <li><a href="#tab_4" data-toggle="tab">Facture OCR&nbsp&nbsp&nbsp</a>
+            </li>
+            <li><a href="#tab_5" data-toggle="tab">Fonds de prévoyance&nbsp&nbsp&nbsp</a>
+            </li>
+            <li><a href="#tab_6" data-toggle="tab">Réservations</a>
+            </li>
+        </ul>
+    <br>
+    <div id="my-tab-content" class="tab-content">
+        <div class="tab-pane active" id="tab_1">
+            <div class="list-group nav-item">
+                <form action="{{ url_for('bp_parametres.reglages_modif') }}" method=post class="form-horizontal" role="form">
+                    <div class="row">
+                        <div class="container col-md-12 bg-form-bground">
+                            <p>CondoFix Version 2.1 (2023-05-05)</p>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-0"><small>Début d'année budgétaire</small></p>
+                                    <div class="input-group mb-2">
+                                        <div class="input-group-prepend bg-white">
+                                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                                        </div>
+                                        <input type="date" class="form-control border-right-0" value="{{ fill_parametres[0][1] }}" name="date_debut"
+                                               placeholder="Début d'année budgétaire" aria-label="codeGL" autofocus="autofocus" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-0"><small>Cible d'âge moyen des tickets (jours)</small></p>
+                                    <div class="input-group mb-2">
+                                        <div class="input-group-prepend bg-white">
+                                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-bullseye"></i></span>
+                                        </div>
+                                        <input type="number" step="0" class="form-control border-right-0" value="{{ fill_parametres[0][2] }}" name="cible_age_moyen"
+                                               placeholder="Cible pour tableau de bord" aria-label="cible_age_moyen" autofocus="autofocus" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-0"><small>Réception du carnet d'entretien</small></p>
+                                    <div class="input-group mb-2">
+                                        <div class="input-group-prepend bg-white">
+                                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                                        </div>
+                                        <input type="date" class="form-control border-right-0" value="{{ fill_parametres[0][4] }}" name="date_cahier_entretien"
+                                               placeholder="Dernier carnet d'entretien" aria-label="date_cahier_entretien" autofocus="autofocus" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-0"><small>Fréquence du rapport d'activité (jours)</small></p>
+                                    <div class="input-group mb-2">
+                                        <div class="input-group-prepend bg-white">
+                                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                                        </div>
+                                        <input type="number" step="0" class="form-control border-right-0" value="{{ fill_parametres[0][28] }}" name="freq_rapport"
+                                               placeholder="Fréquence du rapport" aria-label="freq_rapport" autofocus="autofocus" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 mt-2">
+                                    <label for="date_MAJ"><small>Prochaine autogénération de tickets:&nbsp;</small></label>
+                                    <label for="date_MAJ"><small><b>{{ fill_parametres[0][0] }}</b></small></label>
+                                    <button type="button" class="btn bg-steel text-white btn-rounded btn-sm ml-4" data-toggle="modal" data-target="#exampleModal" required>
+                                    Note
+                                    </button>
+                                    <div class="form-group form-inline mb-2 justify-content-between">
+                                        <!-- Modal -->
+                                        <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLabel">Processus de mise à jour (maj)</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body text-secondary ">
+                                                        <p>La vérification de la mise à jour des entretiens préventifs est effectuée à chaque login.<br>
+                                                            1) si la date courante est inférieure à la date de maj indiquée, aucun traitement a lieu <br>
+                                                            2) dans le cas contraire, tous les enregistrements d'entretien préventifs sont traités:<br>
+                                                            a) si la date prochaine d'un enregistrement est égale ou inférieure à la date de MAJ, un ticket est automatiquement créé et la date prochaine  de l'enregistrement est fixée selon la fréquence et le(s) mois prévu(s)<br>
+                                                            b) la date de la prochaine maj est fixée au premier jour du mois suivant la date courante</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn bg-steel text-white" data-dismiss="modal">Fermer</button>
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn bg-steel text-white float-right mb-3" name="btn_enreg">Soumettre</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <label for="date_rapp"><small>Dernier rapport d'activité:&nbsp;</small></label>
+                                    <label for="date_rapp"><small><b>{{ fill_parametres[0][26] }}</b></small></label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p class="mb-0"><small>Récipiendaires du rapport d'activité (courriels séparés d'une virgule)</small></p>
+                                    <div class="input-group mb-2">
+                                        <div class="input-group-prepend bg-white">
+                                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control border-right-0" value="{{ fill_parametres[0][27] }}" name="emails_rapport"
+                                               placeholder="Récipendaires (courriel)" aria-label="budget" autofocus="autofocus">
+                                    </div>
+                                    <p class="mb-0"><small>Récipiendaires des signalements</small></p>
+                                    <div class="input-group mb-2">
+                                        <div class="input-group-prepend bg-white">
+                                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control border-right-0" value="{{ fill_parametres[0][37] }}" name="email_signalement"
+                                               placeholder="Récipiendaires des signalements" aria-label="email_signalement" autofocus="autofocus">
+                                    </div>
+
+                                    <div class="form-inline justify-content-between mt-2">
+
+                                        <div class="form-check float-left">
+                                            {% if (fill_parametres[0][36] ==0): %}
+                                            <input type="checkbox" class="form-check-input"  value=1 name="envoi_signalement">
+                                            {% else %}
+                                            <input type="checkbox" class="form-check-input"  value=0 name="envoi_signalement" checked>
+                                            {% endif %}
+                                            <label class="form-check-label" for="envoi_signalement"> <small>Envoi de courriel à chaque signalement</small></label>
+                                        </div>
+                                        <div class="form-check float-left">
+                                            {% if (fill_parametres[0][51] ==0): %}
+                                            <input type="checkbox" class="form-check-input"  value=1 name="affiche_encours_cell">
+                                            {% else %}
+                                            <input type="checkbox" class="form-check-input"  value=0 name="affiche_encours_cell" checked>
+                                            {% endif %}
+                                            <label class="form-check-label" for="affiche_encours_cell"> <small>Affichage mobile tickets en cours (employés)</small></label>
+                                        </div>
+                                        <br>
+                                        <div>
+                                            <p class="mb-0"><small>Numéro(s) en cas d'urgence</small></p>
+                                            <div class="form-group form-inline mb-2 justify-content-between">
+                                                <div class="input-group mb-2 mr-2">
+                                                    <div class="input-group-prepend bg-white">
+                                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone"></i></span>
+                                                    </div>
+                                                    <input type="text" class="form-control border-right-0" value="{{ fill_parametres[0][38] }}" name="tel_urgence_1"
+                                                           style="width:140px;" placeholder="tel urgence 1" aria-label="tel_urgence" autofocus="autofocus">
+                                                </div>
+                                                <div class="input-group mb-2 mr-2">
+                                                    <div class="input-group-prepend bg-white">
+                                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone"></i></span>
+                                                    </div>
+                                                    <input type="text" class="form-control border-right-0" value="{{ fill_parametres[0][39] }}" name="tel_urgence_2"
+                                                           style="width:140px;" placeholder="tel urgence 2" aria-label="tel_urgence" autofocus="autofocus">
+                                                </div>
+                                                <div class="input-group mb-2 mr-2">
+                                                    <div class="input-group-prepend bg-white">
+                                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone"></i></span>
+                                                    </div>
+                                                    <input type="text" class="form-control border-right-0" value="{{ fill_parametres[0][40] }}" name="tel_urgence_3"
+                                                           style="width:140px;" placeholder="tel urgence 3" aria-label="tel_urgence" autofocus="autofocus">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn bg-steel text-white float-right mt-2 mb-3">Soumettre</button>                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="tab-pane" id="tab_2">
+            <div class="list-group nav-item">
+                <form action="{{ url_for('bp_parametres.profil_modif') }}" method=post class="form-horizontal" role="form">
+                    <div class="container col-md-12 bg-form-bground">
+                        <br>
+                        <div class="form-group">
+                            <h3>Profil d'immeuble</h3>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Nombre d'unités privatives</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-institution"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="0" value="{{ fill_parametres[0][7] }}" name="nbre_unites" placeholder="Nombre d'unités"
+                                          aria-label="nbre_unites" autofocus="autofocus" required>
+                                </div>
+                                <p class="mb-0"><small>Nombre d'étages</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-institution"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="0" value="{{ fill_parametres[0][8] }}"name="nbre_etages" placeholder="Nombre d'étages"
+                                          aria-label="nbre_etages" autofocus="autofocus" required>
+                                </div>
+                                <p class="mb-0"><small>Ascenseurs</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-institution"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="0" value="{{ fill_parametres[0][11] }}" name="nbre_ascenseurs"  placeholder="Nombre d'ascenseurs"
+                                          aria-label="mbre_ascenseurs" autofocus="autofocus" required>
+                                </div>
+                                <p class="mb-0"><small>Année de construction</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="0" value="{{ fill_parametres[0][9] }}" name="annee_construit" placeholder="Année de construction"
+                                          aria-label="annee_construit" autofocus="autofocus" required>
+                                </div>
+                                <p class="mb-0"><small>Valeur de remplacement</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="0" value="{{ fill_parametres[0][10] }}" name="val_remplacement" placeholder="Valeur de remplacement"
+                                          aria-label="valeur" autofocus="autofocus" required>
+                                </div>
+                                    <a class="btn btn-primary btn-rounded float-left btn-sm my-1" role="button" href="{{ url_for('bp_central.central_acces') }}">Réglages</a>
+
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][12] ==0): %}
+                                        <input type="checkbox" class="form-check-input"  value=1 name="park_int_1">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="park_int_1" checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="park_int_1"><small>Stationnement intérieur (1 étage)</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][13] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="park_int_multi">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="park_int_multi" checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="park_int_multi"><small>Stationnement intérieur multi-étages</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][14] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="gicleurs">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="gicleurs" checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="gicleurs"> <small>Système de gicleurs</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][15] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="lavage_vitres">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="lavage_vitres"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="lavage_vitres"> <small>Système de lavage de vitres sur toit</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][16] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="chute_ordures">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="chute_ordures"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="chute_ordures"> <small>Chute à ordures</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][17] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="generatrice">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="generatrice"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="generatrice"> <small>Génératrice d'urgence</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][18] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="piscine_int">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="piscine_int"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="piscine_int"> <small>Piscine intérieure chauffée</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][19] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="piscine_ext">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="piscine_ext"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="piscine_ext"> <small>Piscine extérieure</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][20] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="spa">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="spa"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="spa"> <small>Bain tourbillon (spa)</small></label>
+                                </div>
+                                <br>
+                                <button type="submit" class="btn bg-steel text-white float-left">Soumettre</button>                            </div>
+                            </div>
+                        </div>
+
+                </form>
+            </div>
+        </div>
+        <div class="tab-pane" id="tab_3">
+            <div class="list-group nav-item">
+                <form action="{{ url_for('bp_parametres.salaires_modif') }}" method=post class="form-horizontal" role="form">
+                    <div class="container col-md-12 bg-form-bground">
+                        <br>
+                        <div class="form-group">
+                            <h3>Répartition des salaires et des honoraires</h3>
+                            <p><small>Pour employés/contractuels et par catégorie</small></p>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Salaires/honoraires (incluant avantages)</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][21] }}" name="salaires" placeholder="Total des salaires"
+                                          aria-label="salaires" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Part des aires communes intérieures</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][22] }}" name="categ_8"
+                                           placeholder="Pourcentage aires communes" aria-label="categ_8" autofocus="autofocus" required>
+                                </div>
+                                <p class="mb-0"><small>Part des trottoirs et stationnements</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][24] }}" name="categ_20"
+                                           placeholder="Pourcentage trottoirs stationnements" aria-label="categ_20" autofocus="autofocus" required>
+                                </div>
+                                <p class="mb-0"><small>Part de piscine/spa</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][23] }}" name="categ_17"
+                                           placeholder="Pourcentage piscine et spa" aria-label="categ_17" autofocus="autofocus" required>
+                                </div>
+                                <p class="mb-0"><small>Part du gazon/paysagisme</small></p>
+                                <div class="input-group mb-1">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][25] }}" name="categ_21"
+                                           placeholder="Pourcentage gazon et paysagisme" aria-label="categ_21" autofocus="autofocus" required>
+                                </div>
+                                <br>
+                                <label for=avis"><small>Le total des parts doit égaler 100.</small></label>
+                                <button type="submit" class="btn bg-steel text-white float-right mb-3">Soumettre</button>                        </div>
+                            </div>
+                        </div>
+                </form>
+            </div>
+        </div>
+        <div class="tab-pane" id="tab_4">
+            <div class="list-group nav-item">
+                <form action="{{ url_for('bp_parametres.factures_OCR_modif') }}" method=post class="form-horizontal" role="form">
+                    <div class="container col-md-12 bg-form-bground">
+                        <br>
+                        <div class="form-group">
+                            <h3>Affichage dans la page de résultat OCR</h3>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][42] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="tags_affiche">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="tags_affiche"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="tags_affiche"> <small>Afficher les champs 'Tags' et 'Aucun tag'</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][43] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="ticket_ouvert_affiche">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="ticket_ouvert_affiche"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="ticket_ouvert_affiche"> <small>Afficher le champ 'Laisser ticket ouvert'</small></label>
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][44] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="MDO_MAT_affiche">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="MDO_MAT_affiche"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="MDO_MAT_affiche"> <small>Afficher les champs 'Main d'oeuvre' et 'Matériel'</small></label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn bg-steel text-white float-right my-3">Soumettre</button>                        </div>
+                            </div>
+                        </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="tab-pane" id="tab_5">
+            <div class="list-group nav-item">
+                <form action="{{ url_for('bp_parametres.fds_prevoyance_modif') }}" method=post class="form-horizontal" role="form">
+                    <div class="container col-md-12 bg-form-bground">
+                        <br>
+                        <div class="form-group">
+                            <h3>Fonds de prévoyance</h3>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Dernière analyse de fonds de prévoyance</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-light"><i class="fa fa-calendar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="date" value="{{ fill_parametres[0][29] }}" name="date_analyse_prevoyance"  placeholder="Analyse la plus récente"
+                                          aria-label="date_analyse_prevoyance" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Solde du fonds au début de l'analyse</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][30] }}" name="solde_debut_anal"
+                                           placeholder="Solde au début de l'analyse" aria-label="solde_debut_anal" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Contribution annuelle au début de l'analyse</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][31] }}" name="contribution_annuelle"
+                                           placeholder="Contribution au début d'analyse" aria-label="contribution_annuelle" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Taux annuel d'augmentation de contribution</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" step="0.01" type="number" value="{{ fill_parametres[0][32] }}" name="taux_contribution"
+                                           placeholder="Taux d'augmentation annuel" aria-label="taux_contribution" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Taux moyen de rendement sur placements</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-percent"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="0.01" max="19.9" value="{{ fill_parametres[0][33] }}" name="taux_rendement"
+                                           placeholder="Taux moyen de rendement annuel" aria-label="taux_rendement" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Solde actuel du fonds</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="number" step="1" value="{{ fill_parametres[0][34] }}" name="solde_actuel"
+                                           placeholder="Solde actuel du fonds" aria-label="solde_actuel" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-0"><small>Date du solde actuel</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-light"><i class="fa fa-calendar"></i></span>
+                                    </div>
+                                    <input class="form-control border-right-0" type="date" value="{{ fill_parametres[0][35] }}" name="date_solde_actuel"
+                                           placeholder="Date du solde actuel" aria-label="date_solde_actuel" autofocus="autofocus" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][41] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="fdp_restreint">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="fdp_restreint" checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="fdp_restreint"> <small>Affichage restreint pour copropriétaires</small></label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <button type="submit" class="btn bg-steel text-white float-right mt-3 mb-3">Soumettre</button>
+                            </div>
+                         </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="tab-pane" id="tab_6">
+            <div class="list-group nav-item">
+                <form action="{{ url_for('bp_parametres.reservations_modif') }}" method=post class="form-horizontal" role="form">
+                    <div class="container col-md-12 bg-form-bground">
+                        <br>
+                        <div class="form-group">
+                            <h3>Module de réservations</h3>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <p class="mb-0"><small>Récipiendaires de l'alerte pour réservations facturables</small></p>
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control border-right-0" value="{{ fill_parametres[0][6] }}" name="email_facturable"
+                                           placeholder="Récipiendaires alerte" aria-label="email_facturable" autofocus="autofocus">
+                                </div>
+                                <div class="form-check">
+                                    {% if (fill_parametres[0][52] ==0): %}
+                                    <input type="checkbox" class="form-check-input"  value=1 name="affiche_message_rez">
+                                    {% else %}
+                                    <input type="checkbox" class="form-check-input"  value=0 name="affiche_message_rez"checked>
+                                    {% endif %}
+                                    <label class="form-check-label" for="affiche_message_rez"> <small>Afficher un message avant la réservation'</small></label>
+                                </div>
+                                <p class="mb-0"><small>Message</small></p>
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                                    </div>
+                                    <textarea class="form-control border-right-0" maxlength="1600" name="message_rez" rows="10"
+                                              placeholder="Texte du message affiché avant la réservation" aria-label="message_rez"
+                                              autofocus="autofocus">{{ fill_parametres[0][53] }}</textarea>
+                                </div>
+                                <button type="submit" class="btn bg-steel text-white float-right my-3">Soumettre</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+{% endblock content %}

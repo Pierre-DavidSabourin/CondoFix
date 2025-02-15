@@ -1,0 +1,105 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Règlementation du carnet d'entretien en copropriété</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="carnet d'entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+
+<body>
+<div class="container">
+    <div class="col-12 mt-4">
+        <div class="row mb-4">
+            <div class="col-6">
+                <img  class="img-fluid float-left" src="../static/Animate_GIF_Coupe.gif"/>
+            </div>
+            <div class="col-6 mr-0 pr-0">
+                    <div>
+                        <h1>Le carnet d'entretien, <i>essentiel</i> pour gérer les composantes de votre copropriété</h1>
+                        <br>
+                        <h4>Assurez-vous de bien gérer votre carnet d'entretien avec CondoFix</h4>
+                        <br>
+                    </div>
+                    <div>
+                            <p>Les nombreuses composantes de votre immeuble requièrent un suivi constant afin de s'assurer que les dépenses
+                                d'entretien soient sous contrôle. <br><b>CondoFix</b> répond à ce besoin avec un système intuitif et
+                                facile à utiliser pour les administrateurs et les gestionnaires de syndicat.</p>
+                            <br>
+                            <a class="btn-lg text-black btn-warning btn-rounded" role="button" href="{{ url_for('bp_public.video_infos') }}">Vidéo 3 min.</a>
+                            <a class="btn-lg text-white btn-danger btn-rounded" role="button" href="{{ url_for('bp_public.demo') }}">Essai gratuit</a>
+                    </div>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div>
+                <h1>Le carnet d'entretien fera partie de vos obligations</h1>
+
+                <p>Quelque soit l'âge de votre immeuble, un système de Gestion de Maintenance Assisté par Ordinateur (GMAO) comme CondoFix vous aidera
+                    à faire face à ce défi. Selon l’Association des professionnels de la construction et de l’habitation du Québec, l’âge moyen des copropriétés
+                    divises est de 29 ans. Le parc se fait donc vieillissant, ce qui entraîne des travaux d’entretien, de rénovation et de mise
+                    aux normes. Ce contexte constitue un enjeu majeur pour les copropriétaires.</p>
+                <p>Une récente publication du <a href="https://www.mamh.gouv.qc.ca/habitation/copropriete-divise/" target="_blank">ministère des affaires municipales et habitation</a> (MAMH) explique que, dans le cadre de la loi 16, le conseil d’administration d’une
+                    copropriété sera obligé de tenir un carnet d’entretien et de le faire réviser périodiquement. La forme, le contenu et les modalités
+                    de tenue et de révision du carnet d’entretien seront déterminés par un règlement du gouvernement du Québec prévu en 2021.</p>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-between">
+            <div class="container" style="width: 76%">
+                <p><b>Comité d'experts mis sur pied par le RGCQ</b></p>
+                <p>En attendant cette réglementation, le conseil d’administration du Regroupement des gestionnaires et copropriétaires du Québec (RGCQ) a confié à un groupe de travail, formé de professionnels de l’industrie, la tâche de
+                    définir les principaux éléments que devrait contenir un carnet d’entretien dans le but de proposer un standard adapté aux besoins des copropriétés. Voici les propositions découlant
+                    du rapport:
+                <ul>
+                    <li>l’inventaire des éléments des parties communes de la copropriété devrait être effectué selon la norme Uniformat II</li>
+                    <li>les activités d’entretien devraient être identifiées selon les trois catégories suivantes : exigences réglementaires, recommandations du fabricant
+                        et normes de pratiques</li>
+                    <li>les activités d’entretien aux fins de la planification devraient comporter, au minimum, les informations suivantes :
+                        l’identification de l’élément considéré selon Uniformat II, la description de chaque activité d’entretien, les fréquences
+                        des interventions et le calendrier des interventions</li>
+                    <li>la mise en oeuvre de la planification du carnet d’entretien devrait être sous la responsabilité des administrateurs ou du gestionnaire de la copropriété
+                        en fonction des ressources disponibles</li>
+                    <li>un rapport devrait systématiquement être produit par la ressource ou l’entreprise qui a effectué les travaux d’entretien. Les informations de ce rapport
+                        devraient être selon les exigences règlementaires ou selon un gabarit produit par la copropriété.</li>
+                </ul>
+            </div>
+            <div class="container  bg-secondary text-white rounded text-center" style="width: 24%">
+                <br>
+                <p><b>Coordonnez l’entretien préventif avec le carnet d'entretien.</b></p>
+                <p><small>Le carnet d'entretien soumis par le consultant est intégré à CondoFix et les tickets d'entretien préventif sont automatiquement générés au moment prévu.</small></p>
+                <br>
+                <img  class="img-fluid" src="../static/Bienvenue_4.png"/>
+                <br>
+                <br>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <br>
+                <div class="row">
+                    <div class="col-12">
+                        <p><b>Le système de gestion d'entretien CondoFix répond déjà aux recommandations du comité du RGCQ:</b></p>
+                        <ul>
+                            <li>chaque équipement est inventorié dans le système selon la norme Uniformat II</li>
+                            <li>chaque bon de travail (ticket) inclut la description de chaque activité permettant d'établir la fréquence
+                                des interventions et le calendrier des interventions</li>
+                            <li>les membres du conseil d'administration et le gestionnaire ont entièrement le contrôle de la planification de l'entretien</li>
+                            <li>les copropriétaires ont accès au système pour consulter la documentation des entretiens complétés et des rapports d'expertise</li>
+                        </ul>
+                    <a class="btn btn-primary btn-rounded mb-3" role="button" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+{% endblock content %}

@@ -1,0 +1,84 @@
+{% extends "proprios_layout.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3">
+                    <h4 class="text-secondary">Fiche de signalement au syndicat</h4><br>
+                    <h6 class="mb-1">S'il s'agit d'une urgence, appelez le(s) numéros(s) suivant(s):</h6>
+                    <h5>{{ no_tel_1 }}&nbsp;&nbsp;&nbsp;{{ no_tel_2 }}&nbsp;&nbsp;&nbsp;{{ no_tel_3 }}</h5>
+                </div>
+                <style>
+                  .border-1 {
+                    border-width: 1px !important;
+                  }
+                </style>
+                <div class="row">
+                    <div class="col-md-12">
+                        <form action="{{ url_for('bp_signalements.signalement_ajout') }}" method=post class="form-horizontal" enctype="multipart/form-data" role="form">
+                        <p class="mb-1"><small>Sujet:</small></p>
+                        <div class="form-group form-inline justify-content-between border border-dark border-1 px-3 py-2">
+                                <input type="radio" name="options_demande" id="optionA" value="1" checked><small>Entretien&nbsp;</small>
+                                <input type="radio" name="options_demande" id="optionB" value="2" required="required"><small>Règlements de l'immeuble&nbsp;</small>
+                                <input type="radio" name="options_demande" id="optionC" value="3"><small>Suggestion</small>
+                                <input type="radio" name="options_demande" id="optionD" value="4"><small>Autre</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Unité privative</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                               </div>
+                               <input type="number" class="form-control border-right-0" min="0" name="no_unite" placeholder="Votre numéro d'unité"
+                                      aria-label="duree_max" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Courriel</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                               </div>
+                               <input type="email" class="form-control border-right-0" min="0" name="courriel" placeholder="Votre adresse courriel"
+                                      aria-label="duree_max" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                   <div class="col-md-6">
+                        <p class="mb-0"><small>Emplacement</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-map-marker"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="emplacement" placeholder="Décrire le lieu sur la propriété"
+                                  aria-label="emplacement" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p class="mb-0"><small>Description</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                            </div>
+                            <textarea class="form-control border-right-0" maxlength="200" name="desc_signalement" rows="3"
+                                      placeholder="Description de la déficience" aria-label="desc_signalement" autofocus="autofocus" required></textarea>
+                         </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn bg-steel text-white float-right my-2">Soumettre</button>
+                        <p><small>Le syndicat vous remercie de nous faire part de ce signalement.<br>
+                        Celui-ci est enregistré et sera traité dans les meilleurs délais.</small></p>
+                    </div>
+                </div>
+</div>
+</body>
+{% endblock content %}

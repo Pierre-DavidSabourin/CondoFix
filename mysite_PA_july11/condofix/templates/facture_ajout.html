@@ -1,0 +1,111 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="list-group">
+    <form action="{{ url_for('bp_factures.facture_ajout', id_ticket=liste_ticket[0]) }}" method=post class="form-horizontal" enctype="multipart/form-data" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Ajout de facture</h4>
+                </div>
+                <input type="hidden" name="ident_ticket" value="{{ liste_ticket[0] }}">
+                <p class="mb-0"><small><b>Description du ticket</b></small></p>
+                <div class="input-group mb-2">
+                        <label><small>{{ liste_ticket[2] }}</small></label>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label><small><b>Ticket complété:&nbsp</b>{{ liste_ticket[3] }}</small></label>
+                    <label><small><b>Heures estimées/requises:&nbsp</b>{{ liste_ticket[4] }} / {{ liste_ticket[5] }}</small></label>
+                    <label><small><b>Visites requises:&nbsp</b>{{ liste_ticket[6] }}</small></label>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Numéro de facture</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="no_facture" placeholder="Numéro de la facture"
+                                  aria-label="no_facture" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Fournisseur</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-institution"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="fournisseur" placeholder="Nom du fournisseur"
+                                  value="{{ liste_ticket[9] }}" aria-label="budget" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Total avec taxes</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                            </div>
+                            <input type="number" step=".01" class="form-control border-right-0" name="total_facture_taxes" placeholder="Total avec taxes ($)"
+                                  aria-label="total_facture_taxes" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                {% if afficher_MDO_MAT==1 %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Main d'oeuvre (hors taxes)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                            </div>
+                            <input type="number" step=".01" class="form-control border-right-0" name="mdo" placeholder="Main d'oeuvre ($)"
+                                  aria-label="mdo" autofocus="autofocus">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Matériel (hors taxes)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                            </div>
+                            <input type="number" step=".01" class="form-control border-right-0" name="mat" placeholder="Matériel ($)"
+                                  aria-label="mat" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Évaluation</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-check-circle"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0"  min="1" max="5" value="" name="eval"
+                                   placeholder="Valeur de 1 à 5" autofocus="autofocus" required>
+
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn bg-steel text-white float-right mt-4">Soumettre</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock content %}

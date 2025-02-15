@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+<!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link href="../static/bootstrap.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="../static/font-awesome-4.7.0/css/font-awesome.min.css">
+</head>
+<style>
+.navbar-brand>img {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+</style>
+<header class="site-header">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top px-5 py-0">
+        <button class="pull-left navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="navbar-brand ml-1" href="#">
+            <img class="img-responsive mb-2" src="../static/ToolsIconSmall.png" alt="Logo" style="padding: 2px;">
+            <span class="mb-0 h4">CondoFix</span>
+            <a class="btn-sm btn-warning text-dark"  href="{{ url_for('bp_admin.login') }}">Login</a>
+        </a>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav ml-5">
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.home') }}">ACCUEIL</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle font-weight-bold" href="#" id="navbarDropdownMenuLink_5" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        OFFRES
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="{{ url_for('bp_public.produits') }}">Produits</a>
+                        <a class="dropdown-item" href="{{ url_for('bp_public.services') }}">Services</a>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle font-weight-bold" href="#" id="navbarDropdownMenuLink_7"  data-toggle="dropdown"  aria-haspopup="true" aria-expanded="false">
+                        LOI 16
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="{{ url_for('bp_public.carnet_entretien') }}">Carnet d'entretien</a>
+                        <a class="dropdown-item" href="{{ url_for('bp_public.attestation_home') }}">Attestation</a>
+                        <a class="dropdown-item" href="{{ url_for('bp_public.module_fdp') }}">Fonds de prévoyance</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.demo') }}">ESSAI</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.quiz') }}">QUIZ</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.blog') }}" target="_blank">BLOG</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.demande_info') }}">CONTACT</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>
+<main role="main" class="container-fluid">
+    <div class="row">
+        <div class="container-fluid">
+            {% block content %}
+            <!--                content of each template is inserted here-->
+            {% endblock %}
+        </div>
+    </div>
+</main>
+
+<div class="card mt-5 bg-dark">
+  <div class="row no-gutters">
+    <div class="col-md-4">
+      <div class="card-body ">
+          <img src="../static/ToolsIconSmall.png" alt="Logo" style="padding: 2px;" width="50" height="50">
+          <span class="mb-0 h2 text-primary">CondoFix</span>
+          <p class="card-text text-white">CONSERVEZ VOTRE IMMEUBLE</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-body">
+        <h5 class="card-text text-white mt-0">Plateforme de gestion d'entretien</h5>
+        <div><a class="text-white" href="{{ url_for('bp_public.produits') }}"><small>Fonctionnalités</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.tarifs',produit=1) }}"><small>Tarifs</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.demo') }}"><small>Essai gratuit</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.services') }}"><small>Services</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.module_fdp') }}"><small>Fonds de prévoyance</small></a></div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-body">
+        <h5 class="card-text text-white mt-0">Informations générales</h5>
+        <div><a class="text-white" href="{{ url_for('bp_public.confidentialite') }}"><small>Politique de confidentialité</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.carnet_entretien') }}"><small>Carnet d'entretien</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.quiz') }}"><small>Quiz</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.blog') }}"><small>Blog</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.module_rez') }}"><small>Module de réservations</small></a></div>
+        <div><a class="text-white" href="{{ url_for('bp_public.demande_info') }}"><small>Communiquez avec nous</small></a></div>
+      </div>
+    </div>
+</div>
+
+
+</html>
+<!-- JQuery et JavaScript pour que les menus fonctionnent -->
+<script src="../static/jquery-3.5.1.js"></script>
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>

@@ -1,0 +1,35 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="list-group">
+    <form action="{{ url_for('bp_ocr.upload', args=['dnload',0,0]) }}" method=post enctype="multipart/form-data" class="form-horizontal" role="form">
+    <div class="col-md-6 offset-md-3 text-center">
+            <h1>Saisie de facture sans ticket</h1>
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h3>Téléchargement</h3>
+                </div>
+                <div class="card-body my-3">
+                    <div class="custom-file mt-3">
+                        <div style="position:relative;">
+                        <input type="file" name="fichier" id="fichier_upload" required>
+                    </div>
+                    <button type="submit" class="btn bg-steel text-white mt-4">Soumettre</button>
+                </div>
+            </div>
+    </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

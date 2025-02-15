@@ -1,0 +1,105 @@
+{% extends "layout_admin_tables.html" %}
+{% block content %}
+<head>
+    <title>CondoFix</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
+    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <!-- pour le style de la table-->
+    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+    <script>
+    $(document).ready(function() {
+        $('#table_data').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+             {
+               extend: 'excelHtml5',
+               title: 'Export CondoFix Intervenants'
+
+            },
+
+        ],
+        "pageLength":100,
+        language: {
+                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            }
+        });
+    } );
+    </script>
+</head>
+<body>
+<div class="col-md-12 page">
+    <h2>Intervenants</h2>
+<!--    si nouveau: parametre =0-->
+    <a class="btn bg-steel text-white btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_intervenants.intervenant_enreg', parametre=0) }}">Nouveau</a>
+    <br>
+    <br>
+    <div class="datagrid">
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            font-size: 12px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
+        <table id="table_data" class="table table-striped table-bordered" style="width:100%">
+                <thead>
+                    <tr>
+                        <th width="100px"><strong>Nom</strong></th>
+                        <th width="60px"><strong>Type</strong></th>
+                        <th width="80px"><strong>Catégorie</strong></th>
+                        <th width="110px"><strong>Courriel</strong></th>
+                        <th width="110px"><strong>Contact 1</strong></th>
+                        <th width="80px"><strong>Téléphone</strong></th>
+                        <th width="110px"><strong>Contact 2</strong></th>
+                        <th width="80px"><strong>Téléphone</strong></th>
+                        <th width="40px"><strong>Actif</strong></th>
+                        <th width="80px"><strong>Action</strong></th>
+                    </tr>
+                </thead>
+                {% for item in fill_intervenants %}
+                <tr>
+                    <td width="100px">{{ item[1] }}</td>
+                    <td width="60px">{{ item[13] }}</td>
+                    <td width="80px">{{  item[14]  }}</td>
+                    <td width="110px">{{  item[7]  }}</td>
+                    <td width="110px">{{  item[3]  }}</td>
+                    <td width="80px">{{  item[4]  }}</td>
+                    <td width="110px">{{  item[5]  }}</td>
+                    <td width="80px">{{  item[6]  }}</td>
+                    <td width="40px">{{  item[12]  }}</td>
+                    <td class="text-center align-middle">
+                        <div class="btn-group">
+                            <a class="btn bg-steel text-white btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_intervenants.intervenant_enreg',parametre=item[0]) }}">Modifier</a>
+                        </div>
+                         </td>
+                </tr>
+                {% endfor %}
+            </table>
+    </div>
+</div>
+</body>
+{% endblock %}
+           <!--                    <a href="{{ url_for('populate', collector_id = o.collector_id) }}">Modifier</a>-->
+

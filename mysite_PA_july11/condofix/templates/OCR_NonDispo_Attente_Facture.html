@@ -1,0 +1,31 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao,entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<div class="row">
+        <div class="col-md-12 col-xs-12 col-sm-12 text-center">
+            <a class="btn btn-sm bg-dark text-white btn-rounded" role="button" href="{{ url_for('bp_ocr.lancer_facture_attente_ocr',id_ticket=id_ticket) }}">Scan OCR</a>
+        </div>
+</div>
+</body>
+{% endblock content %}

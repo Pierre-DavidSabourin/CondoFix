@@ -1,0 +1,51 @@
+Élément;Description;Catégorie;Fréquence ans;J;F;M;A;M;J;J;A;S;O;N;D;Date prochain;Employé h.;Fournisseur h.
+1.1.1b;Appliquer un protecteur sur les surfaces du revêtement de chaussée en béton bitumineux.;20;4;0;0;0;0;1;0;0;0;0;0;0;0;2023-05-01;18;
+1.1.1c;Refaire le marquage sur les surfaces du revêtement de chaussée en béton bitumineux.;20;4;0;0;0;0;1;0;0;0;0;0;0;0;2023-05-01;;8
+1.1.2a;Vérifier et restaurer les joints de scellement des bordures en béton coulé sur place.;20;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;6;
+1.2.1b;Inspecter les surfaces du revêtement des voies piétonnières en béton et sceller les fissures et les joints non étanches.;20;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;4;
+1.2.2b;Emplir les joints de sable stabilisant et appliquer une membrane liquide sur les surfaces du revêtement des voies piétonnières en pavés imbriqués.;20;4;0;0;0;0;1;0;0;0;0;0;0;0;2023-05-01;8;
+1.3.1a;Vérifier la condition des ancrages de la clôture et réparer tous les joints fissurés ou déficients.;21;1;0;0;0;0;0;0;0;0;1;0;0;0;2021-09-01;4;
+1.3.2a;Vérifier et corriger les surfaces mises à nu et les boulons et assemblages de la clôture en acier galvanisé enduit d’un émail de poudre de polyester.;21;5;0;0;0;0;1;0;0;0;0;0;0;0;2024-05-01;3;
+1.3.4a;Vérifier les joints de dilatation et de fractionnement du mur en béton coulé sur place et corriger ceux qui sont déficients.;1;3;0;0;0;0;1;0;0;0;0;0;0;0;2022-05-01;4;
+1.4.3a;Vérifier les joints de mortier entre les pièces de maçonnerie de la structure de support du panneau de signalisation.;1;2;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;2;
+1.4.3b;Appliquer une membrane liquide sur les surfaces horizontales de la structure en maçonnerie du panneau de signalisation.;5;4;0;0;0;0;1;0;0;0;0;0;0;0;2023-05-01;2;
+1.5.1a;Nettoyer les puisards et les drains du réseau de drainage pluvial.;22;4;0;0;0;0;1;0;0;0;0;0;0;0;2023-05-01;;8
+1.5.1b;Nettoyer les crépines inversées des drains du parc de stationnement situé au-dessus de l’enceinte du garage du deuxième étage.;22;1;0;0;0;0;1;0;0;0;0;1;0;0;2021-05-01;4;
+10.2.1a;Vérifier et nettoyer les appareils de chauffage des garages.;11;3;0;0;0;0;0;0;0;0;0;1;0;0;2022-10-01;;8
+10.2.3a;Nettoyer la prise d'air et vérifier les volets.;11;1;0;1;0;1;0;0;0;1;0;1;0;0;2021-08-01;2;
+10.2.3b;Remplacer les filtres.;11;1;0;1;0;1;0;0;0;1;0;1;0;0;2021-08-01;2;
+10.2.3c;Vérifier les courroies des ventilateurs des garages et les régler ou les changer au besoin. Lubrifier les roulements à bille.;11;1;0;1;0;1;0;0;0;1;0;1;0;0;2021-08-01;;4
+10.2.3d;Vérifier la pleine ouverture des volets d'air frais.;11;1;0;0;0;1;0;0;0;0;0;1;0;0;2021-10-01;;4
+10.2.4c;Vérifier le bon fonctionnement des contrôles et s'assurer que les commandes de sécurité sont fonctionnelles.;11;1;0;0;0;0;0;0;0;0;0;1;0;0;2021-10-01;;4
+10.2.6d;Vérifier le bon fonctionnement des contrôles et s'assurer que les commandes de sécurité sont fonctionnelles.;11;1;0;0;0;0;0;0;0;0;0;1;0;0;2021-10-01;;4
+10.3.2a;Faire inspecter les extincteurs portatifs par une entreprise spécialisée.;12;1;0;0;0;0;0;0;0;0;0;0;1;0;2021-11-01;;10
+10.4.10a;Faire vérifier les détecteurs de gaz des garages par une entreprise spécialisée.;13;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-10-01;;4
+10.4.1a;Nettoyer la chambre électrique.;13;1;0;0;0;1;0;0;0;0;0;1;0;0;2021-10-01;2;
+11.1.2a;Faire nettoyer le plancher de la salle à déchets ainsi que le conduit de la chute à déchets.;14;1;1;0;0;0;1;0;0;0;1;0;0;0;2021-09-01;8;
+11.1.2b;Faire vérifier, et entretenir, les composants du compacteur à déchets. ;14;2;0;0;0;1;0;0;0;0;0;0;0;0;2021-04-01;;8
+12.1.1a;Restaurer les surfaces et la peinture caoutchoutée des parois du bassin en béton de la piscine.;17;3;0;0;0;0;1;0;0;0;0;0;0;0;2022-05-01;;8
+12.1.1b;Remplacer la peinture caoutchoutée des parois du bassin en béton de la piscine.;17;6;0;0;0;0;1;0;0;0;0;0;0;0;2025-05-01;;24
+12.1.2b;Inspecter les joints du carrelage de la plage des bassins et corriger ceux qui sont déficients.;17;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;4;
+12.1.2c;Changer l'eau du mur d'eau dans le lobby ;8;2;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;2;
+2.2.1d;Vérifier l’intégrité des joints à la base des murs et des colonnes des garages et corriger, si requis, les scellants et les surfaces de membrane détériorées qui montrent des signes de défaillance.;2;3;0;0;0;1;0;0;0;0;0;0;0;0;2022-04-01;;16
+2.2.2b;Nettoyer, au jet d’eau sous pression, les tuyaux horizontaux reliant les fosses de retenue en polyéthylène aux colonnes de drainage.;2;1;0;0;0;1;0;0;0;0;0;0;0;0;2020-04-01;8;
+2.2.2c;Sceller le périmètre des conduits qui traversent les parois des fosses de retenue en polyéthylène des garages. ;2;5;0;0;0;1;0;0;0;0;0;0;0;0;2024-04-01;8;
+2.3.1c;Nettoyer à grande eau, ou avec une autolaveuse industrielle, l'ensemble des surfaces de la dalle structurale des garages;2;1;1;0;1;1;0;0;0;0;0;0;0;1;2021-12-01;24;
+2.3.1d;Examiner l’intrados de la dalle structurale du garage du deuxième étage afin de déceler les indices pouvant indiquer des défaillances de la membrane d’étanchéité.;2;1;0;0;0;1;0;0;0;0;0;0;0;0;2023-04-01;;5
+2.3.2a;Nettoyer les crépines des drains de plancher de la dalle structurale du garage du deuxième étage.;2;1;1;0;0;0;0;0;0;1;0;0;0;0;2021-08-01;4;
+2.3.2b;Nettoyer, à l’aide d’un jet d’eau sous pression, les tuyaux horizontaux reliant les renvois aux colonnes de drainage.;2;1;0;0;0;1;0;0;0;0;0;0;0;0;2021-04-01;4;
+2.3.2c;Restaurer les joints qui assurent l’interface du périmètre du cadre des drains de plancher par rapport à la membrane de la dalle structurale du garage du deuxième étage.;2;5;0;0;0;0;1;0;0;0;0;0;0;0;2024-05-01;;8
+2.3.3a;Effectuer la vérification des dalles structurales des garages selon les exigences du Règlement sur la sécurité dans les édifices publics.;2;1;0;0;0;1;0;0;0;0;0;0;0;0;2021-04-01;;50
+2.4.1b;Vérifier le plafond du garage du deuxième étage afin de déceler les indices pouvant indiquer des défaillances du complexe d’étanchéité.;2;1;0;0;0;1;0;0;0;0;0;0;0;0;2021-04-01;;6
+3.1.2a;Vérifier et restaurer, au besoin, les joints de scellement qui assurent l’interface entre la base du mur de maçonnerie et le pontage en béton des balcons en surplomb.;3;2;0;0;0;0;0;0;0;0;1;0;0;0;2022-09-01;12;
+3.3.1b;Remplacer les dalles fissurées ou brisées et niveler les dalles modulaires en béton des terrasses sur toiture des unités d’habitation.;3;5;0;0;0;0;1;0;0;0;0;0;0;0;2024-05-01;4;
+3.4.1a;Inspecter les garde-corps en aluminium émaillé et en panneaux de verre des balcons et appliquer un enduit de protection sur les surfaces en aluminium exposées. Vérifier et resserrer, si requis, les fixations.;3;5;0;0;0;0;1;0;0;0;0;0;0;0;2024-05-01;12;
+4.2.1a;Inspecter le revêtement en enduit acrylique afin de déterminer les surfaces détériorées et de corriger les déficiences.;4;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;;8
+5.1.1a;Nettoyer les drains de la toiture principale.;5;1;0;0;0;0;1;0;0;0;0;1;0;0;2021-05-01;2;
+5.1.1b;Inspecter et restaurer les joints de scellement des contre-solins métalliques de la toiture principale.;5;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;;8
+5.2.1a;Nettoyer les drains des toitures des terrasses des deuxième et troisième étages.;5;1;0;0;0;0;1;0;0;0;0;1;0;0;2021-05-01;2;
+5.2.1b;Inspecter et restaurer les joints de scellement des contre-solins métalliques et nettoyer les drains des toitures des terrasses des deuxième et troisième étages.;5;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;2;
+6.2.2a;Peindre les portes d'issue en acier.;6;5;0;0;0;0;1;0;0;0;0;0;0;0;2024-05-01;4;
+6.2.3a;Ajuster et lubrifier les composants des portes élévatrices articulées des garages.;6;1;0;0;0;1;0;0;0;0;0;0;0;0;2021-04-01;;4
+8.2.4a;Inspecter les joints du revêtement de sol en carrelage de céramique du vestibule, du hall d’entrée et de certains corridors et corriger ceux qui sont déficients.;8;3;0;0;0;0;1;0;0;0;0;0;0;0;2022-05-01;4;
+8.2.4b;Vérifier la grille gratte-pieds, nettoyer le bassin et corriger les éléments non étanches.;8;1;0;0;0;0;1;0;0;0;0;0;0;0;2021-05-01;1;

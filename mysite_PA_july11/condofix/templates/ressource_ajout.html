@@ -1,0 +1,140 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_ressources.ressource_ajout') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Nouvelle ressource</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Description</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                               </div>
+                               <input type="text" class="form-control border-right-0" name="ress_desc" placeholder="Description"
+                                      aria-label="ress_desc" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Durée maximum de réservation (h.)</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                               </div>
+                               <input type="number" class="form-control border-right-0" step="0.5" min="0" name="duree_max" placeholder="Durée maximale en heures"
+                                      aria-label="duree_max" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Délai minimal (h.)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="1" min="0" name="delai_min" placeholder="Délai minimal en heures"
+                                  aria-label="delai_min" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Délai maximal (jours)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="1" min="0" name="delai_max" placeholder="Délai maximal en jours"
+                                  aria-label="delai_max" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Heure début permise</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="time" class="form-control border-right-0" value="00:00:00" name="heure_debut" placeholder="Heure début des réservations"
+                                  aria-label="heure_debut" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Heure fin permise</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="time" class="form-control border-right-0" value="00:00:00" name="heure_fin" placeholder="Heures fin des réservations"
+                                  aria-label="heure_fin" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Intervalle entre réservations (h.)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="0.1" min="0" value=0 name="intervalle" placeholder="Intervalle en heures"
+                                  aria-label="intervalle" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Jours consécutifs</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="1" min="0" name="jrs_consecutifs" placeholder="Nombre de jours"
+                                  value="1" aria-label="jrs_consecutifs" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Date début de non-disponibilité</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" value="2021-01-01" name="date_debut_non_dispo" placeholder="Début de non-disponibilité"
+                                  aria-label="date_debut_non_dispo" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Durée de non-disponibilité (h.)</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" min="0" value="24" step="1" name="duree_non_dispo" placeholder="Heures de non-disponibilité"
+                                  aria-label="duree_non_dispo" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="facturable">
+                            <label class="form-check-label" for="facturable">Facturable</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="actif" checked>
+                            <label class="form-check-label" for="actif">Actif</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn bg-steel text-white float-right mb-2">Soumettre</button>
+                    </div>
+                </div>
+            </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

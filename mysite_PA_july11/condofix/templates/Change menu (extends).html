@@ -1,0 +1,18 @@
+{% if test_var==1 %}
+{% extends "layout_admin.html" %}
+{% else %}
+{% extends "layout_central.html" %}
+{% endif %}
+
+# pour ne pas afficher un champ:
+{% if test_var==1 %}
+<p class="mb-0"><small>Téléphone (000-000-0000)</small></p>
+<div class="input-group mb-2">
+       <div class="input-group-prepend bg-white">
+            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+       </div>
+       <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" class="form-control border-right-0" name="contact_tel" placeholder="Téléphone" aria-label="contact_tel" autofocus="autofocus">
+</div>
+{% else %}
+<p class="mb-0"><small></small></p>
+{% endif %}

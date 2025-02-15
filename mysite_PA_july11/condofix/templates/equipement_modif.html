@@ -1,0 +1,108 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_equipements.equipement_modif', ident_equipement=liste_equipement[0][0]) }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Modification d'équipement</h4>
+                </div>
+                <input type="hidden" name="ident_equipement" value="{{ liste_equipement[0][0] }}">
+                <h6>Tag no.:&nbsp;&nbsp;{{ liste_equipement[0][1] }}</h6>
+                <p class="mb-0"><small>Description</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-cog"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" name="equipement_nom" placeholder="Description de l'équipement"
+                              value= "{{ liste_equipement[0][2] }}" aria-label="equipement_nom" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Détails</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" name="equipement_desc" placeholder="Modèle, no. série etc."
+                              value= "{{ liste_equipement[0][3] }}" aria-label="equipement_desc" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Catégorie</small></p>
+                <div class="input-group mb-2 pr-1">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                       </div>
+                       <select class="form-control flex-grow-1" name="equipement_cat" id="categ_select" data-width="100%" autofocus="autofocus" required>
+                        <option hidden value="">Choisir..</option>
+                            {% for item in liste_categories %}
+                            <option value="{{ item[0] }}">{{ item[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    <!--                sélection de l'option à partir de la liste-->
+                    <script>
+                        function selectElement(id, valueToSelect) {
+                            let element = document.getElementById(id);
+                            element.value = valueToSelect;
+                        }
+                        selectElement("categ_select","{{ liste_equipement[0][4] }}")
+                    </script>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Emplacement</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-map-marker"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" name="emplacement" placeholder="Emplacement"
+                                  value= "{{ liste_equipement[0][5] }}" aria-label="emplacement" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Date d'installation</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_install" placeholder="Date d'installation"
+                                  value= "{{ liste_equipement[0][6] }}" aria-label="date_install" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Valeur de remplacement</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="0" name="equipement_val" placeholder="Valeur aujourd'hui"
+                                  value= "{{ liste_equipement[0][7] }}" aria-label="equipement_val" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Date de remplacement</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_rempl" placeholder="Date prévue pour le remplacement"
+                                  value= "{{ liste_equipement[0][8] }}" aria-label="date_rempl" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <div class="form-check">
+                        {% if (liste_equipement[0][9] ==0): %}
+                            <input type="checkbox" class="form-check-input"  name="actif">
+                        {% else %}
+                            <input type="checkbox" class="form-check-input"  name="actif" checked>
+                        {% endif %}
+                            <label class="form-check-label" for="actif">Actif</label>
+                    </div>
+                    <button type="submit" class="btn bg-steel text-white float-right mb-1">Soumettre</button>
+                </div>
+            </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

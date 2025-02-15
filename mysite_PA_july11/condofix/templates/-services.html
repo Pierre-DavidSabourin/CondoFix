@@ -1,0 +1,72 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Gamme de services de CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12  mt-4">
+            <h1>Services professionnels</h1>
+            <p>CondoFix est fourni avec une configuration de démarrage. Le client est responsable de saisir les données touchant son immeuble:</p>
+            <ul>
+              <li>Les intervenants, les équipements, les contacts, la documentation et les budgets</li>
+              <li>Les paramètres de l'immeuble et les réglages spécifiques au syndicat</li>
+              <li>Les interventions prévues dans le carnet d'entretien et dans l'étude du fonds de prévoyance</li>
+            </ul>
+            <br>
+            <table id="table_data" class="table table-striped table-bordered" style="width:100%">
+                <thead>
+                    <tr>
+                        <th width="100px"><strong>Description du service</strong></th>
+                        <th width="60px"><strong>Tarif</strong></th>
+                        <th width="60px"><strong>Type de tarif</strong></th>
+                    </tr>
+                </thead>
+                <tr>
+                    <td width="100px">Formation</td>
+                    <td width="60px">95$</td>
+                    <td width="60px">Horaire</td>
+                </tr>
+                <tr>
+                    <td width="100px">Importation de fichier Excel (carnet d'entretien, interventions du fonds de prévoyance)</td>
+                    <td width="60px">100$</td>
+                    <td width="60px">Chacun</td>
+                </tr>
+                <tr>
+                    <td width="100px">Inventaire des équipements</td>
+                    <td width="60px">95$</td>
+                    <td width="60px">Horaire</td>
+                </tr>
+                <tr>
+                    <td width="100px">Étiquettes d'équipement ('Tags')</td>
+                    <td width="60px">1,50$</td>
+                    <td width="60px">Chacune</td>
+                </tr>
+            </table>
+            <p><small>Les frais de déplacement et les taxes sont en sus.</small></p>
+        </div>
+        <style>
+            #image1{
+              border: 1px solid #000;
+            }
+        </style>
+    </div>
+    <div class="row">
+        <a class="btn-lg btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+        <a class="btn-lg text-black btn-warning btn-rounded mx-2 my-4" role="button" href="/video_infos">Vidéo 3 min.</a>
+        <a class="btn-lg text-white btn-danger btn-rounded my-4" role="button" href="/demo">Essai gratuit</a></div>
+    </div>
+</body>
+{% endblock content %}

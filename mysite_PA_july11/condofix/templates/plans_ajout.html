@@ -1,0 +1,68 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_documentation.plan_ajout') }}" method=post enctype="multipart/form-data" class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center" >
+                    <h4>Nouveau plan ou schéma</h4><h6>(pdf seulement)</h6>
+                </div>
+                <p class="mb-0"><small>Description</small></p>
+                <div class="input-group mb-2">
+                   <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                   </div>
+                   <input type="text" class="form-control border-right-0" name="desc_doc" placeholder="Description"
+                          aria-label="desc_doc" autofocus="autofocus" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Catégorie</small></p>
+                        <div class="input-group mb-2 pr-1">
+                            <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="id_categ" id="id_categ" data-width="100%"  autofocus="autofocus" required>
+                                <option value='' hidden>Choisir..</option>
+                                {% for item in liste_categories %}
+                                <option value="{{ item[0] }}" >{{ item[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn bg-steel text-white float-right mt-4">Soumettre</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group form-inline justify-content-between mb-2">
+                            <label><b>Téléchargement</b></label>
+                            <div class="custom-file">
+                                <div style="position:relative;">
+                                <input type="file" name="fichier" id="fichier_upload" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

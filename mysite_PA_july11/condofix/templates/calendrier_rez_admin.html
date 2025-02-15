@@ -1,0 +1,78 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<head>
+<div>
+    <meta charset='utf-8' />
+    <link href='../static/FullCalendar/main.css' rel='stylesheet' />
+    <script src='../static/FullCalendar/main.js'></script>
+    <script src='../static/FullCalendar/locales-all.js'></script>
+    <a class="btn bg-steel text-white btn-rounded mb-2" role="button" href="{{ url_for('bp_reservations.reservation_affiche_admin') }}">Réserver</a>
+    <ul class="legend mt-3">
+        <li><span class="ressource_1"></span>{{ fill_ressources[0][1] }}</li>
+        <li><span class="ressource_2"></span>{{ fill_ressources[1][1] }}</li>
+        <li><span class="ressource_3"></span>{{ fill_ressources[2][1] }}</li>
+        <li><span class="ressource_4"></span>{{ fill_ressources[3][1] }}</li>
+        <li><span class="ressource_5"></span>{{ fill_ressources[4][1] }}</li>
+        <li><span class="ressource_6"></span>{{ fill_ressources[5][1] }}</li>
+        <li><span class="ressource_7"></span>{{ fill_ressources[6][1] }}</li>
+        <li><span class="ressource_8"></span>{{ fill_ressources[7][1] }}</li>
+        <li><span class="ressource_9"></span>{{ fill_ressources[8][1] }}</li>
+        <li><span class="ressource_10"></span>{{ fill_ressources[9][1] }}</li>
+    </ul>
+</div>
+</head>
+<body>
+<br>
+<br>
+<div id='calendar'></div>
+<script>
+
+      let calendarEl = document.getElementById('calendar');
+      let calendar=new FullCalendar.Calendar(calendarEl, {
+          events: [
+            {% for event in events_list %}
+            {
+                title: '{{event.no_unite}} ({{event.duree}} h)',
+                start: '{{event.date_heure}}',
+                color: '{{event.couleur}}',
+            },
+            {% endfor %}
+          ]
+      });
+      calendar.setOption('locale', 'fr');
+      calendar.render();
+</script>
+</body>
+
+<style>
+
+  body {
+    margin: 40px 10px;
+    padding-top: 30px;
+    font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
+    font-size: 14px;
+  }
+
+  #calendar {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+/* basic positioning */
+.legend { list-style: none; }
+.legend li { float: left; margin-right: 10px; }
+.legend span { border: 1px solid #ccc; float: left; width: 10px; height: 10px; margin: 2px; }
+/* your colors */
+.legend .ressource_1{ background-color: black; }
+.legend .ressource_2 { background-color: lawngreen; }
+.legend .ressource_3 { background-color: blue; }
+.legend .ressource_4 { background-color: red; }
+.legend .ressource_5 { background-color: orange; }
+.legend .ressource_6 { background-color: pink; }
+.legend .ressource_7 { background-color: lightslategrey; }
+.legend .ressource_8 { background-color: magenta; }
+.legend .ressource_9 { background-color: peru; }
+.legend .ressource_10 { background-color: purple; }
+
+</style>
+
+{% endblock content %}

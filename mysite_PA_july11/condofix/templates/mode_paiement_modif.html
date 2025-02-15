@@ -1,0 +1,25 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+     <form action="{{ url_for('bp_ressources.mode_paiement_modif', ident_mode=fill_paiement[0][0]) }}" method=post class="form-horizontal" role="form">
+         <div class="row">
+            <div class="container col-md-4 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Nouveau mode de paiement</h4>
+                </div>
+                <p class="mb-0"><small>Description</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" name="desc_mode" placeholder="Mode de paiement"
+                              value="{{ fill_paiement[0][1] }}"  aria-label="desc_mode" autofocus="autofocus" required>
+                </div>
+                <button type="submit" class="btn bg-steel text-white float-right mt-2 mb-1">Soumettre</button>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

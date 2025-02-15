@@ -1,0 +1,83 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Règlementation du carnet d'entretien en copropriété</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="carnet d'entretien maison,entretien copropriété, gestion d'entretien, logiciel entretien, agenda partagé">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+
+<body>
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 style="font-size: 2vw;">Carnet d'entretien de copropriété</h5>
+            <h1 style="font-size: 3.5vw;">Agenda partagé, système hybride ou GMAO?</h1>
+            <br>
+            <a class="btn-lg text-black btn-primary btn-rounded mt-4" style="font-size: 2.5vw;" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+            <a class="btn-lg text-black btn-warning btn-rounded mt-4" style="font-size: 2.5vw;" role="button" href="/video_infos">Vidéo 3 min.</a>
+            <a class="btn-lg text-white btn-danger btn-rounded" style="font-size: 2.5vw;" role="button" href="/demo">Essai gratuit</a>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-lg-6 col-sm-8 col-9 mr-0 pr-0">
+            <h6 style="font-size: 2vw;">Vous avez en main le carnet d’entretien du consultant et vous devez maintenant organiser la gestion d’entretien
+            de votre immeuble? Voici un mini-guide qui vous aidera à faire les bons choix de moyens pour atteindre cet objectif.</h6>
+            <p style="font-size: 2vw;">La figure 1 illustre clairement que le nombre d’unités privatives est un facteur déterminant dans le
+                choix d’un système de suivi de carnet d'entretien. Il tient compte à la fois de l’effort requis et des ressources disponibles pour faire
+                le suivi de l’entretien.</p>
+        </div>
+        <div class="col-lg-6 col-sm-4 col-3 mr-0 pr-0">
+            <img  class="img-fluid mb-2" src="../static/images_publiques/Choix_Outil.png"/>
+            <p class="text-center" style="font-size: 1.5vw;"><small><b>Figure 1</b> - Grille de choix d'outil</small></p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-6 col-sm-6 col-8 mr-0 pr-0">
+             <p style="font-size: 2vw;"><b>Pour les petites copropriétés</b></p>
+            <p style="font-size: 2vw;">Les petites copropriétés de moins de 10 unités peuvent utiliser un agenda partagé comme celui de Google&trade; (figures 2 et 3) accompagné
+                d’un système de classification (papier ou numérique) de factures permettant de suivre l’historique d'entretien du bâtiment.</p>
+            <p style="font-size: 2vw;">Pour les copropriétés ayant de 10 à 20 unités, le système papier devient un peu lourd et ralentit
+                la prise de décision. Un chiffrier comme Excel&trade; ou comme Google&trade; Sheets utilisé en parallèle avec un agenda partagé
+                (système hybride) offre une solution accessible plus rapidement aux administrateurs (voir figure 4 au bas de la page). Par contre, notez que le partage d'un fichier Excel
+                entre les différents intervenants s'avère onéreux et que les erreurs de saisie sont à surveiller.</p>
+        </div>
+        <div class="col-lg-6 col-sm- col-4 mr-0 pr-0">
+            <img class="img-fluid mt-3" src="../static/images_publiques/Calendrier_Mois.png"/>
+            <p class="text-center mt-1" style="font-size: 1.5vw;"><small><b>Figure 2</b> - Exemple de calendrier d'entretien sur Agenda Google&trade;</small></p>
+            <img class="img-fluid mt-3" src="../static/images_publiques/Calendrier_Liste.png"/>
+            <p class="text-center mt-1" style="font-size: 1.5vw;"><small><b>Figure 3</b> - Exemple  de liste priorisée d'interventions sur Agenda Google&trade;</small></p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+             <p style="font-size: 2vw;"><b>Pour les plus grandes copropriétés</b></p>
+            <p style="font-size: 2vw;">Les immeubles ayant plus de 20 unités privatives ont plusieurs équipements et un nombre d'interventions d'entretien plus élevé.
+                Ceux-ci requièrent un logiciel GMAO <i>(Gestion de Maintenance Assistée par Ordinateur)</i> comme CondoFix qui inclut de nombreuses fonctionnalités (calendrier, saisie de factures, tableau de bord, etc.) et qui peut aisément se partager entre les différents usagers. </p>
+            <b style="font-size: 2vw;">Intégration de la facturation</b>
+            <p style="font-size: 2vw;">Une des particularités du secteur de la copropriété est la dépendance presque complète envers les fournisseurs
+                pour l’accomplissement des tâches d’entretien. Il devient alors primordial de pouvoir intégrer les factures
+                des fournisseurs dans un système de gestion d’entretien (GMAO) comme CondoFix afin de tenir compte des coûts de main d’œuvre
+                et de matériel applicables à chaque équipement de l’immeuble.</p>
+            <b style="font-size: 2vw;">Importance des notifications</b>
+            <p style="font-size: 2vw;">L'utilisation d'un agenda partagé ou d'un GMAO tel CondoFix est avantageuse étant donné que les administrateurs peuvent recevoir une
+            notification pour chaque intervention prévue très prochainement. De même, les événements d'entretien peuvent être programmés pour
+            se répéter afin de réfléter la fréquence recommandée dans le carnet d'entretien soumis par le consultant.</p>
+            <br>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-10">
+            <img class="img-fluid mt-3" src="../static/GoogleSheetsScreenShot.jpg"/>
+            <p class="text-center mt-2" style="font-size: 1.5vw;"><small><b>Figure 4</b> - Exemple de GMAO avec Google&trade; Sheets/Forms</small></p>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

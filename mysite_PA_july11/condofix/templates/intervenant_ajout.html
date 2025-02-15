@@ -1,0 +1,112 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+   <form action="{{ url_for('bp_intervenants.intervenant_ajout') }}" method=post class="form-horizontal" role="form">
+       <div class="row">
+            <div class="container col-md-4 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Nouvel intervenant</h4>
+                </div>
+                <p class="mb-0"><small>Nom de l'intervenant</small></p>
+                <div class="input-group mb-2">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-address-book"></i></span>
+                       </div>
+                       <input type="text" class="form-control border-right-0" name="intervenant_nom" placeholder="Nom de l'intervenant"
+                              aria-label="intervenant_nom" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Type d'intervenant</small></p>
+                <div class="input-group mb-2 pr-1">
+                       <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                       </div>
+                       <select class="form-control flex-grow-1" name="intervenant_type" data-width="100%" autofocus="autofocus" required>
+                           <option hidden value="">Choisir..</option>
+                           <option value="1">Employé</option>
+                           <option value="2">Fournisseur</option>
+                           <option value="3">Contractuel</option>
+                       </select>
+                </div>
+                <p class="mb-0"><small>Adresse complète</small></p>
+                <div class="input-group mb-2">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                    </div>
+                    <input type="text" class="form-control border-right-0" name="adresse" placeholder="Adresse incluant code postal"
+                          aria-label="adresse" autofocus="autofocus">
+                </div>
+                <p class="mb-0"><small>Téléphone bureau (000-000-0000)</small></p>
+                <div class="input-group mb-2">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                    </div>
+                    <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" class="form-control border-right-0" name="tel_principal" placeholder="no. principal"
+                          aria-label="tel_principal" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Catégorie</small></p>
+                <div class="input-group mb-2 pr-1">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                    </div>
+                     <select class="form-control flex-grow-1" name="id_categorie" id="categorie_select"
+                                        data-width="100%" autofocus="autofocus" required>
+                    <option hidden value="">Choisir</option>
+                    {% for item in liste_categories %}
+                    <option value="{{ item[0] }}">{{ item[1] }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <p class="mb-0"><small>Courriel</small></p>
+                <div class="input-group mb-2">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                    </div>
+                    <input type="email" class="form-control border-right-0" name="email" placeholder="Courriel de l'intervenant"
+                          aria-label="email" autofocus="autofocus">
+                </div>
+                <p class="mb-0"><small>Contact 1</small></p>
+                <div class="input-group mb-2">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-address-book"></i></span>
+                    </div>
+                    <input type="text" class="form-control border-right-0" name="contact_1" placeholder="Premier contact"
+                          aria-label="contact_1" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Téléphone 1 (000-000-0000)</small></p>
+                <div class="input-group mb-2">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                    </div>
+                    <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" class="form-control border-right-0" name="teleph_1" placeholder="Téléphone"
+                          aria-label="teleph_1" autofocus="autofocus" required>
+                </div>
+                <p class="mb-0"><small>Contact 2</small></p>
+                <div class="input-group mb-2">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-address-book"></i></span>
+                    </div>
+                    <input type="text" class="form-control border-right-0" name="contact_2" placeholder="Deuxième contact"
+                          aria-label="contact_2" autofocus="autofocus">
+                </div>
+                <p class="mb-0"><small>Téléphone 2 (000-000-0000)</small></p>
+                <div class="input-group mb-2">
+                    <div class="input-group-prepend bg-white">
+                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                    </div>
+                    <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" class="form-control border-right-0" name="teleph_2" placeholder="Téléphone"
+                          aria-label="teleph_2" autofocus="autofocus">
+                </div>
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="actif">
+                        <label class="form-check-label" for="actif">Actif</label>
+                    </div>
+                    <button type="submit" class="btn bg-steel text-white float-right mt-2 mb-1">Soumettre</button>
+                </div>
+            </div>
+       </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

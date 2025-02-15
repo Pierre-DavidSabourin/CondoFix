@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<header class="site-header">
+    <input type="hidden" name="ident_list" value="{{ ident_list }}">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <a class="pull-left navbar-brand" href="#">
+            <img src="../static/ToolsIcon.png" alt="Logo" style="padding: 8px;" width="50" height="50">
+            <span class="mb-0 h2">CondoFix</span>
+        </a>
+    </nav>
+</header>
+<script>
+function affiche_mp() {
+      var x = document.getElementById("mot_passe");
+      if (x.type === "password") {
+        x.type = "text";
+      } else {
+        x.type = "password";
+      }
+}
+</script>
+<div class="content-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 mx-auto my-1">
+                <div class="card rounded-0">
+                    <h3 class="card-header">Login</h3>
+                    <div class="card-body">
+                        <form class="form" role="form" autocomplete="off" id="formLogin" novalidate="" method="POST">
+                            <div class="form-group">
+                                <label for="Usager">Usager</label>
+                                <input type="text" class="form-control" autofocus="autofocus" name="usager" required="">
+                                 </div>
+                            <div class="form-group">
+                                <label for="InputPassword">Mot de passe</label>
+                                <input type="password" class="form-control" name="password" id="mot_passe" required="">
+                                <!-- An element to toggle between password visibility -->
+                                <input type="checkbox" onclick="affiche_mp()">&nbsp; Afficher mot de passe
+                            </div>
+                        <button type="submit" class="btn bg-steel text-white" id="btnLogin">Soumettre</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+</body>

@@ -1,0 +1,213 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, carnet d'entretien, entretien copropriété, gestion d'entretien, logiciel entretien">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+
+<body >
+<style>
+    html, body {
+  height: 100%;
+}
+.container, .row.justify-content-center.align-items-center {
+  flex: 1; /* additionally, equal width */
+}
+  height: 100%;
+  min-height: 100%;
+}
+</style>
+<div class="container">
+    <script>
+        .rounded-xl {
+   border-radius: 1.5rem;
+}
+    </script>
+    <div class="col-12 mt-4">
+        <h3 class="text-center" style="font-size: 3.5vw;">Des produits qui répondent aux besoins des syndicats de copropriété</h3>
+        <div class="text-center">
+            <p style="font-size: 2.5vw; margin-bottom: -1px;">&#9989;&nbsp;Essai gratuit</p>
+            <p style="font-size: 2.5vw; margin-bottom: -1px;">&#9989;&nbsp;Aucune installation requise</p>
+            <p style="font-size: 2.5vw; margin-bottom: -1px;">&#9989;&nbsp;Évolutif: changez de produit en tout temps</p>
+        </div>
+        <div class="row mt-4">
+            <div class="card bg-primary text-white rounded-xl mx-1 my-2" style="width: 32%">
+                <div class="card-body">
+                    <H6 class="text-white text-center mb-0" style="font-size: 2.5vw;">Trousse de</H6><H2 class="text-white text-center" style="font-size: 4vw;">DÉMARRAGE</H2>
+                    <p class="text-white text-center" style="font-size: 1.5vw;">Numérisez vos factures pour bâtir<br>votre historique des entretiens</p>
+                    <h4 class="text-white text-center" style="font-size: 3.5vw;">0,40$ par porte*</h4>
+                    <dl class="text-small mt-3 ml-2" style="font-size: 1.3vw;">
+                          <dt>2 accès (administrateur/CA)</dt>
+                          <dt>Lecture OCR/numérisation de factures</dt>
+                          <dt>Sauvegarde des images de facture</dt>
+                          <dt>Historique des entretiens</dt>
+                          <dt>Exportation vers Excel</dt>
+                          <dt>Analyse des dépenses annuelles</dt>
+                          <dt>Aide (documentation/courriel)</dt>
+                        </dl>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="text-white mb-1" style="font-size: 1.5vw;"><small>* Plus tarif de base de 20$ par mois</small></p>
+                    <a class="btn btn-warning btn-rounded mt-2 mb-5" style="font-size: 2vw;" role="button" href="{{ url_for('bp_public.tarifs',produit=0) }}"><b>Calculer mon tarif</b></a>
+                </div>
+            </div>
+            <div class="card bg-danger text-white rounded-xl mx-1 my-2" style="width: 32%">
+                <div class="card-body">
+                    <H6 class="text-white text-center mb-0" style="font-size: 2.5vw;">CARNET</H6><H2 class="text-white text-center" style="font-size: 4vw;">ESSENTIEL</H2>
+                    <p class="text-white text-center" style="font-size: 1.5vw;">Pour copropriétés ayant<br>moins d'équipements à entretenir</p>
+                    <h4 class="text-white text-center" style="font-size: 3.5vw;">0,90$ par porte*</h4>
+                    <dl class="text-small mt-3 ml-2" style="font-size: 1.3vw;">
+                      <dt>Trousse de DÉMARRAGE plus:</dt>
+                      <dt>&nbsp;</dt>
+                      <dt>1 accès additionnel (employé)</dt>
+                      <dt>Gestion des tickets (interventions)</dt>
+                      <dt>Calendrier d'entretien</dt>
+                      <dt>Tableau de bord</dt>
+                      <dt>Approbation en ligne des factures</dt>
+                      <dt>Rapport d’activité autogénéré</dt>
+                    </dl>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="text-white mb-1" style="font-size: 1.5vw;"><small>* Plus tarif de base de 20$ par mois</small></p>
+                    <a class="btn btn-warning btn-rounded mt-2 mb-5" style="font-size: 2vw;" role="button" href="{{ url_for('bp_public.tarifs',produit=1) }}"><b>Calculer mon tarif</b></a>
+                </div>
+            </div>
+            <div class="card bg-dark text-white rounded-xl mx-1 my-2" style="width: 32%">
+                <div class="card-body">
+                    <H6 class="text-white text-center mb-0" style="font-size: 2.5vw;">CARNET</H6><H2 class="text-white text-center" style="font-size: 4vw;">PLUS</H2>
+                    <p class="text-white text-center" style="font-size: 1.5vw;">Plusieurs équipements à entretenir<br>et interventions fréquentes</p>
+                    <h4 class="text-white text-center" style="font-size: 3.5vw;">1,85$ par porte*</h4>
+                    <dl class="text-small mt-3 ml-2" style="font-size: 1.3vw;">
+                      <dt>Carnet ESSENTIEL plus:</dt>
+                      <dt>&nbsp;</dt>
+                      <dt>Accès copropriétaires via portail</dt>
+                      <dt>Gestion et inventaire des équipements</dt>
+                      <dt>Gestion du fonds de prévoyance</dt>
+                      <dt>Documents du syndicat</dt>
+                      <dt>Signalements et demandes de service</dt>
+                      <dt>Contacts du syndicat (bottin)</dt>
+                      <dt>Gestion du budget d’entretien</dt>
+                      <dt>Statistiques d’achalandage</dt>
+                    </dl>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="text-white mb-1" style="font-size: 1.5vw;"><small>* Plus tarif de base de 20$ par mois</small></p>
+                    <a class="btn btn-warning btn-rounded mt-2 mb-5" style="font-size: 2vw;" role="button" href="{{ url_for('bp_public.tarifs',produit=2) }}"><b>Calculer mon tarif</b></a>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+                <div class="container  bg-steel white text-white rounded-xl mx-2 my-2">
+                    <br>
+                    <H6 class="text-white text-center mb-0" style="font-size: 2.5vw;">OPTIONNEL</H6><H2 class="text-white text-center" style="font-size: 3.3vw;">RÉSERVATIONS</H2>
+                    <p class="text-white text-center mt-4" style="font-size: 1.5vw;">Gérez l'utilisation de vos locaux et équipements par les copropriétaires</p>
+                    <h4 class="text-white text-center" style="font-size: 3.5vw;">0,40$ par porte*</h4>
+                    <dl class="text-small mt-3 ml-2" style="font-size: 1.3vw;">
+                      <dt>Environnement simple et intuitif</dt>
+                      <dt>Possibilité d'annuler une réservation</dt>
+                      <dt>Disponibilité et contraintes paramétrables</dt>
+                      <dt>Ressources facturables</dt>
+                    </dl>
+                    <div class="text-center">
+                        <p class="text-white" style="font-size: 1.8vw;"><small>* Disponible avec Carnet Plus</small></p>
+                        <a class="btn btn-success btn-rounded mt-2 mb-3" style="font-size: 2vw;" role="button" href="{{ url_for('bp_public.module_rez') }}"><b>Voir le module</b></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-between mt-3">
+            <table class="table table-striped small">
+              <thead>
+                <tr>
+                  <th scope="col"><b>FONCTIONNALITÉ</b></th>
+                  <th class= scope="col"><b>DESCRIPTION</b></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Gestion de tickets</th>
+                  <td>Suivre les activités d'entretien depuis la création d'un ticket jusqu'à la réception de la facture.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Calendrier d'entretien</th>
+                  <td>Planifier les interventions du carnet d'entretien et générer les tickets automatiquement au moment voulu.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Tableau de bord</th>
+                  <td>Afficher l'état d'avancement des tickets, les dépenses par catégorie, la situation budgétaire et davantage.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Documentation</th>
+                  <td>Afficher tous les documents touchant la copropriété tels que contrats, rapports, procès verbaux et autres.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Gestion des équipements</th>
+                  <td>Inventorier tous les équipements de l'immeuble afin de pouvoir leur attribuer les entretiens et évaluer leur état.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Gestion des intervenants</th>
+                  <td>Connaître en tout temps l'état des travaux confiés aux employés et aux fournisseurs.</td>
+               </tr>
+                <tr>
+                  <th scope="row">Budget d'entretien</th>
+                  <td>Suivre en temps réel l'évolution des dépenses d'entretien par catégorie par rapport au budget annuel.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Factures d'entretien</th>
+                  <td>Répertorier toutes les factures touchant l'entretien de l'immeuble et les exporter au grand livre comptable.</td>
+               </tr>
+               <tr>
+                  <th scope="row">Signalements</th>
+                  <td>Les copropriétaires peuvent transmettre aux administrateurs les demandes pour l'entretien ou autre service.</td>
+               </tr>
+                <tr>
+                  <th scope="row">Contacts</th>
+                  <td>Afficher un bottin de contacts aux copropriétaires (administrateurs, fournisseurs, etc.).</td>
+               </tr>
+                <tr>
+                  <th scope="row">Fonds de prévoyance</th>
+                  <td>Connaître et diffuser l'état actuel du fonds et l'impact de l'inflation réelle sur les projections de l'analyse du fonds.</td>
+               </tr>
+               <tr>
+                  <th scope="row">Réservations (optionnel)</th>
+                  <td>Offrir aux copropriétaires un outil permettant de réserver en ligne les salles et les équipements de l'immeuble.</td>
+                </tr>
+
+              </tbody>
+            </table>
+        </div>
+        <div class="row">
+            <div class="col-12 text-center mt-3" style="padding: 10px; border: 1px solid black;">
+                <p><b>Comparez CondoFix avec d'autres fournisseurs de logiciel:</b></p>
+                <style>
+                .image {
+                display: inline-block;
+                }
+
+                </style>
+
+                <!-- Begin SF Tag -->
+                <div class="sf-root" data-id="3526123" data-badge="customers-love-us-white" data-variant-id="sf" style="width:125px; display: inline-block;">
+                    <a href="https://sourceforge.net/software/product/CondoFix/" target="_blank">CondoFix Reviews</a>
+                </div>
+                <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=3526123&variant_id=sf';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
+                </script>
+                <!-- End SF Tag -->
+                <a href="https://www.capterra.com/p/237116/CondoFix/">
+                <img  class="img-fluid inline-block" style="display: inline-block" src="../static/images_publiques/Capterra_logo.png">
+                </a>
+            </div>
+        </div>
+        <a class="btn btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+    </div>
+</div>
+</body>
+{% endblock content %}

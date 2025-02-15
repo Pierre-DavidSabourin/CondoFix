@@ -1,0 +1,110 @@
+{% extends "proprios_layout.html" %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Permet le bon layout de la table incluant triage et formatage : -->
+    <link rel="stylesheet" href="../static/DataTables/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire' de datatables : -->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.3.0/Chart.min.js"></script>
+</head>
+<body>
+<style>
+    h4 {
+  margin: 1px;
+}
+</style>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-8">
+            <div class="wrapper">
+                <h4>Solde et dépenses prévues du fonds de prévoyance</h4>
+                <p><small>En $ actualisés. Détails des paramètres affichés à droite du graphique.</small></p>
+                <canvas id="line-chart" width="800" height="400"></canvas>
+            </div>
+            <script>
+              //console.log({{labels|tojson}});
+              //console.log({{values_1|tojson}});
+              new Chart(document.getElementById("line-chart"), {
+                  type: 'line',
+                  data: {
+                    labels: {{labels}},
+                    datasets: [
+                      {
+                      label: 'Dépenses             ',
+                      borderColor: "#caf270",
+                      fill: false,
+                      pointStyle: "line",
+                      data: {{ values_1|tojson }},
+                    }, {
+                      label: 'Solde prévu             ',
+                      borderColor: "#45c490",
+                      fill: false,
+                      pointStyle: "line",
+                      data: {{ values_2|tojson }},
+                    }, {
+                      label: 'Solde actuel            ',
+                      borderColor: "#ff0000",
+                      borderWidth: 7,
+                      fill: false,
+                      pointStyle: "line",
+                      data: {{ values_3|tojson }},
+                    },
+                    ]
+                  },
+                  options: {
+                       legend: { display: true,
+                       position: 'bottom',
+                       labels: {usePointStyle: true},
+                       textAlign: 'left',
+                       symbolWidth: 40
+                },
+                title: {
+                  display: false,
+                  text: 'Predicted world population (millions) in 2050'
+                },
+                    responsive: false
+                  }
+                  });
+            </script>
+        </div>
+        <div class="col-sm-4">
+            <form action="{{ url_for('bp_fonds_prevoyance.calcul_solde',args=('scenario','coproprios')) }}" method=post class="form-horizontal" role="form">
+            <h6>Dépenses après {{ fill_champs[0] }} : {{ fill_champs[1] }}</h6>
+            <p><small>En $ actualisés.{{ fill_champs[2] }} interventions prévues aux 25 années suivantes.</small></p>
+            <div class="container col-md-12 bg-form-bground p-4 rounded">
+                <div class="text-center">
+                    <label><strong>PARAMÈTRES DE L'ANALYSE</strong></label>
+                </div>
+                <br>
+                <div class="form-group form-inline justify-content-between">
+                    <label>Contribution annuelle au début ($)</label>
+                    <label>{{ fill_champs[3] }}</label>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label>Croissance annuelle de contribution (%)</label>
+                    <label>{{ fill_champs[4] }}</label>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label>Taux moyen d'inflation* (%)</label>
+                    <label>{{ fill_champs[5] }}</label>
+                </div>
+                <div class="form-group form-inline justify-content-between">
+                    <label>Rendement** sur placements (%)</label>
+                    <label>{{ fill_champs[6] }}</label>
+                </div>
+                <p><small>* Pondéré selon le type d'intervention.
+                    <br>** Pondéré entre placements à court et à long terme.</small></p>
+            </div>
+            <p style=" margin-top: 20px; margin-bottom: 20px;">Solde actuel du fonds au {{ fill_champs[11] }}: <strong>{{ fill_champs[10] }}</strong></p>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

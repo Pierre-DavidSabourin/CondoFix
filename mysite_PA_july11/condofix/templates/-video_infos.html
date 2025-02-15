@@ -1,0 +1,103 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<header class="site-header">
+    <input type="hidden" name="ident_list" value="{{ ident_list }}">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <title>Formulaire de demande pour vidéo CondoFix</title>
+        <a class="pull-left navbar-brand" href="#">
+            <img src="../static/ToolsIcon.png" alt="Logo" style="padding: 8px;" width="50" height="50">
+            <span class="mb-0 h2">CondoFix</span>
+        </a>
+    </nav>
+</header>
+<head>
+<script src="../static/jquery-3.5.1.js"></script>
+
+<script type="text/javascript">
+    $(window).on('load', function() {
+        $('#myModal').modal('show');
+    });
+</script>
+</head>
+<body>
+<div id="myModal" class="modal fade">
+    <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confidentialité</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>En cliquant sur « Continuer », vous acceptez le stockage et l'utilisation de vos données personnelles
+            pour nos analyses et pour contribuer à nos efforts de marketing.</p>
+        <p>Pour plus d'informations, consultez notre <a href="{{ url_for('bp_public.confidentialite') }}">politique de confidentialité.</a></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Continuer</button>
+        <button type="button" onclick="window.location.href='{{ url_for( 'bp_public.home' ) }}';" class="btn btn-secondary">Retour à l'accueil</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="list-group">
+    <form action="{{ url_for('bp_public.affiche_video') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-3 rounded mt-5">
+                <div class="text-center my-3" >
+                    <h4 class="text-secondary">Comment fonctionne CondoFix (3 minutes)</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                         <p class="mb-0"><small>Courriel</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope-open"></i></span>
+                               </div>
+                               <input type="email" class="form-control border-right-0" name="courriel" maxlength="40"
+                                      aria-label="courriel" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Téléphone (000-000-0000)</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                               </div>
+                               <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" maxlength="12" class="form-control border-right-0" name="tel" placeholder="Téléphone" aria-label="contact_tel" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Nom du syndicat</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-institution"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" maxlength="40" name="nom" placeholder=""
+                                  aria-label="nom" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Nombre de portes</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" maxlength="3" name="portes" placeholder="Nombre d'unités privatives"
+                                  aria-label="portes" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <p><small>En soumettant ce formulaire, vous consentez à l'utilisation de vos informations de contact par CondoFix.</small></p>
+                <button type="submit" class="btn bg-steel text-white float-right mb-3" id="btnLogin">Afficher la vidéo</button>
+            </div>
+    </form>
+</div>
+</body>
+{% endblock %}

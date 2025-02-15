@@ -1,0 +1,133 @@
+{% extends "proprios_layout.html" %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire de datatables : -->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <script src="../static/Chart.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="row justify-content-center">
+                    <div class="wrapper">
+                        <h6 class="text-center">Dépenses par catégorie** (tickets):</h6>
+                        <p class="text-center">{{ ytd_pourcent }} Année à Date</p>
+                    </div>
+                    <canvas id="bar-chart_1" width="500" height="400"></canvas>
+
+                    <script>
+
+                      new Chart(document.getElementById("bar-chart_1"), {
+                      type: 'horizontalBar',
+                      data: {
+                        labels: {{labels_10|tojson}},
+                        datasets: [
+                          {
+                          label: 'Budget*',
+                          backgroundColor: "#FFA500",
+                          data: {{ budget_10|tojson }},
+
+                        }, {
+                          label: 'Actuel***',
+                          backgroundColor: "#0000FF",
+                          data: {{ records_10|tojson }},
+
+                        }
+                        ]
+                      },
+                      options: {
+                        hover: true,
+                        indexAxis: 'y',
+                        legend: {
+                          display: true,
+
+                     },
+                        title: {
+                          display: false,
+                          text: 'blabla'
+                        },
+                        scales: {
+                        xAxes: [{ stacked: false}],
+                        yAxes: [{ stacked: false }]
+                        },
+                        responsive: false
+                      }
+                      });
+                    </script>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="row justify-content-center">
+                    <div class="wrapper">
+                        <h6>Cumulatif des dépenses d'entretien***</h6>
+                        <p class="text-center">Année courante du budget</p>
+                    </div>
+                    <canvas class="text-center" id="bar-chart_2" width="500" height="400"></canvas>
+
+                    <script>
+                      new Chart(document.getElementById("bar-chart_2"), {
+                          type: 'bar',
+                          data: {
+                            labels: {{labels_mois|tojson}},
+                            datasets: [
+                              {
+                              label: 'Budget*',
+                              borderColor: "#FFA500",
+                              data: {{ budgets_mois|tojson }},
+                              type: 'line',
+
+                            }, {
+                              label: 'Entretien et réparations',
+                              backgroundColor: "#e81123",
+                              data: {{ reparations|tojson }},
+                              type: 'bar',
+
+                            },
+                            {
+                              label: 'Préventif',
+                              backgroundColor: "#7CFC00",
+                              data: {{ preventif|tojson }},
+
+                            }
+                            ]
+                          },
+                          options: {
+                            hover: true,
+                            legend: {
+                              display: true,
+                              position: 'bottom',
+
+                         },
+                            title: {
+                              display: false,
+                              text: 'blabla'
+                            },
+                            scales: {
+                            xAxes: [{ stacked: true }],
+                            yAxes: [{ stacked: true }]
+                            },
+                            responsive: false
+                          }
+                          });
+                    </script>
+                </div>
+            </div>
+        </div>
+    <br>
+    <p class="mb-0"><small>* Le budget du syndicat est provisoire jusqu'à sa présentation lors de l'assemblée générale annuelle.</small></p>
+    <p class="mb-0"><small>** Affichage des 10 catégories ayant le plus de dépenses.</small></p>
+    <p><small>*** Inclut les factures attribuées aux tickets et les salaires/honoraires.</small></p>
+    </div>
+
+</div>
+
+</body>
+{% endblock content %}

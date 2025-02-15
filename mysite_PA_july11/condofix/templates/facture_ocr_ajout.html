@@ -1,0 +1,449 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="180 ;URL=//www.condofix.ca">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao,entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <script>
+        //pour permettre le choix d'aucun tag
+        function hide_tag_1() {
+            if (document.getElementById("tag_select").style.display == 'none') {
+                (document.getElementById("tag_select").style.display = 'block');
+            } else {
+                document.getElementById("tag_select").style.display = 'none';
+
+            }
+        }
+        //formater liste à partir de JSON
+        var categ_listing=JSON.parse('{{ list_categ_avec_tags|safe }}');
+        var equip_listing=JSON.parse({{ list_equip|tojson}});
+
+        function categoryChange() {
+
+        // valeur de l'option choisie
+        var x = document.getElementById("categ_select").value;
+        //trouver index de la catégorie choisie
+        var idx=categ_listing.findIndex(function (element) {
+            return element ==x;
+        });
+        //créer la liste des équipements pour la catégorie choisie
+        cList = equip_listing[idx];
+        // get the tag select element via its known id
+        var cSelect = document.getElementById("tag_select");
+        // remove the current options from the tag select
+        var len=cSelect.options.length;
+        while (cSelect.options.length > 0) {
+        cSelect.remove(0);
+        }
+        var newOption;
+        // create new options
+        for (var i=0; i<cList.length; i++) {
+        newOption = document.createElement("option");
+        newOption.value = cList[i][0];  // assumes option string and value are the same
+        newOption.text=cList[i];
+        // add the new option
+        try {
+        cSelect.add(newOption);  // this will fail in DOM browsers but is needed for IE
+        }
+        catch (e) {
+        cSelect.appendChild(newOption);
+        }
+        }
+        }
+    </script>
+
+
+</head>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<script>
+
+</script>
+<body onload="categoryChange()">
+<div class="container mt-4">
+
+    <div class="row col-12">
+        <div class="col-12 text-center">
+            <h1>Saisie de facture sans ticket</h1>
+        </div>
+        <div class="col-4">
+               </div>
+        </div>
+    </div>
+    <br>
+    <div class="row col-12 mt-3">
+
+        <div class="container col-md-5 bg-form-bground p-4 rounded mb-2">
+            <form action="{{ url_for('bp_ocr.facture_ocr', mode=mode) }}" method=post class="form-horizontal" role="form">
+
+            <input type="hidden"  name="type_fichier" value="{{ liste_ocr[1] }}">
+            <input type="hidden"  name="ident_ticket" value="0">
+            <input type="hidden"  name="type_fichier" value="{{ liste_ocr[1] }}">
+
+            <p class="mb-0"><small>Fournisseur</small></p>
+            <div class="input-group mb-2 pr-1">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                </div>
+                 <select class="form-control flex-grow-1" name="fourn_select" id="fournisseur_select" onchange="categoryChange();"
+                                    data-width="100%" autofocus="autofocus" required>
+                <option hidden value="">Choisir</option>
+                {% for item in liste_intervenants %}
+                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <script>
+            function selectElement(id, valueToSelect) {
+                let element = document.getElementById(id);
+                element.value = valueToSelect;
+            }
+            selectElement("fournisseur_select","{{ liste_ocr[2] }}")
+            </script>
+            <p class="mb-0"><small>Fournisseur (autre)</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                </div>
+                <input type="text" class="form-control border-right-0" name="fourn_autre" id="fourn_autre_original" onkeyup="myFunction()"
+                          value="{{ liste_ocr[5] }}" placeholder="" aria-label="autre_fournisseur" autofocus="autofocus">
+            </div>
+            <div class="form-group form-inline justify-content-between mb-3">
+                <div>
+                    <p class="mb-0"><small>Date</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                        </div>
+                        <input type="date" class="form-control border-right-0" name="date" id="date"
+                              style="width:170px;" value="{{ liste_ocr[9] }}" aria-label="date" autofocus="autofocus" required>
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-0"><small>Numéro de facture</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                        </div>
+                        <input type="text" class="form-control border-right-0" name="no_facture" placeholder="Non trouvé"
+                              style="width:120px;" value="{{ liste_ocr[8] }}" aria-label="no_facture" autofocus="autofocus" required>
+                    </div>
+                </div>
+            </div>
+            <p class="mb-0"><small>Catégorie</small></p>
+            <div class="input-group mb-2 pr-1">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                </div>
+                 <select class="form-control flex-grow-1" name="categorie" id="categ_select" onchange="categoryChange();"
+                                    data-width="100%" autofocus="autofocus" required>
+                <option hidden value="">Choisir</option>
+                {% for item in liste_categories %}
+                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <script>
+            function selectElement(id, valueToSelect) {
+                let element = document.getElementById(id);
+                element.value = valueToSelect;
+            }
+            selectElement("categ_select","{{ liste_ocr[4] }}")
+            </script>
+
+            {% if liste_affichage[0][0]==1 %}
+            <p class="mb-0"><small>Tag</small></p>
+            <div class="input-group mb-2 pr-1">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                </div>
+                <select class="form-control flex-grow-1" name="id_equipement" id="tag_select"  data-width="100%" autofocus="autofocus">
+                <option hidden value=""></option>
+                </select>
+            </div>
+            <div class="form-group form-inline justify-content-between mb-3">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" onchange="hide_tag_1();" name="aucun_tag" value="1" id="no_tag">
+                    <label class="form-check-label" for="aucun_tag">Aucun tag</label>
+                </div>
+            </div>
+            {% else %}
+
+            {% endif %}
+
+            <div class="form-group form-inline justify-content-between mb-3">
+                <div>
+                    <p class="mb-0"><small>Type de travail</small></p>
+                    <div class="input-group mb-2 pr-1">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                        </div>
+                        <select class="form-control flex-grow-1" id="type_select" name="type_travail" style="width:220px;" data-width="100%" autofocus="autofocus" required>
+                            <option hidden value="">Choisir</option>
+                            {% for item in liste_types_travail %}
+                            <option value="{{ item[0] }}">{{ item[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-0"><small>Heures requises</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                        </div>
+                        <input type="number" class="form-control border-right-0" step="0.5" name="hres_req" placeholder=""
+                              style="width:80px;" aria-label="hres_est" autofocus="autofocus" required>
+                    </div>
+                </div>
+            </div>
+            <p class="mb-0"><small>Emplacement</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-map-marker"></i></span>
+                </div>
+                <input type="text" class="form-control border-right-0" name="emplacement" placeholder="Lieu de l'entretien ou équipement"
+                      aria-label="emplacement" autofocus="autofocus">
+            </div>
+            <p class="mb-0"><small>Description</small></p>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                </div>
+                <textarea class="form-control border-right-0" maxlength="200" name="desc_travail" rows="4"
+                          placeholder="Description du travail accompli" aria-label="desc_travail" autofocus="autofocus" required></textarea>
+            </div>
+            <p class="mb-0"><small>Total avec taxes ($)</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                </div>
+                <input type="number" step=".01" class="form-control border-right-0" name="total_facture_taxes" placeholder="Total avec taxes ($)"
+                      value="{{ liste_ocr[10] }}"  aria-label="total_facture_taxes" autofocus="autofocus" required>
+            </div>
+
+
+            {% if liste_affichage[0][2]==1 %}
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0"><small>Main d'oeuvre (hors taxes)</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                        </div>
+                        <input type="number" step=".01" class="form-control border-right-0" name="mdo" placeholder="Main d'oeuvre ($)"
+                              aria-label="mdo" autofocus="autofocus">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-0"><small>Matériel (hors taxes)</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                        </div>
+                        <input type="number" step=".01" class="form-control border-right-0" name="mat" placeholder="Matériel ($)"
+                              aria-label="mat" autofocus="autofocus">
+                    </div>
+                </div>
+            </div>
+            {% else %}
+
+            {% endif %}
+            <div class="form-group form-inline justify-content-between mb-1">
+            {% if liste_affichage[0][1]==1 %}
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="ouvert_ticket" value="0" id="ouvert_ticket">
+                <label class="form-check-label" for="ouvert_ticket">Laisser ticket ouvert</label>
+            </div>
+            {% else %}
+
+            {% endif %}
+            </div>
+
+            <div class="form-group form-inline justify-content-between">
+                {% if mode== 'dz' %}
+                <a class="btn bg-danger text-white float-right mt-2 mb-4" role="button" href="{{ url_for('bp_ocr.annulation', args=['dz',0]) }}">Annuler</a>
+                {% else %}
+                <a class="btn bg-danger text-white float-right mt-2 mb-4" role="button" href="{{ url_for('bp_ocr.annulation', args=['download',0]) }}">Annuler</a>
+                {% endif %}
+                <button type="submit" class="btn bg-steel text-white float-right mt-2 mb-4">Soumettre</button>
+            </div>
+            <p style="padding: 10px; border: 2px solid red;"><small><b>Avertissement: </b>Étant donné le format hautement variable
+                des factures pouvant affecter la lecture OCR, assurez-vous de bien vérifier tous les champs avant de soumettre les données saisies.</small></p>
+            </form>
+        </div>
+
+        <div class="col-7">
+            <div class="row">
+                {% if liste_ocr[1]=='image' %}
+<!--                <img  class="img-fluid float-right ml-3" src="{{ jpg_orig}}">-->
+                <div class="img-magnifier-container img-fluid float-right ml-3">
+                      <img id="myimage" src="{{ jpg_orig}}" width="700" height="900">
+                </div>
+                <style>
+                * {box-sizing: border-box;}
+
+                .img-magnifier-container {
+                  position:relative;
+                }
+
+                .img-magnifier-glass {
+                  position: absolute;
+                  border: 3px solid #000;
+                  border-radius: 50%;
+                  cursor: none;
+                  /*Set the size of the magnifier glass:*/
+                  width: 100px;
+                  height: 100px;
+                }
+                </style>
+                <script>
+                    function magnify(imgID, zoom) {
+                      var img, glass, w, h, bw;
+                      img = document.getElementById(imgID);
+                      /*create magnifier glass:*/
+                      glass = document.createElement("DIV");
+                      glass.setAttribute("class", "img-magnifier-glass");
+                      /*insert magnifier glass:*/
+                      img.parentElement.insertBefore(glass, img);
+                      /*set background properties for the magnifier glass:*/
+                      glass.style.backgroundImage = "url('" + img.src + "')";
+                      glass.style.backgroundRepeat = "no-repeat";
+                      glass.style.backgroundSize = (img.width * zoom) + "px " + (img.height * zoom) + "px";
+                      bw = 3;
+                      w = glass.offsetWidth / 2;
+                      h = glass.offsetHeight / 2;
+                      /*execute a function when someone moves the magnifier glass over the image:*/
+                      glass.addEventListener("mousemove", moveMagnifier);
+                      img.addEventListener("mousemove", moveMagnifier);
+                      /*and also for touch screens:*/
+                      glass.addEventListener("touchmove", moveMagnifier);
+                      img.addEventListener("touchmove", moveMagnifier);
+                      function moveMagnifier(e) {
+                        var pos, x, y;
+                        /*prevent any other actions that may occur when moving over the image*/
+                        e.preventDefault();
+                        /*get the cursor's x and y positions:*/
+                        pos = getCursorPos(e);
+                        x = pos.x;
+                        y = pos.y;
+                        /*prevent the magnifier glass from being positioned outside the image:*/
+                        if (x > img.width - (w / zoom)) {x = img.width - (w / zoom);}
+                        if (x < w / zoom) {x = w / zoom;}
+                        if (y > img.height - (h / zoom)) {y = img.height - (h / zoom);}
+                        if (y < h / zoom) {y = h / zoom;}
+                        /*set the position of the magnifier glass:*/
+                        glass.style.left = (x - w) + "px";
+                        glass.style.top = (y - h) + "px";
+                        /*display what the magnifier glass "sees":*/
+                        glass.style.backgroundPosition = "-" + ((x * zoom) - w + bw) + "px -" + ((y * zoom) - h + bw) + "px";
+                      }
+                      function getCursorPos(e) {
+                        var a, x = 0, y = 0;
+                        e = e || window.event;
+                        /*get the x and y positions of the image:*/
+                        a = img.getBoundingClientRect();
+                        /*calculate the cursor's x and y coordinates, relative to the image:*/
+                        x = e.pageX - a.left;
+                        y = e.pageY - a.top;
+                        /*consider any page scrolling:*/
+                        x = x - window.pageXOffset;
+                        y = y - window.pageYOffset;
+                        return {x : x, y : y};
+                      }
+                    }
+                </script>
+
+                <script>
+                /* Initiate Magnify Function
+                with the id of the image, and the strength of the magnifier glass:*/
+                magnify("myimage", 3);
+                </script>
+
+                {% else %}
+                <object class="ml-3" data="{{ image_pdf }}" type="application/pdf" width="100%" height="800px"></object>
+                {% endif %}
+            </div>
+            <div class="row">
+                <div class="container col-md-12 ml-3 my-2 bg-form-bground p-4 rounded">
+                    <form action="{{ url_for('bp_ocr.ajout_fournisseur', mode=mode ) }}" method=post class="form-horizontal" role="form">
+
+                    <p class="mb-0"><small>Fournisseur</small></p>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                        </div>
+                        <input type="text" class="form-control border-right-0" name="fourn_new" id="fourn_autre_copie"
+                                  value="{{ liste_ocr[5] }}" placeholder="" aria-label="nouv_fournisseur" autofocus="autofocus" readonly>
+                    </div>
+                    <p class="mb-0"><small>Adresse</small></p>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                        </div>
+                       <input type="text" class="form-control border-right-0" name="adresse_new"
+                                  value="{{ liste_ocr[6] }}" placeholder="" aria-label="adresse" autofocus="autofocus" required>
+                    </div>
+                    <div class="form-group form-inline justify-content-between">
+                        <div>
+                            <p class="mb-0"><small>Catégorie d'entretien du fournisseur</small></p>
+                            <div class="input-group mb-2 pr-1">
+                                <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                                </div>
+                                 <select class="form-control flex-grow-1" name="categorie_new"
+                                                    data-width="100%" autofocus="autofocus" required>
+                                <option hidden value="">Choisir</option>
+                                {% for item in liste_categories %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0"><small>Téléphone (000-000-0000)</small></p>
+                            <div class="input-group mb-2">
+                                   <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                                   </div>
+                                   <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" class="form-control border-right-0" name="tel_new"
+                                          value="{{ liste_ocr[7] }}" style="width:140px;" placeholder="Téléphone" aria-label="contact_tel" autofocus="autofocus" required>
+                            </div>
+                        </div>
+                    </div>
+                    {% if affiche_ajouter==1 %}
+                        <button type="submit" class="btn bg-primary text-white float-right my-1">Ajouter</button>
+                    {% else %}
+                        <button type="button" class="btn bg-primary text-white float-right my-1" disabled>Ajouter</button>
+                    {% endif %}
+                </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function myFunction() {
+      let x = document.getElementById("fourn_autre_copie");
+      let y = document.getElementById("fourn_autre_original");
+      x.value = y.value;
+    }
+</script>
+</body>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" href="../static/bootstrap.css">
+<body>
+<select class="form-select form-select-lg bg-primary text-white" name="ress_select" autofocus="autofocus"
+        onchange="ressource.submit()" aria-label="select-lg example">
+    <option hidden value="">Réserver...</option>
+    {% for item in fill_ressources %}
+    <option value="{{ item[0] }}">{{ item[1] }}</option>
+    {% endfor %}
+</select>
+
+<video width="320" height="240" controls>
+    <source src="../static/movie.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+</body>
+</html>

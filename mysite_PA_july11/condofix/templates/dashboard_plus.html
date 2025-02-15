@@ -1,0 +1,336 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire de datatables : -->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <script src="../static/Chart.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-4">
+            <div class="row">
+                <div class="card-group col-sm-12">
+                    <div class="card bg-danger mt-0 mb-0">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Critique</small></p>
+                            <h4 class="card-text text-center text-white px-0 mb-0 pb-0">{{ indicateurs[0] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[1] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-warning">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Élevée</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[2] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[3] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-primary">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Moyenne</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[4] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[5] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-success">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1" ><small>Non prioritaire</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[6] }}</h4>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>{{ indicateurs[7] }}</small></p>
+                        </div>
+                    </div>
+                    <div class="card bg-light">
+                        <div class="card-body px-0 pt-2 pb-1">
+                            <h5 class="card-text text-center px-0 pb-0 mb-0">{{ indicateurs[8] }}j.</h5>
+                            <p class="card-title_2 text-center px-0 mb-1"><small>Cible: {{ indicateurs[13] }} j.</small></p>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>Âge moyen</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-1">
+                <div class="wrapper ">
+                <div class="text-center">
+                    <div>
+                    <h6>Tickets en cours</h6>
+                    </div>
+                </div>
+                <canvas id="bar-chart" width="400" height="325"></canvas>
+                </div>
+                <script>
+                  //console.log({{intervenant_list|tojson}});
+                  //console.log({{priorite_1|tojson}});
+                  new Chart(document.getElementById("bar-chart"), {
+                      type: 'horizontalBar',
+                      data: {
+                        labels: {{intervenant_list|tojson}},
+                        datasets: [
+                          {
+                          label: 'Critique (4 heures)',
+                          backgroundColor: "#de0f17",
+                          data: {{ priorite_1|tojson }},
+
+                        }, {
+                          label: 'Élevée (48 heures)',
+                          backgroundColor: "#FFA500",
+                          data: {{ priorite_2|tojson }},
+
+                        }, {
+                          label: 'Moyenne (5 jours)',
+                          backgroundColor: "#0000FF",
+                          data: {{ priorite_3|tojson }},
+
+                        }, {
+                          label: 'Non prioritaire (15 jours)',
+                          backgroundColor: "#03C04A",
+                          data: {{ priorite_4|tojson }},
+                        }
+                        ]
+                      },
+                      options: {
+                        hover: true,
+                        indexAxis: 'y',
+                        legend: {
+                          display: false,
+
+                     },
+                        title: {
+                          display: false,
+                          text: 'blabla'
+                        },
+                        scales: {
+                        xAxes: [{ stacked: true }],
+                        yAxes: [{ stacked: true }]
+                        },
+                        responsive: false
+                      }
+                      });
+                </script>
+            </div>
+            <div class="row mt-1">
+                <div class="card-group col-sm-12">
+                    <div class="card bg-dark">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>En cours-AAD</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[9] }}</h4>
+                        </div>
+                    </div>
+                    <div class="card bg-secondary">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1"><small>Attente facture-AAD</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[10] }}</h4>
+                        </div>
+                    </div>
+                    <div class="card bg-info">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title text-center px-0 mb-1" ><small>Fermés-AAD</small></p>
+                            <h4 class="card-text text-center text-white mb-0">{{ indicateurs[11] }}</h4>
+                        </div>
+                    </div>
+                    <div class="card bg-light">
+                        <div class="card-body px-0 pt-1 pb-1">
+                            <p class="card-title_1 text-center px-0 mb-0"><small>Heures estimées</small></p>
+                            <p class="card-title_1 text-center px-0 mb-0"><small>(en cours - employés)</small></p>
+                            <h5 class="card-text text-center px-0 pb-0 mb-0">{{ indicateurs[12] }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="wrapper">
+                        <div class="text-center">
+                            <div>
+                            <h6 class="text-center">Dépenses par catégorie: {{ ytd_pourcent }} Année à Date (AAD)</h6>
+                            </div>
+                        </div>
+                        <canvas id="bar-chart_1" width="380" height="315"></canvas>
+                    </div>
+                    <script>
+
+                      new Chart(document.getElementById("bar-chart_1"), {
+                      type: 'horizontalBar',
+                      data: {
+                        labels: {{labels_12|tojson}},
+                        datasets: [
+                          {
+                          label: 'Budget',
+                          backgroundColor: "#FFA500",
+                          data: {{ budget_12|tojson }},
+
+                        }, {
+                          label: 'Actuel',
+                          backgroundColor: "#0000FF",
+                          data: {{ records_12|tojson }},
+
+                        }
+                        ]
+                      },
+                      options: {
+                        hover: true,
+                        indexAxis: 'y',
+                        legend: {
+                          display: false,
+
+                     },
+                        title: {
+                          display: false,
+                          text: 'blabla'
+                        },
+                        scales: {
+                        xAxes: [{ stacked: false}],
+                        yAxes: [{ stacked: false }]
+                        },
+                        responsive: false
+                      }
+                      });
+                    </script>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="datagrid">
+                        <style>
+                        table {
+                            font-family: arial, sans-serif;
+                            font-size: 9px;
+                            border-collapse: collapse;
+                            width: 100%;
+                        }
+                        th {
+                            border: 1px solid #dddddd;
+                            text-align: right;
+                            color: white;
+                            background-color: grey;
+                            padding: 3px;
+                        }
+                        td {
+                            border: 1px solid #dddddd;
+                            font-weight:bold;
+                            text-align: right;
+                            padding: 3px;
+                        }
+
+                        tr:nth-child(even) {
+                            background-color: #dddddd;
+                        }
+                        </style>
+                        <table>
+                            <tr>
+                                <th width="130px"><strong>Type de travail</strong></th>
+                                <th width="100px"><strong>Total $ (TTC)</strong></th>
+                                <th width="100px"><strong></strong></th>
+                            </tr>
+                             {% for item in tableau_list %}
+                            <tr>
+                                <td width="130px">{{ item[0] }}</td>
+                                <td width="100px">{{ item[1] }}</td>
+                                <td width="100px">{{ item[2] }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="row">
+                <div class="col-12 d-flex justify-content-center">
+                    <div class="wrapper">
+                        <div class="text-center">
+                            <div>
+                            <h6>Historique des tickets par tag</h6>
+                            </div>
+                        </div>
+                        <canvas id="pie-chart" width="280" height="170"></canvas>
+                    </div>
+                    <script>
+                      new Chart(document.getElementById("pie-chart"), {
+                          type: 'pie',
+                          data: {
+                            labels: {{labels_pie|tojson}},
+                            datasets: [
+                              {
+                              label: "",
+                              backgroundColor: ["#fff100","#ff8c00","#e81123","#ec008c","#68217a","#00188f","#00bcf2","#00b294","#009e49","#bad80a"],
+                              data: {{ tickets_pie|tojson }},
+                            }
+                          ]
+                          },
+                          options: {
+                              legend: { display: false },
+                              responsive: false,
+                              title: {
+                                display: false,
+                                text: 'Titre ici'
+                              }
+                          },
+                          });
+                    </script>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="wrapper">
+                        <div class="text-center">
+                            <div>
+                            <h6>Heures estimées - Entretien préventif</h6>
+                            </div>
+                        </div>
+                        <canvas id="bar-chart_2" width="380" height="250"></canvas>
+                    </div>
+                    <script>
+                      new Chart(document.getElementById("bar-chart_2"), {
+                          type: 'bar',
+                          data: {
+                            labels: {{labels_preventif|tojson}},
+                            datasets: [
+                              {
+                              label: 'Fournisseurs',
+                              backgroundColor: "#ec008c",
+                              data: {{ heures_fournisseurs|tojson }},
+                              type: 'bar',
+
+                            }, {
+                              label: 'Employés',
+                              backgroundColor: "#fff100",
+                              data: {{ heures_employes|tojson }},
+
+                            }
+                            ]
+                          },
+                          options: {
+                            hover: true,
+                            legend: {
+                              display: false,
+
+                         },
+                            title: {
+                              display: false,
+                              text: 'blabla'
+                            },
+                            scales: {
+                            xAxes: [{ stacked: true }],
+                            yAxes: [{ stacked: true }]
+                            },
+                            responsive: false
+                          }
+                          });
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+{% endblock content %}

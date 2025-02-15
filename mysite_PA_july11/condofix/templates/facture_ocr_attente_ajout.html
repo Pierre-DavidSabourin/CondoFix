@@ -1,0 +1,255 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="180 ;URL=//www.condofix.ca">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao,entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+<body>
+<div class="container mt-4">
+
+    <div class="row col-12">
+        <div class="col-12 text-center">
+            <h1>Saisie de facture attribuée à un ticket</h1>
+        </div>
+        <div class="col-4">
+               </div>
+        </div>
+    </div>
+    <br>
+    <div class="row col-12 mt-3">
+        <div class="container col-md-5 bg-form-bground p-4 rounded mb-2">
+        <form action="{{ url_for('bp_ocr.facture_ocr_attente', args=[mode,liste_ticket[0]]) }}" method=post class="form-horizontal" role="form">
+
+            <input type="hidden" name="ident_ticket" value="{{ liste_ticket[0] }}">
+            <input type="hidden"  name="id_fournisseur" value="{{ liste_ocr[2] }}">
+            <input type="hidden"  name="type_fichier" value="{{ liste_ocr[1] }}">
+            <p class="mb-0"><small><b>Description du ticket no. {{ liste_ticket[0] }}</b></small></p>
+            <div class="input-group mb-2">
+                    <label><small>{{ liste_ticket[2] }}</small></label>
+            </div>
+            <div class="form-group form-inline justify-content-between">
+                <label><small><b>Intervenant:&nbsp</b>{{ liste_ticket[9] }}</small></label>
+                <label><small><b>Ticket complété:&nbsp</b>{{ liste_ticket[3] }}</small></label>
+                <label><small><b>Heures estimées/requises:&nbsp</b>{{ liste_ticket[4] }} / {{ liste_ticket[5] }}</small></label>
+                <label><small><b>Visites requises:&nbsp</b>{{ liste_ticket[6] }}</small></label>
+            </div>
+            <p class="mb-0"><small>Fournisseur</small></p>
+            <div class="input-group mb-2 pr-1">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                </div>
+                 <select class="form-control flex-grow-1" name="fourn_select" id="fournisseur_select" onchange="categoryChange();"
+                                    data-width="100%" autofocus="autofocus" required>
+                <option hidden value="">Choisir</option>
+                {% for item in liste_intervenants %}
+                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <script>
+            function selectElement(id, valueToSelect) {
+                let element = document.getElementById(id);
+                element.value = valueToSelect;
+            }
+            selectElement("fournisseur_select","{{ liste_ocr[2] }}")
+            </script>
+            <p class="mb-0"><small>Fournisseur (autre)</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                </div>
+                <input type="text" class="form-control border-right-0" name="fourn_autre" id="fourn_autre_original" onkeyup="myFunction()"
+                          value="{{ liste_ocr[5] }}" placeholder="" aria-label="autre_fournisseur" autofocus="autofocus">
+            </div>
+            <div class="form-group form-inline justify-content-between mb-3">
+                <div>
+                    <p class="mb-0"><small>Date</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                        </div>
+                        <input type="date" class="form-control border-right-0" name="date" id="date"
+                              style="width:170px;" value="{{ liste_ocr[9] }}" aria-label="date" autofocus="autofocus" required>
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-0"><small>Numéro de facture</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                        </div>
+                        <input type="text" class="form-control border-right-0" name="no_facture" placeholder="Non trouvé"
+                              style="width:120px;" value="{{ liste_ocr[8] }}" aria-label="no_facture" autofocus="autofocus" required>
+                    </div>
+                </div>
+            </div>
+            <p class="mb-0"><small>Total avec taxes ($)</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                </div>
+                <input type="number" step=".01" class="form-control border-right-0" name="total_facture_taxes" placeholder="Total avec taxes ($)"
+                      value="{{ liste_ocr[10] }}"  aria-label="total_facture_taxes" autofocus="autofocus" required>
+            </div>
+
+            {% if liste_affichage[0][2]==1 %}
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0"><small>Main d'oeuvre (hors taxes)</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                        </div>
+                        <input type="number" step=".01" class="form-control border-right-0" name="mdo" placeholder="Main d'oeuvre ($)"
+                              aria-label="mdo" autofocus="autofocus">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-0"><small>Matériel (hors taxes)</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                        </div>
+                        <input type="number" step=".01" class="form-control border-right-0" name="mat" placeholder="Matériel ($)"
+                              aria-label="mat" autofocus="autofocus">
+                    </div>
+                </div>
+            </div>
+            {% else %}
+
+            {% endif %}
+
+            <div class="form-group form-inline justify-content-between">
+                {% if mode== 'dz' %}
+                <a class="btn bg-danger text-white float-right mt-2 mb-4" role="button" href="{{ url_for('bp_ocr.annulation', args=['dz',liste_ticket[0]]) }}">Annuler</a>
+                {% else %}
+                <a class="btn bg-danger text-white float-right mt-2 mb-4" role="button" href="{{ url_for('bp_ocr.annulation', args=['dnload',liste_ticket[0]]) }}">Annuler</a>
+                {% endif %}
+                <button type="submit" class="btn bg-steel text-white float-right mt-2 mb-4">Soumettre</button>
+            </div>
+            <p style="padding: 10px; border: 2px solid red;"><small><b>Avertissement: </b>Étant donné le format hautement variable
+                des factures pouvant affecter la lecture OCR, assurez-vous de bien vérifier tous les champs avant de soumettre les données saisies.</small></p>
+        </form>
+        </div>
+
+        <div class="col-7">
+            <div class="row">
+                {% if liste_ocr[1]=='image' %}
+<!--                <img  class="img-fluid float-right ml-3" src="{{ jpg_orig}}">-->
+                <div class="img-magnifier-container img-fluid float-right ml-3">
+                      <img id="myimage" src="{{ jpg_orig}}" width="700" height="900">
+                </div>
+                <style>
+                * {box-sizing: border-box;}
+
+                .img-magnifier-container {
+                  position:relative;
+                }
+
+                .img-magnifier-glass {
+                  position: absolute;
+                  border: 3px solid #000;
+                  border-radius: 50%;
+                  cursor: none;
+                  /*Set the size of the magnifier glass:*/
+                  width: 100px;
+                  height: 100px;
+                }
+                </style>
+                <script>
+                    function magnify(imgID, zoom) {
+                      var img, glass, w, h, bw;
+                      img = document.getElementById(imgID);
+                      /*create magnifier glass:*/
+                      glass = document.createElement("DIV");
+                      glass.setAttribute("class", "img-magnifier-glass");
+                      /*insert magnifier glass:*/
+                      img.parentElement.insertBefore(glass, img);
+                      /*set background properties for the magnifier glass:*/
+                      glass.style.backgroundImage = "url('" + img.src + "')";
+                      glass.style.backgroundRepeat = "no-repeat";
+                      glass.style.backgroundSize = (img.width * zoom) + "px " + (img.height * zoom) + "px";
+                      bw = 3;
+                      w = glass.offsetWidth / 2;
+                      h = glass.offsetHeight / 2;
+                      /*execute a function when someone moves the magnifier glass over the image:*/
+                      glass.addEventListener("mousemove", moveMagnifier);
+                      img.addEventListener("mousemove", moveMagnifier);
+                      /*and also for touch screens:*/
+                      glass.addEventListener("touchmove", moveMagnifier);
+                      img.addEventListener("touchmove", moveMagnifier);
+                      function moveMagnifier(e) {
+                        var pos, x, y;
+                        /*prevent any other actions that may occur when moving over the image*/
+                        e.preventDefault();
+                        /*get the cursor's x and y positions:*/
+                        pos = getCursorPos(e);
+                        x = pos.x;
+                        y = pos.y;
+                        /*prevent the magnifier glass from being positioned outside the image:*/
+                        if (x > img.width - (w / zoom)) {x = img.width - (w / zoom);}
+                        if (x < w / zoom) {x = w / zoom;}
+                        if (y > img.height - (h / zoom)) {y = img.height - (h / zoom);}
+                        if (y < h / zoom) {y = h / zoom;}
+                        /*set the position of the magnifier glass:*/
+                        glass.style.left = (x - w) + "px";
+                        glass.style.top = (y - h) + "px";
+                        /*display what the magnifier glass "sees":*/
+                        glass.style.backgroundPosition = "-" + ((x * zoom) - w + bw) + "px -" + ((y * zoom) - h + bw) + "px";
+                      }
+                      function getCursorPos(e) {
+                        var a, x = 0, y = 0;
+                        e = e || window.event;
+                        /*get the x and y positions of the image:*/
+                        a = img.getBoundingClientRect();
+                        /*calculate the cursor's x and y coordinates, relative to the image:*/
+                        x = e.pageX - a.left;
+                        y = e.pageY - a.top;
+                        /*consider any page scrolling:*/
+                        x = x - window.pageXOffset;
+                        y = y - window.pageYOffset;
+                        return {x : x, y : y};
+                      }
+                    }
+                </script>
+
+                <script>
+                /* Initiate Magnify Function
+                with the id of the image, and the strength of the magnifier glass:*/
+                magnify("myimage", 3);
+                </script>
+
+                {% else %}
+                <object class="ml-3" data="{{ image_pdf }}" type="application/pdf" width="100%" height="800px"></object>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function myFunction() {
+      let x = document.getElementById("fourn_autre_copie");
+      let y = document.getElementById("fourn_autre_original");
+      x.value = y.value;
+    }
+</script>
+</body>
+{% endblock %}

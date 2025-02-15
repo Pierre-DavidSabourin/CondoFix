@@ -1,0 +1,277 @@
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao,entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <script>
+        //pour permettre le choix d'aucun tag
+        function hide_tag_1() {
+            if (document.getElementById("tag_select").style.display == 'none') {
+                (document.getElementById("tag_select").style.display = 'block');
+            } else {
+                document.getElementById("tag_select").style.display = 'none';
+
+            }
+        }
+    </script>
+
+</head>
+<body>
+<div class="container mt-4">
+
+    <div class="row col-12">
+        <div class="col-12 text-center">
+            <h1>Saisie de facture sans ticket</h1>
+        <div>
+        <div class="col-4">
+               </div>
+        </div>
+    </div>
+    <br>
+    <div class="row col-12 mt-3">
+        <input type="hidden"  name="type_fichier" value="{{ liste_ocr[1] }}">
+        <div class="container col-md-5 bg-form-bground p-4 rounded mb-2">
+            <form action="{{ url_for('facture_ocr') }}" method=post class="form-horizontal" role="form">
+            <input type="hidden"  name="id_fournisseur" value="{{ liste_ocr[2] }}">
+            <p class="mb-0"><small>Intervenant (fournisseur)</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-map-marker"></i></span>
+                </div>
+                <input type="text" class="form-control border-right-0" name="fournisseur" placeholder=""
+                      value="{{ liste_ocr[3] }}" aria-label="fournisseur" autofocus="autofocus" readonly>
+            </div>
+            <p class="mb-0"><small>Fournisseur (autre)</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                </div>
+                <input type="text" class="form-control border-right-0" name="fourn_autre" id="fourn_autre_original" onkeyup="myFunction()"
+                          value="{{ liste_ocr[5] }}" placeholder="Fournisseur trouvé dans CondoFix" aria-label="autre_fournisseur" autofocus="autofocus" required>
+            </div>
+            <div class="form-group form-inline justify-content-between mb-3">
+                <div>
+                    <p class="mb-0"><small>Date</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                        </div>
+                        <input type="date" class="form-control border-right-0" name="date" id="date" placeholder="Date de l'entretien"
+                              style="width:170px;" value="{{ liste_ocr[9] }}" aria-label="date" autofocus="autofocus" required>
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-0"><small>Numéro de facture</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                        </div>
+                        <input type="text" class="form-control border-right-0" name="no_facture" placeholder="Non trouvé"
+                              style="width:120px;" value="{{ liste_ocr[8] }}" aria-label="no_facture" autofocus="autofocus" required>
+                    </div>
+                </div>
+            </div>
+            <p class="mb-0"><small>Catégorie</small></p>
+            <div class="input-group mb-2 pr-1">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                </div>
+                 <select class="form-control flex-grow-1" name="categorie" id="categorie_select" onchange="categoryChange();"
+                                    data-width="100%" autofocus="autofocus" required>
+                <option hidden value="">Choisir</option>
+                {% for item in liste_categories %}
+                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <script>
+            function selectElement(id, valueToSelect) {
+                let element = document.getElementById(id);
+                element.value = valueToSelect;
+            }
+            selectElement("categorie_select","{{ liste_ocr[4] }}")
+            </script>
+            <p class="mb-0"><small>Tag</small></p>
+             <div class="input-group mb-2 pr-1">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                </div>
+                 <select class="form-control flex-grow-1" name="id_equipement" id="tag_select"
+                                    data-width="100%" autofocus="autofocus">
+                <option hidden value="">Choisir</option>
+                {% for item in liste_equipements %}
+                <option value="{{ item[0] }}">{{ item[1] }} {{ item[2] }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            <div class="form-group form-inline justify-content-between mb-3">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" onchange="hide_tag_1();" name="aucun_tag" value="1" id="no_tag">
+                    <label class="form-check-label" for="aucun_tag">Aucun tag</label>
+                </div>
+            </div>
+            <div class="form-group form-inline justify-content-between mb-3">
+                <div>
+                    <p class="mb-0"><small>Type de travail</small></p>
+                    <div class="input-group mb-2 pr-1">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                        </div>
+                        <select class="form-control flex-grow-1" id="type_select" name="type_travail" style="width:220px;" data-width="100%" autofocus="autofocus" required>
+                            <option hidden value="">Choisir..</option>
+                            <option value="1">Entretien et réparations</option>
+                            <option value="2">Fonds de prévoyance</option>
+                            <option value="3">Préventif</option>
+                            <option value="4">Projets d'amélioration</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-0"><small>Heures requises</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                        </div>
+                        <input type="number" class="form-control border-right-0" step="0.5" name="hres_req" placeholder=""
+                              style="width:80px;" aria-label="hres_est" autofocus="autofocus">
+                    </div>
+                </div>
+            </div>
+            <p class="mb-0"><small>Emplacement</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-map-marker"></i></span>
+                </div>
+                <input type="text" class="form-control border-right-0" name="emplacement" placeholder="Lieu de l'entretien ou équipement"
+                      aria-label="emplacement" autofocus="autofocus">
+            </div>
+            <p class="mb-0"><small>Description</small></p>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                </div>
+                <textarea class="form-control border-right-0" maxlength="200" name="desc_travail" rows="4"
+                          placeholder="Description du travail accompli" aria-label="desc_travail" autofocus="autofocus" required>{{ liste_ocr[13] }}</textarea>
+            </div>
+            <p class="mb-0"><small>Total avec taxes ($)</small></p>
+            <div class="input-group mb-2">
+                <div class="input-group-prepend bg-white">
+                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                </div>
+                <input type="number" step=".01" class="form-control border-right-0" name="total_facture_taxes" placeholder="Total avec taxes ($)"
+                      value="{{ liste_ocr[10] }}"  aria-label="total_facture_taxes" autofocus="autofocus" required>
+            </div>
+            <div class="form-group form-inline justify-content-between">
+                <div>
+                    <p class="mb-0"><small>TPS ($)</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                        </div>
+                        <input type="number" step=".01" class="form-control border-right-0" name="tps" placeholder=""
+                              value="{{ liste_ocr[11] }}" style="width:110px;" aria-label="mdo" autofocus="autofocus">
+                    </div>
+                </div>
+                <div>
+                    <p class="mb-0"><small>TVQ ($)</small></p>
+                    <div class="input-group mb-2">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white" ><i class="fa fa-dollar"></i></span>
+                        </div>
+                        <input type="number" step=".01" class="form-control border-right-0" name="mat" placeholder=""
+                              value="{{ liste_ocr[12] }}" style="width:110px;" aria-label="mat" autofocus="autofocus">
+                    </div>
+                </div>
+                <div class="form-group form-inline justify-content-between mb-1">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="ferme_ticket" value="0" id="ferme_ticket">
+                    <label class="form-check-label" for="aucun_tag">Fermer le ticket</label>
+                </div>
+            </div>
+            </div>
+            <div class="form-group form-inline justify-content-between">
+                <a class="btn bg-danger text-white float-right mt-2 mb-4" role="button" href="{{ url_for('annulation') }}">Annuler</a>
+                <button type="submit" class="btn bg-steel text-white float-right mt-2 mb-4">Soumettre</button>
+            </div>
+            <p style="padding: 10px; border: 2px solid red;"><small><b>Avertissement: </b>Étant donné le format hautement variable
+                des factures pouvant affecter la lecture OCR, assurez-vous de bien vérifier tous les champs avant de soumettre les données saisies.</small></p>
+            </form>
+        </div>
+
+        <div class="col-7">
+            <div class="row">
+                {% if liste_ocr[1]=='image' %}
+                <img  class="img-fluid float-right ml-3" src="../static/temp_images/resized_image.jpg">
+                {% else %}
+                <object class="ml-3" data="../static/temp_images/temp_image_test.pdf" type="application/pdf" width="100%" height="800px"></object>
+                {% endif %}
+            </div>
+            <div class="row">
+                <div class="container col-md-12 ml-3 my-2 bg-form-bground p-4 rounded">
+                    <form action="{{ url_for('ajout_fournisseur') }}" method=post class="form-horizontal" role="form">
+
+                    <p class="mb-0"><small>Fournisseur</small></p>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                        </div>
+                        <input type="text" class="form-control border-right-0" name="fourn_new" id="fourn_autre_copie"
+                                  value="{{ liste_ocr[5] }}" placeholder="Fournisseur trouvé dans CondoFix" aria-label="nouv_fournisseur" autofocus="autofocus" readonly>
+                    </div>
+                    <p class="mb-0"><small>Adresse</small></p>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                        </div>
+                       <input type="text" class="form-control border-right-0" name="adresse_new"
+                                  value="{{ liste_ocr[6] }}" placeholder="" aria-label="adresse" autofocus="autofocus" required>
+                    </div>
+                    <div class="form-group form-inline justify-content-between">
+                        <div>
+                            <p class="mb-0"><small>Catégorie d'entretien du fournisseur</small></p>
+                            <div class="input-group mb-2 pr-1">
+                                <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                                </div>
+                                 <select class="form-control flex-grow-1" name="categorie_new"
+                                                    data-width="100%" autofocus="autofocus" required>
+                                <option hidden value="">Choisir</option>
+                                {% for item in liste_categories %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="mb-0"><small>Téléphone (000-000-0000)</small></p>
+                            <div class="input-group mb-2">
+                                   <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
+                                   </div>
+                                   <input type="text" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" class="form-control border-right-0" name="tel_new"
+                                          value="{{ liste_ocr[7] }}" style="width:100px;" placeholder="Téléphone" aria-label="contact_tel" autofocus="autofocus" required>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn bg-primary text-white float-right my-1">Ajouter</button>
+                </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function myFunction() {
+      let x = document.getElementById("fourn_autre_copie");
+      let y = document.getElementById("fourn_autre_original");
+      x.value = y.value;
+    }
+</script>
+</body>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="../static/font-awesome-4.7.0/css/font-awesome.min.css">
+</head>
+<div class="text-center" >
+            <h4>Nouveau client</h4>
+</div>
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_central.client_ajout') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-secondary text-white rounded">
+                 <!--                <form class="form-horizontal" role="form">-->
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <label for="client_nom"><b>Nom du client</b></label>
+                    <input class="form-control form-control-sm" type="text" maxlength="22" name="client_nom" autofocus="autofocus">
+                    <!--                </form>-->
+                </div>
+                <div class="form-group form-inline justify-content-between mt-3">
+                    <label for="database"><b>Database</b></label>
+                    <input class="form-control form-control-sm" type="text" maxlength="12" name="database" autofocus="autofocus">
+                    <!--                </form>-->
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="carnet_plus">
+                    <label class="form-check-label" for="carnet_plus">Carnet Plus</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="module_rez">
+                    <label class="form-check-label" for="module_rez">Module de réservations</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="actif">
+                    <label class="form-check-label" for="actif">Actif</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-success float-right mb-3" name="btn_enreg">Soumettre</button>
+            </div>
+            <br>
+    </form>
+</div>
+</body>

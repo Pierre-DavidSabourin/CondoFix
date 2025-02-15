@@ -1,0 +1,138 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_reservations.reservation_ajout_admin') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Nouvelle réservation</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-0"><small>Ressource</small></p>
+                        <div class="input-group mb-2 pr-1">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                               </div>
+                               <select class="form-control flex-grow-1" name="ress_select" id="ress_select" data-width="100%" autofocus="autofocus" required>
+                                <option hidden value="">Choisir..</option>
+                                {% for item in fill_ressources %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                                </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-0"><small>Numéro d'unité privative</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                            </div>
+                            <input type="number" step="1" class="form-control border-right-0" name="no_unite" placeholder="Numéro"
+                                  aria-label="no_unite" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-0"><small>Date</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_rez" id="date" placeholder="Date voulue"
+                                  aria-label="codeGL" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-0"><small>Heure</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="time" class="form-control border-right-0" id="time" name="heure_rez" placeholder="Budget annuel"
+                                   value="12:00" aria-label="budget" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-0"><small>Durée</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" step="0.5" class="form-control border-right-0" name="duree_rez" placeholder="Durée en heures"
+                                  aria-label="duree_rez" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-0"><small>Jours consécutifs</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="number" step="1" class="form-control border-right-0" name="jrs_consecutifs" value="1"
+                                  aria-label="jours_consecutifs" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p class="mb-0"><small>Notes</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                            </div>
+                            <textarea class="form-control border-right-0" maxlength="200" name="note" rows="3"
+                                      placeholder="Notes applicables à la réservation" aria-label="note" autofocus="autofocus"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <p class="mb-0"><small><b>Pour ressources facturables seulement:</b></small></p>
+                        <p class="mb-0"><small>Courriel</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
+                            </div>
+                            <input type="email" class="form-control border-right-0" name="courriel" placeholder="Votre adresse courriel"
+                                  aria-label="courriel" autofocus="autofocus">
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <p class="mb-0"><small>Mode de paiement</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-dollar"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" data-width="100" id="mode_select" name="mode_paiement" autofocus="autofocus">
+                                <option hidden value="">Choisir..</option>
+                                {% for item in fill_modes_paiement %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+                <button type="submit" class="btn bg-steel text-white float-right mt-2 mb-1">Soumettre</button>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

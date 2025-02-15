@@ -1,0 +1,112 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire de datatables : -->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+    <script src="../static/Chart.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-8">
+            <div class="wrapper">
+                <div class="form-group form-inline justify-content-between">
+                    <div>
+                    <h4>Achalandage par type d'usager</h4>
+                    <p><small>Pour les 11 derniers mois.</small></p>
+                    </div>
+                </div>
+                <canvas id="bar-chart" width="750" height="350"></canvas>
+            </div>
+            <script>
+              //console.log({{labels_mois|tojson}});
+              //console.log({{logins_type_5|tojson}});
+              new Chart(document.getElementById("bar-chart"), {
+                  type: 'bar',
+                  data: {
+                    labels: {{labels_mois|tojson}},
+                    datasets: [
+                      {
+                      label: 'Copropriétaires',
+                      backgroundColor: "#808080",
+                      data: {{ logins_type_5|tojson }},
+                      type: 'bar',
+
+                    }, {
+                      label: 'Membres de CA',
+                      backgroundColor: "#caf270",
+                      data: {{ logins_type_4|tojson }},
+
+                    }, {
+                      label: 'Employés',
+                      backgroundColor: "#45c490",
+                      data: {{ logins_type_3|tojson }},
+
+                    }, {
+                      label: 'Admin CondoFix',
+                      backgroundColor: "#008d93",
+                      data: {{ logins_type_2|tojson }},
+                    }
+                    ]
+                  },
+                  options: {
+                    hover: true,
+                    legend: {
+                      display: false,
+
+                 },
+                    title: {
+                      display: false,
+                      text: 'blabla'
+                    },
+                    scales: {
+                    xAxes: [{ stacked: true }],
+                    yAxes: [{ stacked: true }]
+                    },
+                    responsive: false
+                  }
+                  });
+            </script>
+        </div>
+        <div class="col-sm-4">
+            <div class="wrapper">
+                <h4>Cumulatif des logins: {{total_logins}}</h4>
+                <p><small>Depuis {{date_debut}}.</small></p>
+                <canvas id="pie-chart" width="200" height="175"></canvas>
+            </div>
+            <script>
+              //console.log({{liste_etiq_cum|tojson}});
+              //console.log({{liste_valeurs_cum|tojson}});
+              new Chart(document.getElementById("pie-chart"), {
+                  type: 'pie',
+                  data: {
+                    labels: {{liste_etiq_cum|tojson}},
+                    datasets: [
+                      {
+                      label: 'Cumulatif des logins par type',
+                      backgroundColor: ["#008d93","#45c490","#caf270","#808080"],
+                      data: {{ liste_valeurs_cum|tojson }},
+                    }
+                  ]
+                  },
+                  options: {
+                      legend: { display: false },
+                      title: {
+                        display: false,
+                        text: 'Titre ici'
+                      }
+                  },
+                  });
+            </script>
+        </div>
+    </div>
+</div>
+</body>
+{% endblock content %}

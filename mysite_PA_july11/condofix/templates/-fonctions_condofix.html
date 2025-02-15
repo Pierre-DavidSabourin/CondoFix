@@ -1,0 +1,98 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<body>
+<div class="container-fluid">
+
+    <div class="row justify-content-between">
+        <div class="container col-5">
+            <h5>Fonctionnalités</h5>
+            <h1>Suivre le profil de l'usager</h1>
+            <p>Les nombreuses fonctionnalités de CondoFix sont partagées par 4 profils d'usager:</p>
+            <ul>
+              <li>Administrateurs (au C.A.)</li>
+              <li>Gestionnaire</li>
+              <li>Employé (concierge)</li>
+              <li>Copropriétaire</li>
+            </ul>
+            <table class="table table-striped small">
+              <thead>
+                <tr>
+                  <th scope="col"><b>FONCTIONNALITÉ</b></th>
+                  <th class= scope="col"><b>DESCRIPTION (voir figure 1)</b></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Gestion de tickets</th>
+                  <td>Suivre les activités d'entretien depuis la création d'un ticket jusqu'à la réception de la facture.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Calendrier d'entretien</th>
+                  <td>Planifier les interventions du carnet d'entretien et générer les tickets automatiquement au moment voulu.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Tableau de bord</th>
+                  <td>Afficher l'état d'avancement des tickets, les dépenses par catégorie, la situation budgétaire et davantage.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Documentation</th>
+                  <td>Afficher tous les documents touchant la copropriété tels que contrats, rapports, procès verbaux et autres.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Gestion des équipements</th>
+                  <td>Inventorier tous les équipements de l'immeuble afin de pouvoir leur attribuer les entretiens et évaluer leur état.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Gestion des intervenants</th>
+                  <td>Connaître en tout temps l'état des travaux confiés aux employés et aux fournisseurs.</td>
+               </tr>
+                <tr>
+                  <th scope="row">Budget d'entretien</th>
+                  <td>Suivre en temps réel l'évolution des dépenses d'entretien par catégorie par rapport au budget annuel.</td>
+                </tr>
+                <tr>
+                  <th scope="row">Factures d'entretien</th>
+                  <td>Répertorier toutes les factures touchant l'entretien de l'immeuble et les exporter au grand livre comptable.</td>
+               </tr>
+               <tr>
+                  <th scope="row">Signalements</th>
+                  <td>Les copropriétaires peuvent transmettre aux administrateurs les demandes pour l'entretien ou autre service.</td>
+               </tr>
+                <tr>
+                  <th scope="row">Contacts</th>
+                  <td>Afficher un bottin de contacts aux copropriétaires (administrateurs, fournisseurs, etc.).</td>
+               </tr>
+                <tr>
+                  <th scope="row">Fonds de prévoyance</th>
+                  <td>Connaître et diffuser l'état actuel du fonds et l'impact de l'inflation réelle sur les projections de l'analyse du fonds.</td>
+               </tr>
+               <tr>
+                  <th scope="row">Réservations (optionnel)</th>
+                  <td>Offrir aux copropriétaires un outil permettant de réserver en ligne les salles et les équipements de l'immeuble.</td>
+                </tr>
+
+              </tbody>
+            </table>
+        </div>
+        <div class="container col-7">
+            <img  class="img-fluid" src="../static/images_publiques/Fonctions.png"/>
+            <p class="text-center"><small><b>Figure 1 </b>- Fonctionnalités principales de CondoFix par profil d'usager (en bleu)</small></p>
+        </div>
+    </div>
+    <a class="btn-lg text-black btn-warning btn-rounded" role="button" href="/video_infos">Vidéo 3 min.</a>
+    <a class="btn-lg text-white btn-danger btn-rounded" role="button" href="/demo">Essai gratuit</a>
+</div>
+</body>
+{% endblock content %}

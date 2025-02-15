@@ -1,0 +1,41 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Centralisez vos réservations de locaux avec CondoFix</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 mt-4">
+            <style>
+                #image1{
+                  border: 1px solid #000;
+                }
+            </style>
+            <h1>Réservations</h1>
+            <h5>Offrez à vos copropriétaires un outil pour réserver en ligne les locaux, piscine, ascenseur et autres ressources du syndicat.</h5>
+            <ul>
+              <li>Chaque ressource est paramétrable selon disponibilité, délai, durée etc.</li>
+              <li>Environnement facile d'utilisation</li>
+              <li>Un copropriétaire peut aisément annuler une réservation</li>
+            </ul>
+            <img  class="img-fluid rounded-0 mb-3" id=image1 width="800" src="../static/images_publiques/Calendrier_Rez.png"/>
+        </div>
+    </div>
+    <div class="row">
+        <a class="btn-lg btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+        <a class="btn-lg text-black btn-warning btn-rounded mx-2 my-4" role="button" href="/video_infos">Vidéo 3 min.</a>
+        <a class="btn-lg text-white btn-danger btn-rounded my-4" role="button" href="/demo">Essai gratuit</a></div>
+    </div>
+</body>
+{% endblock content %}

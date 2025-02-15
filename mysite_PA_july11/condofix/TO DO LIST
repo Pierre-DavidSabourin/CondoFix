@@ -1,0 +1,57 @@
+ÉTAPE 1:
+QA: dans table Factures:
+        Ajout de Scan OCR factures
+    modifier page 'intervenant' (adresse, catégorie, description typique)
+    dans Paramètres:
+        Ajout d'onglet 'factures'
+    tester mécanisme de scan OCR comme il le faut
+
+ÉTAPE 2:
+Ajout de colonne 'en cours d'approbation'
+Modifier versions pour accepter images dans facture en attente (pas de drag & drop)
+Donner droit à ESSENTIEL de sauvegarder les factures
+Mettre en place version démarrage: pages publiques, aide
+Tests en QA
+
+ÉTAPE 3:
+Intégrer 'Trousse de démarrage' dans essai gratuit
+Aller en prod
+Saisir prospects 41-100 manquants
+Préparer envoi 'Scan OCR'
+
+
+*********DÉTAILS***************
+
+VERSIONS:
+    ajout de version 'démarrage'
+    modifier version 'base' pour 'essentiel'
+    créer layout 'démarrage'
+        Factures   Historique    Analyses    Admin (paramètres, intervenants, catégories)   Aide
+    modifier pages html touchées par 'démarrage'
+PAGES PUBLIQUES:
+    modifier page 'bienvenue' pour ajout 'démarrage'
+    modifier page 'produits'
+    ajout page 'OCR'
+ESSAI GRATUIT:
+    ajout test 'OCR' vs. 'Essentiel' vs. 'Plus'
+FACTURE OCR:
+    cacher 'TAGS', 'Fermer ticket' SELON Version
+    ajout case cocher pour 'Afficher les taxes'
+    type de travail: 'Entretien réparation' par défaut?
+    corriger regex montants si '$' avant ou après et pour 9....02: 902$
+FACTURE table:
+    ajout de bouton 'OCR'
+    ajout de colonne 'en cours d'approbation'
+    ajout de rubrique 'description' comme celle du ticket correspondant
+INTERVENANTS:
+    modifier ajout, modifier (et table?)
+        adresse, no. tel principal, catégorie la plus fréquente, description typique
+PARAMÈTRES:
+    onglet 'Factures':
+        Ajout de Nom et adresse du syndicat
+        Approbation requise
+        Niveau minimal en $ pour approbation
+        Adresse courriel de l'approbateur
+        Afficher les taxes sur écran 'Facture sans ticket'
+        Toujours fermer le ticket associé à la facture
+

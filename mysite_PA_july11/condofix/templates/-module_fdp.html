@@ -1,0 +1,42 @@
+{% extends "-public_layout_new.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Suivez l'évolution de votre fonds de prévoyance</title>
+    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
+    <meta name="keywords" content="gmao, entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 mt-4">
+            <style>
+                #image1{
+                  border: 1px solid #000;
+                }
+            </style>
+            <h1>Module de fonds de prévoyance</h1>
+            <h5>Un outil indispensable pour faire le suivi et modéliser le vrai solde de votre fonds</h5>
+            <ul>
+              <li>Génère automatiquement un bon de travail pour chaque intervention selon l'année prévue dans l'analyse</li>
+              <li>Tient compte des dépenses attribuées au fonds de prévoyance</li>
+              <li>Permet aux copropriétaires de connaître la situation du fonds en tout temps</li>
+              <li>Données ajustées: projection du solde du fonds en tenant compte des taux d'inflation et des taux d'intérêt réels</li>
+            </ul>
+            <img  class="img-fluid rounded-0 mb-3" id=image1 src="../static/images_publiques/FDP_Pageweb.png"/>
+        </div>
+    </div>
+    <div class="row">
+        <a class="btn-lg btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+        <a class="btn-lg text-black btn-warning btn-rounded mx-2 my-4" role="button" href="/video_infos">Vidéo 3 min.</a>
+        <a class="btn-lg text-white btn-danger btn-rounded my-4" role="button" href="/demo">Essai gratuit</a></div>
+    </div>
+</body>
+{% endblock content %}

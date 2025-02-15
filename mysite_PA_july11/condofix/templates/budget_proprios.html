@@ -1,0 +1,34 @@
+{% extends "proprios_layout.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Permet le bon layout de la table incluant triage et formatage : -->
+    <link rel="stylesheet" href="../static/styles_1.css">
+    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire' de datatables : -->
+    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="form-inline pull-left mb-2">
+            <h2>Statut du budget d'entretien</h2>
+        </div>
+    </div>
+    <div class="row">
+            <div class="col-sm-6 text-center">
+                <h5>Cumulatif des dépenses d'entretien</h5>
+                <img style="margin:0px; padding:0px;" src="{{ image_1 }}"/>
+            </div>
+            <div class="col-sm-6 text-center">
+                <h5>Catégories les plus actives (tickets)</h5>
+                <img style="margin:0px; padding:0px;" src="{{ image_2 }}"/>
+            </div>
+    </div>
+</div>
+</div>
+</body>
+{% endblock %}
+

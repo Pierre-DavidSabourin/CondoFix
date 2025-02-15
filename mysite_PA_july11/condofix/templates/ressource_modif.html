@@ -1,0 +1,147 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_ressources.ressource_modif', ident_ress=fill_ressource[0][0]) }}" method=post class="form-horizontal" role="form">    <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Modifier une ressource</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Description</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
+                               </div>
+                               <input type="text" class="form-control border-right-0" name="ress_desc" placeholder="Description"
+                                      value="{{ fill_ressource [0][1] }}" aria-label="ress_desc" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Durée maximum de réservation (h.)</small></p>
+                        <div class="input-group mb-2">
+                               <div class="input-group-prepend bg-white">
+                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                               </div>
+                               <input type="number" class="form-control border-right-0" step="0.5" min="0" name="duree_max" placeholder="Durée maximale en heures"
+                                      value="{{ fill_ressource [0][2] }}" aria-label="duree_max" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Délai minimal (h.)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="1" min="0" name="delai_min" placeholder="Délai minimal en heures"
+                                  value="{{ fill_ressource [0][3] }}" aria-label="delai_min" autofocus="autofocus" required">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Délai maximal (jours)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="text" class="form-control border-right-0" step="1" min="0" name="delai_max" placeholder="Délai maximal en jours"
+                                  value="{{ fill_ressource [0][4] }}" aria-label="delai_max" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Heure début permise</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="time" class="form-control border-right-0" name="heure_debut" placeholder="Heure début des réservations"
+                                  value="{{ fill_ressource [0][13] }}" aria-label="heure_debut" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Heure fin permise</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="time" class="form-control border-right-0" name="heure_fin" placeholder="Heures fin des réservations"
+                                  value="{{ fill_ressource [0][14] }}" aria-label="heure_fin" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Intervalle entre réservations (h.)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="0.1" min="0" name="intervalle" placeholder="Intervalle en heures"
+                                  value="{{ fill_ressource [0][10] }}" aria-label="intervalle" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Jours consécutifs</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" step="1" min="0" name="jrs_consecutifs" placeholder="Nombre de jours"
+                                  value="{{ fill_ressource [0][5] }}" aria-label="jrs_consecutifs" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Date début de non-disponibilité</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_debut_non_dispo" placeholder="Début de non-disponibilité"
+                                  value="{{ fill_ressource [0][8] }}" aria-label="date_debut_non_dispo" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Durée de non-disponibilité (h.)</small></p>
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" min="0" step="1" name="duree_non_dispo" placeholder="Heures de non-disponibilité"
+                                  value="{{ fill_ressource [0][9] }}" aria-label="duree_non_dispo" autofocus="autofocus" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            {% if (fill_ressource [0][11] ==0): %}
+                            <input type="checkbox" class="form-check-input"  name="facturable">
+                            {% else %}
+                            <input type="checkbox" class="form-check-input"  name="facturable" checked>
+                            {% endif %}
+                            <label class="form-check-label" for="facturable">Facturable</label>
+                        </div>
+                        <div class="form-check">
+                            {% if (fill_ressource [0][12] ==0): %}
+                            <input type="checkbox" class="form-check-input"  name="actif">
+                            {% else %}
+                            <input type="checkbox" class="form-check-input"  name="actif" checked>
+                            {% endif %}
+                            <label class="form-check-label" for="actif">Actif</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn bg-steel text-white float-right mb-2">Soumettre</button>
+                    </div>
+                </div>
+            </div>
+    </form>
+</div>
+</body>
+{% endblock content %}

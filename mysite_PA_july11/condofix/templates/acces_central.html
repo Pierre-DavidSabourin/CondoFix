@@ -1,0 +1,29 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>CondoFix</title>
+    <!--    icone sur onglet-->
+    <link rel="icon" href="../static/ToolsIcon.png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="../static/bootstrap.css">
+    <link rel="stylesheet" href="../static/styles_1.css">
+</head>
+<body>
+<div class="container-fluid">
+    <body class="row">
+        <div class="col-12">
+            <br>
+            <br>
+            <form action="{{ url_for('bp_central.central_table', via_page_acces='oui') }}" method=post class="form-horizontal" role="form">
+            <div class="col-5">
+                <div class="form-group form-inline justify-content-between mb-3">
+                    <label for="mot_passe"><b>Mot de passe</b></label>
+                    <input class="form-control form-control-sm" style="width:280px;" type="password" value="" name="mot_passe" autofocus="autofocus" required>
+                </div>
+                <button type="submit" class="btn bg-steel text-white float-right mb-3" name="btn_enreg">Soumettre</button>
+            </div>
+        </div>
+</body>
+{% endblock content %}

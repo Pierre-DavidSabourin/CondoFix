@@ -1,0 +1,110 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category }}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<body>
+<div class="list-group">
+    <form action="{{ url_for('bp_tickets.resultat_tickets') }}" method=post class="form-horizontal" role="form">
+        <div class="row">
+            <div class="container col-md-6 bg-form-bground p-4 rounded">
+                <div class="text-center mb-3" >
+                    <h4 class="text-secondary">Recherche de ticket (s)</h4>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Numéro du ticket</small></p>
+                        <div class="input-group mb-1">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-hashtag"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" name="ID_Ticket" placeholder="Numéro du ticket recherché"
+                                  aria-label="ID_Ticket" autofocus="autofocus">
+                        </div>
+                        <p class="mb-0"><small><b>Plage de dates prévues</b></small></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Intervenant</small></p>
+                        <div class="input-group mt-1 mb-2">
+                            <div class="input-group-prepend bg-white">
+                            <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                       </div>
+                           <select class="form-control flex-grow-1" name="intervenant" data-width="100%" autofocus="autofocus">
+                                <option hidden>Intervenant</option>
+                                {% for item in liste_intervenants %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Du</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_debut" placeholder="Date du début de la plage"
+                                  value="" aria-label="date_debut" autofocus="autofocus">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Au</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                            </div>
+                            <input type="date" class="form-control border-right-0" name="date_fin" placeholder="Date de fin de la plage"
+                                  value="" aria-label="date_fin" autofocus="autofocus">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Catégorie</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-list"></i></span>
+                            </div>
+                            <select class="form-control flex-grow-1" name="categorie" data-width="100%" autofocus="autofocus">
+                                <option hidden>Catégorie</option>
+                                {% for item in liste_categories %}
+                                <option value="{{ item[0] }}">{{ item[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    {% if version==1 %}
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Tag d'équipement</small></p>
+                        <div class="input-group mb-4">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-tag"></i></span>
+                            </div>
+                            <input type="number" class="form-control border-right-0" name="tag" placeholder="Numéro du tag recherché"
+                                  value="" aria-label="tag" autofocus="autofocus">
+                        </div>
+                    </div>
+                    {% else %}
+                    {% endif %}
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                    <button type="submit" class="btn bg-steel text-white float-right mb-2">Soumettre</button>
+                    </div>
+                </div>
+            </div>
+    </form>
+</div>
+</body>
+{% endblock content %}
