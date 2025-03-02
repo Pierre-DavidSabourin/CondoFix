@@ -6,7 +6,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import os
 import decimal
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 bp_fonds_prevoyance = Blueprint('bp_fonds_prevoyance', __name__)
 

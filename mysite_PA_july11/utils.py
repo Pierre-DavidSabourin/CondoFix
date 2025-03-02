@@ -5,23 +5,51 @@ def connect_db(mode):
     """Fonction de connexion à la base de données via objet mysql.connector.
 
     | Requise pour chaque blueprint"""
-    if mode=='DEV':
-        db=mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
+    if mode == 'DEV':
+        try:
+            db = mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
+        except mysql.connector.Error:
+            pass  # Try next option
+
+        try:
+            db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
+        except mysql.connector.Error:
+            pass
+        #db=mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
+        #db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
         return db
-    if mode=='QA' or mode=='APP':
-        db=mysql.connector.connect(user='CondoFix', password='LacNations_1999',
-        host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$condofix')
+    if mode == 'QA' or mode == 'APP':
+        try:
+            db = mysql.connector.connect(user='CondoFix', password='LacNations_1999', host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$condofix')
+        except mysql.connector.Error:
+            pass  # Try next option
+
+        try:
+            db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
+        except mysql.connector.Error:
+            pass
+        #db=mysql.connector.connect(user='CondoFix', password='LacNations_1999', host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$condofix')
+        #db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
         return db
-    if mode=='DEMO':
-        db=mysql.connector.connect(user='CondoFix', password='LacNations_1999',
-        host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$demo')
+    if mode == 'DEMO':
+        try:
+            db = mysql.connector.connect(user='CondoFix', password='LacNations_1999', host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$demo')
+        except mysql.connector.Error:
+            pass  # Try next option
+
+        try:
+            db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
+        except mysql.connector.Error:
+            pass
+        #db=mysql.connector.connect(user='CondoFix', password='LacNations_1999', host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$demo')
+        #db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
         return db
 
 def chemin_rep(mode):
 
     if mode== 'DEV':
-        return str('C:/Users/Donal/Documents/Projets Programmation/mysite_PA_july11/')
-
+        #return str('C:/Users/Donal/Documents/Projets Programmation/mysite_PA_july11/')
+        return str('C:/WORKSPACE/Clone/CondoFix/mysite_PA_july11/')
     if mode == 'QA':
         return str('/home/CondoFix/QA/')
 

@@ -19,6 +19,7 @@ def connect_dbase():
 
     | Requise pour chaque blueprint"""
     # vérifier si l'app est utilisé en dev (pycharm) ou en prod (QA,demo ou app chez PythonAnywhere (PA))
+    env = "DEV"  # Default to DEV if no match is found
     environnement = Path.cwd()
     if 'home/CondoFix/QA' in str(environnement):
      env = 'QA'
@@ -27,11 +28,26 @@ def connect_dbase():
     if 'mysite_PA_july11' in str(environnement):
      env = 'DEV'
 
-    if env=='DEV':
-        db = mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='demo')
+    if env == 'DEV':
+        try:
+            db = mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='demo')
+        except mysql.connector.Error:
+            pass  # Try next option
+
+        try:
+            db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
+        except mysql.connector.Error:
+            pass
     else:
-        db=mysql.connector.connect(user='CondoFix', password='LacNations_1999',
-        host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$demo')
+        try:
+            db = mysql.connector.connect(user='CondoFix', password='LacNations_1999',host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$demo')
+        except mysql.connector.Error:
+            pass  # Try next option
+
+        try:
+            db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
+        except mysql.connector.Error:
+            pass
     return db
 
 @bp_public.route('/info_visiteur/<page>')

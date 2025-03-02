@@ -1,6 +1,7 @@
 import sys
 
-from flask import Blueprint, render_template,session,request,redirect,url_for,flash,Markup,json,send_file
+from flask import Blueprint, render_template,session,request,redirect,url_for,flash,json,send_file
+from markupsafe import Markup  # Import Markup separately
 import mysql.connector
 import os
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
@@ -14,7 +15,7 @@ import time
 from datetime import datetime, timedelta
 import shutil
 import traceback
-from utils import connect_db,chemin_rep,chemin_factures,chemin_temp_images
+from mysite_PA_july11.utils import connect_db,chemin_rep,chemin_factures,chemin_temp_images
 
 
 bp_ocr = Blueprint('bp_ocr', __name__)

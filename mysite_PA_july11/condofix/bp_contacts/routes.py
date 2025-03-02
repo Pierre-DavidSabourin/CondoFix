@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template,g,session,url_for,redirect,request
 import mysql.connector
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 bp_contacts = Blueprint('bp_contacts', __name__)
 

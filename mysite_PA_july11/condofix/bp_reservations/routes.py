@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template,session,url_for,redirect,request,flash,Markup
+from flask import Blueprint, render_template,session,url_for,redirect,request,flash
+from markupsafe import Markup  # Import Markup separately
 import mysql.connector
 from datetime import datetime,timedelta
 import pytz
@@ -12,7 +13,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import traceback
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 
 

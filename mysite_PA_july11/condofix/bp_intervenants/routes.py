@@ -4,7 +4,7 @@ from io import StringIO
 import unicodedata
 import csv
 from werkzeug.wrappers import Response
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 bp_intervenants = Blueprint('bp_intervenants', __name__)
 

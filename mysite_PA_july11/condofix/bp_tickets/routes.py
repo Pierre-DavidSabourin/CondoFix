@@ -3,7 +3,7 @@ import time
 import collections
 from collections import Counter
 from datetime import datetime, date
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 bp_tickets = Blueprint('bp_tickets', __name__)
 
