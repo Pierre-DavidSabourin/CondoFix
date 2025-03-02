@@ -10,7 +10,7 @@ import smtplib
 import traceback
 import mysql.connector
 from datetime import datetime,date
-from utils import connect_db, chemin_rep
+from mysite_PA_july11.utils import connect_db, chemin_rep
 
 bp_rapports = Blueprint('bp_rapports', __name__)
 

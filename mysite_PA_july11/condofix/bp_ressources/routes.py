@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template,g,session,url_for,redirect,request,flash
 import mysql.connector
 from datetime import datetime
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 bp_ressources = Blueprint('bp_ressources', __name__)
 

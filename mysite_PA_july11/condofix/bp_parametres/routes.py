@@ -3,7 +3,7 @@ import mysql.connector
 import collections
 from collections import Counter
 from datetime import datetime
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 bp_parametres = Blueprint('bp_parametres', __name__)
 

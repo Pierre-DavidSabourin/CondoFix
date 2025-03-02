@@ -13,7 +13,7 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-from utils import connect_db, chemin_rep
+from mysite_PA_july11.utils import connect_db, chemin_rep
 
 bp_signalements = Blueprint('bp_signalements', __name__)
 

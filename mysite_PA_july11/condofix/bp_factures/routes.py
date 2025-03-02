@@ -1,11 +1,12 @@
 import sys
 
-from flask import Blueprint, render_template,g,session,request,redirect,url_for,flash,Markup,send_file
+from flask import Blueprint, render_template, g, session, request, redirect, url_for, flash, send_file
+from markupsafe import Markup  # Import Markup separately
 import mysql.connector
 import os
 import time
 from datetime import datetime,timedelta
-from utils import connect_db,chemin_rep
+from mysite_PA_july11.utils import connect_db, chemin_rep
 
 bp_factures = Blueprint('bp_factures', __name__)
 

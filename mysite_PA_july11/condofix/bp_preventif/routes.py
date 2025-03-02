@@ -5,7 +5,7 @@ import unicodedata
 import csv
 from werkzeug.wrappers import Response
 import traceback
-from utils import connect_db
+from mysite_PA_july11.utils import connect_db
 
 bp_preventif = Blueprint('bp_preventif', __name__)
 

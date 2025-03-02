@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 import traceback
 import shutil
 from datetime import datetime
-from utils import connect_db,chemin_rep
+from mysite_PA_july11.utils import connect_db,chemin_rep
 
 bp_documentation = Blueprint('bp_documentation', __name__)
 
