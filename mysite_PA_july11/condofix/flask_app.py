@@ -1,5 +1,6 @@
 import sys
 import os
+# hello world - Test ajouté par Donald de Sherbrooke Qc.
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 #-*-coding: Utf-8-*-
 
