@@ -13,7 +13,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import traceback
-from mysite_PA_july11.utils import connect_db
+from utils import connect_db
 
 
 
