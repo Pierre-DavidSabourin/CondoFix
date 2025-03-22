@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="55485d7e-f6c6-47fe-927f-d31407095b71" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/.name" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/CondoFix_Dev.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/encodings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/mysite_PA_july11.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/documentation/Test_docs/statut_1.csv" beforeDir="false" afterPath="$PROJECT_DIR$/mysite_PA_july11/documentation/Test_docs/statut_1.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/documentation/Test_docs/statut_2.csv" beforeDir="false" afterPath="$PROJECT_DIR$/mysite_PA_july11/documentation/Test_docs/statut_2.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysite_PA_july11/documentation/Test_docs/statut_3.csv" beforeDir="false" afterPath="$PROJECT_DIR$/mysite_PA_july11/documentation/Test_docs/statut_3.csv" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "git-widget-placeholder": "main"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <servers />
+  </component>
+</project>
