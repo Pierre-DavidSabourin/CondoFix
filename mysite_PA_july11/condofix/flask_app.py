@@ -1,6 +1,7 @@
 import sys
 import os
-# sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# hello world - Test ajouté par Donald de Sherbrooke Qc.
+#sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..'))
 #-*-coding: Utf-8-*-
 

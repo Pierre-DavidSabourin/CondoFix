@@ -3,7 +3,7 @@ import mysql.connector
 
 def connect_db(mode):
     """Fonction de connexion à la base de données via objet mysql.connector.
-
+git
     | Requise pour chaque blueprint"""
     if mode == 'DEV':
         try:
@@ -48,8 +48,8 @@ def connect_db(mode):
 def chemin_rep(mode):
 
     if mode== 'DEV':
-        #return str('C:/Users/Donal/Documents/Projets Programmation/mysite_PA_july11/')
-        return str('C:/WORKSPACE/Clone/CondoFix/mysite_PA_july11/')
+        return str('C:/Users/Donal/Documents/Projets Programmation/mysite_PA_july11/')
+        #return str('C:/WORKSPACE/Clone/CondoFix/mysite_PA_july11/')
     if mode == 'QA':
         return str('/home/CondoFix/QA/')
 

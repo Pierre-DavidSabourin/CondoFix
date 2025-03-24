@@ -6,7 +6,7 @@ import mysql.connector
 import os
 import time
 from datetime import datetime,timedelta
-from mysite_PA_july11.utils import connect_db, chemin_rep
+from utils import connect_db, chemin_rep
 
 bp_factures = Blueprint('bp_factures', __name__)
 
