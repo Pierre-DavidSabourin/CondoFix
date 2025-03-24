@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timedelta
 import shutil
 import traceback
-from mysite_PA_july11.utils import connect_db,chemin_rep,chemin_factures,chemin_temp_images
+from utils import connect_db,chemin_rep,chemin_factures,chemin_temp_images
 
 
 bp_ocr = Blueprint('bp_ocr', __name__)
