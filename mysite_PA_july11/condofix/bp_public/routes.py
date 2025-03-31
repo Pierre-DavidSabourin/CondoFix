@@ -19,6 +19,7 @@ def connect_dbase():
 
     | Requise pour chaque blueprint"""
     # vérifier si l'app est utilisé en dev (pycharm) ou en prod (QA,demo ou app chez PythonAnywhere (PA))
+    db = None  # Ensure db is always defined
     env = "DEV"  # Default to DEV if no match is found
     environnement = Path.cwd()
     if 'home/CondoFix/QA' in str(environnement):
