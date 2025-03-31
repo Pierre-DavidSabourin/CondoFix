@@ -28,6 +28,8 @@ def connect_dbase():
      env = 'APP'
     if 'mysite_PA_july11' in str(environnement):
      env = 'DEV'
+    if 'home/CondoFix/CondoFixBeta' in str(environnement):
+        env = 'APP'
 
     if env == 'DEV':
         try:
