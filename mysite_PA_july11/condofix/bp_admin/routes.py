@@ -51,7 +51,7 @@ def login():
         if env == 'QA' or env == 'APP':
             g.db = sqlite3.connect(str('/home/CondoFix/mysite/condofix/Central.db'))
         if env == 'BETA':
-            cible_db = sqlite3.connect('/home/CondoFix/CondoFixBeta/mysite_PA_july11/condofix/Central.db')
+            g.db = sqlite3.connect('/home/CondoFix/CondoFixBeta/mysite_PA_july11/condofix/Central.db')
         # pour environnement demo, on utilise la liste de prospects pour 'matcher' le code d'accès
         # utiliser le bp_admin de 'demos' pour celui-ci car beaucoup moins de code
         cur = g.db.execute("SELECT IDUsager,IDClient, NomUsager, IDTypeUsager,EMail,MotPasse,Actif FROM Usagers WHERE NomUsager=?", (login_usager,))
