@@ -53,9 +53,27 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12 col-xs-12 col-sm-12 mt-1">
-            <h4 class="mb-2">Interventions prévues dans l'analyse du fonds de prévoyance</h4>
-            <a class="btn bg-steel text-white btn-rounded btn-sm mb-2 float-left" role="button"
-                   href="{{ url_for('bp_fonds_prevoyance.affiche_intervention') }}">Ajouter intervention</a>
+<!--            <h4 class="mb-2">Interventions prévues dans l'analyse du fonds de prévoyance</h4>-->
+<!--            <a class="btn bg-steel text-white btn-rounded btn-sm mb-2 float-left" role="button"-->
+<!--                   href="{{ url_for('bp_fonds_prevoyance.affiche_intervention') }}">Ajouter intervention</a>-->
+<h4 class="mb-2">Interventions prévues dans l'analyse du fonds de prévoyance</h4>
+
+<form method="POST" action="{{ url_for('bp_fonds_prevoyance.interventions_table') }}">
+    <div class="form-check mb-2 float-right">
+        <input class="form-check-input" type="checkbox" name="show_historique" id="show_historique"
+               onchange="this.form.submit()" {% if show_historique %}checked{% endif %}>
+        <label class="form-check-label" for="show_historique">
+            Historique
+        </label>
+    </div>
+</form>
+
+{% if show_historique %}
+    <p class="text-info"><b>Affichage des interventions historiques activé.</b></p>
+{% endif %}
+
+<a class="btn bg-steel text-white btn-rounded btn-sm mb-2 float-left" role="button"
+   href="{{ url_for('bp_fonds_prevoyance.affiche_intervention') }}">Ajouter intervention</a>
 
             <div class="datagrid">
                 <style>

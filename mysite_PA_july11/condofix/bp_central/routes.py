@@ -21,13 +21,14 @@ def connect_sqlite():
         env = 'DEV'
     if 'CondoFixBeta' in str(environnement):
         env = 'BETA'
+
     print('env:', env)
     if env == 'DEV':
         cible_db = sqlite3.connect(str('Central.db'))
     if env == 'QA' or env == 'APP':
         cible_db = sqlite3.connect(str('/home/CondoFix/mysite/condofix/Central.db'))
     if env == 'BETA':
-        cible_db = sqlite3.connect(str('/home/CondoFix/CondoFixBeta/mysite_PA_july11/condofix/Central.db'))
+        cible_db = sqlite3.connect('/home/CondoFix/CondoFixBeta/mysite_PA_july11/condofix/Central.db')
     return cible_db
 
 #********************CENTRAL****************************************

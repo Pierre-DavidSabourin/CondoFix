@@ -3,7 +3,6 @@ import mysql.connector
 
 def connect_db(mode):
     """Fonction de connexion à la base de données via objet mysql.connector.
-git
     | Requise pour chaque blueprint"""
     if mode == 'DEV':
         try:
@@ -18,7 +17,7 @@ git
         #db=mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
         #db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
         return db
-    if mode == 'QA' or mode == 'APP':
+    if mode == 'QA' or mode == 'APP' or mode == 'BETA':
         try:
             db = mysql.connector.connect(user='CondoFix', password='LacNations_1999', host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$condofix')
         except mysql.connector.Error:
@@ -48,8 +47,8 @@ git
 def chemin_rep(mode):
 
     if mode== 'DEV':
-        return str('C:/Users/Donal/Documents/Projets Programmation/mysite_PA_july11/')
-        #return str('C:/WORKSPACE/Clone/CondoFix/mysite_PA_july11/')
+        #return str('C:/Users/Donal/Documents/Projets Programmation/mysite_PA_july11/')
+        return str('C:/WORKSPACE/Clone/CondoFix/mysite_PA_july11/')
     if mode == 'QA':
         return str('/home/CondoFix/QA/')
 

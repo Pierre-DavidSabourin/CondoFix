@@ -860,67 +860,134 @@ def calcul_solde(args):
                                    values_2=fill_solde_base,
                                    values_3=fill_dep_ajust_par_an, values_4=fill_solde_ajust, fill_champs=fill_champs,
                                    bd=profile_list[3])
-
-@bp_fonds_prevoyance.route('/interventions_table', methods=['POST','GET'])
+@bp_fonds_prevoyance.route('/interventions_table', methods=['POST', 'GET'])
 def interventions_table():
-    """affichage de la page des interventions du fonds de prévoyance pour ajouts et modifs"""
-    #permet de vérifier si les interventions saisies dans condofix correspondent au rapport du consultant pour FDP
+    """Affichage de la page des interventions du fonds de prévoyance pour ajouts et modifs."""
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
+
+    profile_list = session.get('ProfilUsager')
     if profile_list[2] == 3 or profile_list[2] == 5:
-            return redirect(url_for('bp_admin.permission'))
-    client_ident=profile_list[0]
+        return redirect(url_for('bp_admin.permission'))
+
+    client_ident = profile_list[0]
     mode_connexion = profile_list[8]
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
 
+    # Vérifions si l'utilisateur veut voir les interventions historiques
+    voir_historique = request.form.get('show_historique') == 'on'
+
+    # Construction de la requête SQL selon le filtre historique
+    query = """
+        SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse,
+               ValeurActuelleInterv, FrequenceAns, AnProchain, IDIntervenant, CodeElementUniformat, PartSyndicat,
+               Inflation5ans, Inflation6a15ans, InflationPlus15ans, IDEquipement, Actif
+        FROM fondsprevoyance
+        WHERE IDClient = %s
+    """
+    params = [client_ident]
+
+    if voir_historique:
+        query += " AND historique = 1"
+    else:
+        query += " AND (historique IS NULL OR historique = 0)"
+
     fill_table = []
-    cur.execute("SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse, ValeurActuelleInterv, "
-        "FrequenceAns, AnProchain, IDIntervenant, CodeElementUniformat, PartSyndicat, Inflation5ans,"
-                "Inflation6a15ans, InflationPlus15ans, IDEquipement, Actif FROM fondsprevoyance WHERE IDClient=%s",
-        (client_ident,))
-    type=str()
-    categorie=str()
-    groupe_unif=str()
-    nom_interv=str()
-    no_tag=0
+    cur.execute(query, params)
+
     for item in cur.fetchall():
-        if item[2] == 1:
-            type = "Maintenance"
-        elif item[2] == 2:
-            type = "Remplacement"
-        item+=(type,)#17
+        type_str = "Maintenance" if item[2] == 1 else "Remplacement" if item[2] == 2 else ""
+        item += (type_str,)  # 17
+
         cur.execute("SELECT Description FROM categories WHERE IDCategorie=%s AND IDClient=%s", (item[3], client_ident))
-        for row in cur.fetchall():
-            categorie = row[0]
-        item += (categorie,)#18
+        categorie = next((row[0] for row in cur.fetchall()), "")
+        item += (categorie,)  # 18
+
         cur.execute("SELECT Descriptif FROM groupesuniformat WHERE IDGroupe=%s", (item[4],))
-        for row_1 in cur.fetchall():
-            groupe_unif = row_1[0]
-        item+= (groupe_unif,)#19
+        groupe_unif = next((row[0] for row in cur.fetchall()), "")
+        item += (groupe_unif,)  # 19
+
         cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s", (item[9], client_ident))
-        for row_2 in cur.fetchall():
-            nom_interv = row_2[0]
+        nom_interv = next((row[0] for row in cur.fetchall()), "")
         item += (nom_interv,)  # 20
-        if item[15]==0 or item[15]==None:
+
+        if item[15] in [0, None]:
             no_tag = ''
         else:
-            cur.execute("SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s",
-                        (item[15], client_ident))
-            for row_3 in cur.fetchall():
-                no_tag = str(row_3[0])+' '+row_3[1]
+            cur.execute("SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s", (item[15], client_ident))
+            row = cur.fetchone()
+            no_tag = f"{row[0]} {row[1]}" if row else ''
         item += (no_tag,)  # 21
-        if item[16]==1:
-            actif='oui'
-        else:
-            actif='non'
-        item += (actif,)#22
+
+        actif = 'oui' if item[16] == 1 else 'non'
+        item += (actif,)  # 22
+
         fill_table.append(item)
+
     cnx.close()
-    #print('table interventions:',fill_table)
-    return render_template('interventions_FDP_table.html', fill_table=fill_table, bd=profile_list[3])
+    return render_template('interventions_FDP_table.html', fill_table=fill_table, bd=profile_list[3], show_historique=voir_historique)
+
+# @bp_fonds_prevoyance.route('/interventions_table', methods=['POST','GET'])
+# def interventions_table():
+#     """affichage de la page des interventions du fonds de prévoyance pour ajouts et modifs"""
+#     #permet de vérifier si les interventions saisies dans condofix correspondent au rapport du consultant pour FDP
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     if profile_list[2] == 3 or profile_list[2] == 5:
+#             return redirect(url_for('bp_admin.permission'))
+#     client_ident=profile_list[0]
+#     mode_connexion = profile_list[8]
+#     cnx = connect_db(mode_connexion)
+#     cur = cnx.cursor()
+#
+#     fill_table = []
+#     cur.execute("SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse, ValeurActuelleInterv, "
+#         "FrequenceAns, AnProchain, IDIntervenant, CodeElementUniformat, PartSyndicat, Inflation5ans,"
+#                 "Inflation6a15ans, InflationPlus15ans, IDEquipement, Actif FROM fondsprevoyance WHERE IDClient=%s",
+#         (client_ident,))
+#     type=str()
+#     categorie=str()
+#     groupe_unif=str()
+#     nom_interv=str()
+#     no_tag=0
+#     for item in cur.fetchall():
+#         if item[2] == 1:
+#             type = "Maintenance"
+#         elif item[2] == 2:
+#             type = "Remplacement"
+#         item+=(type,)#17
+#         cur.execute("SELECT Description FROM categories WHERE IDCategorie=%s AND IDClient=%s", (item[3], client_ident))
+#         for row in cur.fetchall():
+#             categorie = row[0]
+#         item += (categorie,)#18
+#         cur.execute("SELECT Descriptif FROM groupesuniformat WHERE IDGroupe=%s", (item[4],))
+#         for row_1 in cur.fetchall():
+#             groupe_unif = row_1[0]
+#         item+= (groupe_unif,)#19
+#         cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s", (item[9], client_ident))
+#         for row_2 in cur.fetchall():
+#             nom_interv = row_2[0]
+#         item += (nom_interv,)  # 20
+#         if item[15]==0 or item[15]==None:
+#             no_tag = ''
+#         else:
+#             cur.execute("SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s",
+#                         (item[15], client_ident))
+#             for row_3 in cur.fetchall():
+#                 no_tag = str(row_3[0])+' '+row_3[1]
+#         item += (no_tag,)  # 21
+#         if item[16]==1:
+#             actif='oui'
+#         else:
+#             actif='non'
+#         item += (actif,)#22
+#         fill_table.append(item)
+#     cnx.close()
+#     #print('table interventions:',fill_table)
+#     return render_template('interventions_FDP_table.html', fill_table=fill_table, bd=profile_list[3])
 
 @bp_fonds_prevoyance.route('/affiche_intervention', methods=['POST','GET'])
 def affiche_intervention():

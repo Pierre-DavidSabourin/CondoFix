@@ -29,7 +29,7 @@ def connect_dbase():
     if 'mysite_PA_july11' in str(environnement):
      env = 'DEV'
     if 'home/CondoFix/CondoFixBeta' in str(environnement):
-        env = 'APP'
+        env = 'BETA'
 
     if env == 'DEV':
         try:
@@ -41,7 +41,8 @@ def connect_dbase():
             db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
         except mysql.connector.Error:
             pass
-    else:
+
+    elif env in ['APP', 'QA', 'BETA']:
         try:
             db = mysql.connector.connect(user='CondoFix', password='LacNations_1999',host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$demo')
         except mysql.connector.Error:
@@ -237,7 +238,7 @@ def soumettre_info():
     cnx.commit()
     cnx.close()
     #envoi de courriel
-    mail_to = 'donald.boileau@gmail.com,jaclus1111@icloud.com'
+    mail_to = 'donald.boileau@gmail.com,sabourinpd@outlook.com'
     email_list=mail_to.split(',')
     yahoo_mail_user = 'condofix.ca@yahoo.com'
     yahoo_mail_password = 'spyvlumgfwscqfkc'
