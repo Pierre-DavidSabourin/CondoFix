@@ -68,6 +68,7 @@ def calcul_dep (args):
     # mettre en valeur les arguments de la fonction
     usager= args[0]# syndicat ou coproprios
     mode= args[1]# base ou scenario ou ajuste
+
     taux_applicable= args[2]# 0 ou taux du scenario ou taux réel (ajusté)
 
 
@@ -203,6 +204,7 @@ def calcul_dep (args):
     fill_dep_50ans=[]
     annee_traitee = annee_anal
     taux_reel = float(croiss_ICC / 100)
+    annee_today=datetime.now().year
     while annee_traitee <= annee_fin:
         for item in fill_interv_50ans:
             if item[8] == annee_traitee:
@@ -244,12 +246,48 @@ def calcul_dep (args):
                 # on ajoute l'élément à la nouvelle liste
                 # CONTENU DE L'AJOUT=  ref_analyse, desc_intervention, frequence, dep_actualisee, annee de l'intervention,
                 # desc type intervention, description categorie, IDGroupe uniformat, description groupe uniformat, nom d'intervenant
-                #
+
+                # POUR DONNÉES AJUSTÉES: lignes 207: annee_today=datetime.now().year
+                # lignes 251 à 258, 262 à 288
+                # on vérifie si cette intervention devrait être exclue si elle est prévue durant une année qui précède l'année actuelle
+                if mode=='ajuste':
+                    if int(str(annee_traitee))<annee_today:
+                        #print('intervention omise:',item[5],int(str(annee_traitee)))
+                        continue
                 ajout=(item[5],item[1],str(item[7]),str(round(dep_actualisee,2)),str(annee_traitee),\
                       item[14],item[15],str(item[16]),item[17],item[18])
                 fill_dep_50ans.append(ajout)
         annee_traitee += 1
         indice += 1
+
+    # POUR DONNÉES AJUSTÉES: on ajoute toutes les dépenses liées au FDP effectuées entre l'année de début et celle qui précéde l'année actuelle
+    if mode == 'ajuste':
+        print('procedure pour ajout de dépenses actuelles')
+
+        # obtenir dépenses des tickets fermés avec type de travail=2 (fonds de prévoyance)
+        fill_tickets = []
+        cur.execute(
+            "SELECT DateComplet, CoutTotalTTC, IDCategorie FROM tickets WHERE TypeTravail=%s AND DateComplet>%s AND IDClient=%s",
+            (2, date_anal, client_ident))
+        for item in cur.fetchall():
+            cur.execute("SELECT IDGroupe FROM categories WHERE IDCategorie=%s AND IDClient=%s", (item[2], client_ident))
+            for row in cur.fetchall():
+                ## tenir compte des interventions dans parties communes à usage restreint ('Z') IDGroupe=9
+                # if entite == 'syndicat' and row[0] != 9:
+                #     ajout_ticket = (item[0].year, int(item[1]), row[0])
+                #     fill_tickets.append(ajout_ticket)
+                # if entite == 'coproprios' and row[0] == 9:
+                #     ajout_ticket = (item[0].year, int(item[1]), row[0])
+                #     fill_tickets.append(ajout_ticket)
+                # sinon:
+                ajout_ticket = (item[0].year, int(item[1]), row[0])
+                fill_tickets.append(ajout_ticket)
+        for unit in fill_tickets:
+            #CONTENU DE L'AJOUT=  ref_analyse, desc_intervention, frequence, dep_actualisee, annee de l'intervention,
+            # desc type intervention, description categorie, IDGroupe uniformat, description groupe uniformat, nom d'intervenant
+            dep_act=('','',0,unit[1],str(unit[0]),'','',unit[2],'','')
+            fill_dep_50ans.append(dep_act)
+
     # tri de la table par ordre d'année croissante
     fill_dep_50ans.sort(key=lambda x: x[4])
     indices=(taux_infl_moyen_anal,croiss_ICC)
