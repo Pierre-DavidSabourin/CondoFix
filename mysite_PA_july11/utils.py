@@ -5,10 +5,10 @@ def connect_db(mode):
     """Fonction de connexion à la base de données via objet mysql.connector.
     | Requise pour chaque blueprint"""
     if mode == 'DEV':
-        try:
-            db = mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
-        except mysql.connector.Error:
-            pass  # Try next option
+        # try:
+        #     db = mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
+        # except mysql.connector.Error:
+        #     pass  # Try next option
 
         try:
             db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
