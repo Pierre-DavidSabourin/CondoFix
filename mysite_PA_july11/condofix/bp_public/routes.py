@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,url_for,session,flash,request,redirect, json
+from flask import Blueprint, render_template, url_for, session, flash, request, redirect, json, current_app
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import time
@@ -47,11 +47,11 @@ def connect_dbase():
             db = mysql.connector.connect(user='CondoFix', password='LacNations_1999',host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$demo')
         except mysql.connector.Error:
             pass  # Try next option
-
-        try:
-            db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
-        except mysql.connector.Error:
-            pass
+        #
+        # try:
+        #     db = mysql.connector.connect(user='CONDO_FIX_DEV', password='4Evcondo1723#$#', host='localhost', database='condofix$condofix')
+        # except mysql.connector.Error:
+        #     pass
     return db
 
 @bp_public.route('/info_visiteur/<page>')
@@ -164,6 +164,19 @@ def demande_info():
 @bp_public.route('/soumettre_info', methods=['POST', 'GET'])
 #page de demande d'information
 def soumettre_info():
+    # --- Honeypot check (Task 132.1) ---
+    hp = (request.form.get('website') or '').strip()
+    if hp:
+        # minimal logging (no PII content)
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        ua = request.headers.get('User-Agent', '')
+        try:
+            current_app.logger.info(f"HONEYPOT block on /soumettre_info ip={ip} ua={ua[:120]}")
+        except Exception:
+            pass
+        # Return the normal thank-you page; do NOT write to DB or send emails
+        return render_template('-merci_demande_info.html')
+    # --- end honeypot ---
     """envoi des données de demande de contact via email à l'équipe CondoFix et dans la bd démo"""
     # vérifier si le formulaire a été 'hacké' avec la longueurs des chaînes soumises
     if len(request.form['syndicat_nom']) > 40:
@@ -293,7 +306,7 @@ def produits():
 
     # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
     session.permanent = True
-    return render_template('-offres.html')
+    return render_template('-offres.html', page_class='offres')
 
 @bp_public.route('/demarrage')
 #page 'trousse de démarrage'
@@ -517,7 +530,7 @@ def services():
 
     # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
     session.permanent = True
-    return render_template('-services.html')
+    return render_template('-services.html', page_class='services')
 
 @bp_public.route('/agenda')
 #page de 'carnet maison'
@@ -669,17 +682,17 @@ def affiche_video():
     cnx.close()
     return render_template('-video_affiche.html')
 
-# @bp_public.route('/affiche_video_OCR')
-# def affiche_video_OCR():
-#     # enregistrement dans la bd 'sessions'
-#     info_visiteur('VideoOCR')
-#     # pour permettre un maximum de 3 tentatives de saisie de login par session
-#     session['solde_tentatives'] = 3
-#     session['logged_in'] = False
-#
-#     # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
-#     session.permanent = True
-#     return render_template('-video_affiche_OCR.html')
+@bp_public.route('/affiche_video_OCR')
+def affiche_video_OCR():
+    # enregistrement dans la bd 'sessions'
+    info_visiteur('VideoOCR')
+    # pour permettre un maximum de 3 tentatives de saisie de login par session
+    session['solde_tentatives'] = 3
+    session['logged_in'] = False
+
+    # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
+    session.permanent = True
+    return render_template('-video_affiche_OCR.html')
 
 @bp_public.route('/confidentialite')
 def confidentialite():
@@ -695,13 +708,20 @@ def confidentialite():
 
     return render_template('-politique_confidentialite.html')
 
-
 @bp_public.route('/attestation_home')
 def attestation_home():
-    # pour permettre un maximum de 3 tentatives de saisie de login par session
-    session['solde_tentatives'] = 3
-    session['logged_in'] = False
+    return redirect('https://attestationcondo-condofix.pythonanywhere.com/', code=302)
 
-    # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
-    session.permanent = True
-    return "Bientôt: nouveau site de préparation d'attestation d'état de copropriété"
+# @bp_public.route('/attestation_home')
+# def attestation_home():
+#     # pour permettre un maximum de 3 tentatives de saisie de login par session
+#     session['solde_tentatives'] = 3
+#     session['logged_in'] = False
+#
+#     # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
+#     session.permanent = True
+#     return "Bientôt: nouveau site de préparation d'attestation d'état de copropriété"
+
+
+
+

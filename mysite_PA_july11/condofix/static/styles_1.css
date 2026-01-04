@@ -7,11 +7,17 @@
     text-align:left;
     font-size:large
 }
+
 body {
   background: #fafafa;
   color: #333333;
-  margin-top: 5rem;
+  margin-top: 0;
+  padding-top: 56px;   /* fixed-top navbar height */
 }
+
+/* breathing room between navbar and main */
+.site-header + main { margin-top: 16px; }  /* try 12–20px to taste */
+
 
 h1, h2, h3, h4, h5, h6 {
   color: #444444;
@@ -36,6 +42,48 @@ h1, h2, h3, h4, h5, h6 {
 .site-header .navbar-nav .nav-link.active {
   font-weight: 500;
 }
+
+/* ===== Footer ===== */
+.site-footer {
+  background: #2f3a43;           /* darker than .bg-dark for better contrast */
+  color: #e9eef2;
+  border-top: 1px solid #43515b; /* subtle divider from content */
+  padding-top: 24px;
+  padding-bottom: 28px;
+}
+
+/* space between page content and footer (tighter than mt-5 if you want) */
+.site-footer.mt-5 { margin-top: 2.5rem !important; } /* tweak to taste */
+
+/* brand block */
+.site-footer .brand { display: flex; align-items: center; gap: .5rem; }
+.site-footer .brand .name { color: #9ec5ff; font-weight: 700; }   /* brand color accent */
+.site-footer .tagline { color: #cdd6dc; }
+
+/* headings: make clearly readable */
+.site-footer .footer-title {
+  color: #ffffff;
+  font-weight: 700;
+  margin: 0 0 .75rem 0;
+}
+
+/* links: readable by default, clear hover/focus */
+.site-footer .footer-links li { margin-bottom: .35rem; }
+.site-footer a {
+  color: #e9eef2;
+  text-decoration: none;
+}
+.site-footer a:hover,
+.site-footer a:focus {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+/* Optional: smaller screens—stack spacing nicely */
+@media (max-width: 767.98px) {
+  .site-footer { padding-top: 20px; padding-bottom: 24px; }
+}
+
 
 .content-section {
   background: #ffffff;

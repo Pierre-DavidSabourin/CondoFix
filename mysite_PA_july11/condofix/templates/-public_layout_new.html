@@ -1,116 +1,164 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>CondoFix</title>
-<!--    icone sur onglet-->
-    <link rel="icon" href="../static/ToolsIcon.png">
-    <!-- Bootstrap CSS -->
-    <link href="../static/bootstrap.css" rel="stylesheet" />
-    <link rel="stylesheet" href="../static/styles_1.css">
-    <link rel="stylesheet" href="../static/font-awesome-4.7.0/css/font-awesome.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+
+  {# ===== Single-source SEO strings (override per page) ===== #}
+  <title>{% block meta_title %}CondoFix{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Logiciel de gestion d'entretien pour copropriétés au Québec.{% endblock %}">
+  <meta name="keywords" content="{% block meta_keywords %}carnet d'entretien, copropriété, gestion d'entretien, gmao{% endblock %}">
+{% block canonical %}
+<link rel="canonical" href="{{ request.url }}">
+{% endblock %}
+  {# ===== Open Graph defaults ===== #}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CondoFix">
+  <meta property="og:locale" content="fr_CA">
+  <meta property="og:title" content="{% block og_title_text %}{{ self.meta_title() }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description_text %}{{ self.meta_description() }}{% endblock %}">
+  {% block og_image %}{% endblock %}
+  <meta property="og:url" content="{{ request.base_url }}">
+  <meta property="fb:pages" content="100093575169849">
+
+  {# ===== Twitter / X (harmless if unused) ===== #}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title_text %}{{ self.meta_title() }}{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description_text %}{{ self.meta_description() }}{% endblock %}">
+  {% block twitter_image %}{% endblock %}
+
+  <link rel="icon" href="{{ url_for('static', filename='ToolsIcon.png') }}" />
+  <link href="{{ url_for('static', filename='bootstrap.css') }}" rel="stylesheet" />
+  <link href="{{ url_for('static', filename='styles_1.css') }}" rel="stylesheet" />
+  <link href="{{ url_for('static', filename='font-awesome-4.7.0/css/font-awesome.min.css') }}" rel="stylesheet" />
+
+  <style>
+    .navbar-brand img { width: 2.5rem; height: 2.5rem; }
+    body { padding-top: 64px; }
+  </style>
+
+  {# ===== Site-wide JSON-LD (safe defaults) ===== #}
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"Organization",
+    "@id":"{{ request.url_root }}#org",
+    "name":"CondoFix",
+    "url":"{{ request.url_root }}",
+    "logo":"{{ url_for('static', filename='ToolsIconSmall.png', _external=True) }}",
+    "areaServed":"CA-QC",
+    "sameAs":["https://www.facebook.com/profile.php?id=100093575169849"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebSite",
+    "@id":"{{ request.url_root }}#website",
+    "url":"{{ request.url_root }}",
+    "name":"CondoFix",
+    "inLanguage":"fr-CA"
+  }
+  </script>
+
+  {% block head_extra %}{% endblock %}
 </head>
-<style>
-.navbar-brand>img {
-  width: 2.5rem !important;
-  height: 2.5rem !important;
-}
-</style>
-<header class="site-header">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top px-5 py-0">
-        <button class="pull-left navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <a class="navbar-brand ml-1" href="#">
-            <img class="img-responsive mb-2" src="../static/ToolsIconSmall.png" alt="Logo" style="padding: 2px;">
-            <span class="mb-0 h4">CondoFix</span>
-            <a class="btn-sm btn-warning text-dark"  href="{{ url_for('bp_admin.login') }}">Login</a>
+<body>
+  <header class="site-header">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top py-0">
+      <div class="container px-3">
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('bp_public.home') }}">
+          <img class="mr-2" src="{{ url_for('static', filename='ToolsIconSmall.png') }}" alt="Logo" style="width:2.5rem;height:2.5rem;">
+          <span class="mb-0 h4">CondoFix</span>
         </a>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
+                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
-            <ul class="navbar-nav ml-5">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.home') }}">ACCUEIL</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold" href="#" id="navbarDropdownMenuLink_5" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        OFFRES
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        <a class="dropdown-item" href="{{ url_for('bp_public.produits') }}">Produits</a>
-                        <a class="dropdown-item" href="{{ url_for('bp_public.services') }}">Services</a>
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold" href="#" id="navbarDropdownMenuLink_7"  data-toggle="dropdown"  aria-haspopup="true" aria-expanded="false">
-                        LOI 16
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        <a class="dropdown-item" href="{{ url_for('bp_public.carnet_entretien') }}">Carnet d'entretien</a>
-                        <a class="dropdown-item" href="{{ url_for('bp_public.attestation_home') }}">Attestation</a>
-                        <a class="dropdown-item" href="{{ url_for('bp_public.module_fdp') }}">Fonds de prévoyance</a>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.demo') }}">ESSAI</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.quiz') }}">QUIZ</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.blog') }}" target="_blank">BLOG</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold" href="{{ url_for('bp_public.demande_info') }}">CONTACT</a>
-                </li>
-            </ul>
+          <ul class="navbar-nav ml-3 mr-auto">  <!-- reduced from ml-5 -->
+            <li class="nav-item"><a class="nav-link font-weight-bold" href="{{ url_for('bp_public.home') }}">ACCUEIL</a></li>
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle font-weight-bold" href="#" id="nav-offres" data-toggle="dropdown"
+                 aria-haspopup="true" aria-expanded="false">OFFRES</a>
+              <div class="dropdown-menu" aria-labelledby="nav-offres">
+                <a class="dropdown-item" href="{{ url_for('bp_public.produits') }}">Produits</a>
+                <a class="dropdown-item" href="{{ url_for('bp_public.services') }}">Services</a>
+              </div>
+            </li>
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle font-weight-bold" href="#" id="nav-loi16" data-toggle="dropdown"
+                 aria-haspopup="true" aria-expanded="false">LOI 16</a>
+              <div class="dropdown-menu" aria-labelledby="nav-loi16">
+                <a class="dropdown-item" href="{{ url_for('bp_public.carnet_entretien') }}">Carnet d'entretien</a>
+<!--                <a class="dropdown-item" href="{{ url_for('bp_public.attestation_home') }}">Attestation</a>-->
+                <a class="dropdown-item" href="{{ url_for('bp_public.attestation_home') }}" target="_blank" rel="noopener">Attestation</a>
+                <a class="dropdown-item" href="{{ url_for('bp_public.module_fdp') }}">Fonds de prévoyance</a>
+              </div>
+            </li>
+
+            <li class="nav-item"><a class="nav-link font-weight-bold" href="{{ url_for('bp_public.demo') }}">ESSAI</a></li>
+            <li class="nav-item"><a class="nav-link font-weight-bold" href="{{ url_for('bp_public.quiz') }}">QUIZ</a></li>
+            <li class="nav-item"><a class="nav-link font-weight-bold" href="{{ url_for('bp_public.blog') }}" target="_blank">BLOG</a></li>
+            <li class="nav-item"><a class="nav-link font-weight-bold" href="{{ url_for('bp_public.demande_info') }}">CONTACT</a></li>
+          </ul>
+
+          <div class="navbar-nav">
+            <a class="btn btn-sm btn-warning text-dark my-2 my-lg-0" href="{{ url_for('bp_admin.login') }}">Login</a>
+          </div>
         </div>
+      </div>
     </nav>
-</header>
-<main role="main" class="container-fluid">
+  </header>
+
+  <main role="main" class="container {{ page_class|default('') }}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer mt-5">
+  <div class="container">
     <div class="row">
-        <div class="container-fluid">
-            {% block content %}
-            <!--                content of each template is inserted here-->
-            {% endblock %}
+      <div class="col-md-4 mb-4">
+        <div class="brand">
+          <img src="{{ url_for('static', filename='ToolsIconSmall.png') }}" alt="Logo" width="50" height="50">
+          <span class="name h4 mb-0">CondoFix</span>
         </div>
-    </div>
-</main>
+        <p class="tagline mb-0 mt-2">CONSERVEZ VOTRE IMMEUBLE</p>
+      </div>
 
-<div class="card mt-5 bg-dark">
-  <div class="row no-gutters">
-    <div class="col-md-4">
-      <div class="card-body ">
-          <img src="../static/ToolsIconSmall.png" alt="Logo" style="padding: 2px;" width="50" height="50">
-          <span class="mb-0 h2 text-primary">CondoFix</span>
-          <p class="card-text text-white">CONSERVEZ VOTRE IMMEUBLE</p>
+      <div class="col-md-4 mb-4">
+        <h5 class="footer-title">Plateforme de gestion d'entretien</h5>
+        <ul class="list-unstyled mb-0 footer-links">
+          <li><a href="{{ url_for('bp_public.produits') }}">Fonctionnalités</a></li>
+          <li><a href="{{ url_for('bp_public.tarifs', produit=1) }}">Tarifs</a></li>
+          <li><a href="{{ url_for('bp_public.demo') }}">Essai gratuit</a></li>
+          <li><a href="{{ url_for('bp_public.services') }}">Services</a></li>
+          <li><a href="{{ url_for('bp_public.module_fdp') }}">Fonds de prévoyance</a></li>
+        </ul>
+      </div>
+
+      <div class="col-md-4 mb-4">
+        <h5 class="footer-title">Informations générales</h5>
+        <ul class="list-unstyled mb-0 footer-links">
+          <li><a href="{{ url_for('bp_public.confidentialite') }}">Politique de confidentialité</a></li>
+          <li><a href="{{ url_for('bp_public.carnet_entretien') }}">Carnet d'entretien</a></li>
+          <li><a href="{{ url_for('bp_public.quiz') }}">Quiz</a></li>
+          <li><a href="{{ url_for('bp_public.blog') }}">Blog</a></li>
+          <li><a href="{{ url_for('bp_public.module_rez') }}">Module de réservations</a></li>
+          <li><a href="{{ url_for('bp_public.demande_info') }}">Communiquez avec nous</a></li>
+        </ul>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card-body">
-        <h5 class="card-text text-white mt-0">Plateforme de gestion d'entretien</h5>
-        <div><a class="text-white" href="{{ url_for('bp_public.produits') }}"><small>Fonctionnalités</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.tarifs',produit=1) }}"><small>Tarifs</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.demo') }}"><small>Essai gratuit</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.services') }}"><small>Services</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.module_fdp') }}"><small>Fonds de prévoyance</small></a></div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card-body">
-        <h5 class="card-text text-white mt-0">Informations générales</h5>
-        <div><a class="text-white" href="{{ url_for('bp_public.confidentialite') }}"><small>Politique de confidentialité</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.carnet_entretien') }}"><small>Carnet d'entretien</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.quiz') }}"><small>Quiz</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.blog') }}"><small>Blog</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.module_rez') }}"><small>Module de réservations</small></a></div>
-        <div><a class="text-white" href="{{ url_for('bp_public.demande_info') }}"><small>Communiquez avec nous</small></a></div>
-      </div>
-    </div>
-</div>
+  </div>
+</footer>
 
 
+<!-- JS: jQuery + Bootstrap (bundle includes Popper) -->
+<script src="{{ url_for('static', filename='jquery-3.5.1.js') }}"></script>
+<script src="{{ url_for('static', filename='bootstrap-4.1.3-dist/js/bootstrap.bundle.min.js') }}"></script>
+</body>
 </html>
-<!-- JQuery et JavaScript pour que les menus fonctionnent -->
-<script src="../static/jquery-3.5.1.js"></script>
-<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>

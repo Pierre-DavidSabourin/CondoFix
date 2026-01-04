@@ -1,72 +1,260 @@
 {% extends "-public_layout_new.html" %}
+
+{# === SEO overrides (strings) === #}
+{% block meta_title %}Services professionnels CondoFix — Formation, import Excel, inventaire, étiquettes{% endblock %}
+{% block meta_description %}
+Services professionnels CondoFix pour syndicats de copropriété au Québec : formation, importation de fichiers Excel (carnet d’entretien et fonds de prévoyance), inventaire des équipements et étiquettes (tags). Conforme à la Loi 16.
+{% endblock %}
+{% block meta_keywords %}
+services CondoFix, formation carnet d’entretien, importation Excel, inventaire équipements, étiquettes tags, copropriété, syndicat, Loi 16, fonds de prévoyance, Québec
+{% endblock %}
+{% block canonical %}
+<link rel="canonical" href="{{ url_for('bp_public.services', _external=True) }}">
+{% endblock %}
+
+{# Open Graph / Twitter images #}
+{% block og_image %}
+<meta property="og:image" content="{{ url_for('static', filename='og/og_services.jpg', _external=True) }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+{% endblock %}
+{% block twitter_image %}
+<meta name="twitter:image" content="{{ url_for('static', filename='og/og_services.jpg', _external=True) }}">
+{% endblock %}
+
+{# Structured data: Service catalog with prices #}
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "Services professionnels CondoFix",
+  "provider": { "@type": "Organization", "name": "CondoFix", "@id": "{{ request.url_root }}#org" },
+  "areaServed": { "@type": "AdministrativeArea", "name": "Québec" },
+  "serviceType": "Services professionnels liés à la gestion d'entretien",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Catalogue des services",
+    "itemListElement": [
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Formation" },
+        "priceCurrency": "CAD",
+        "price": "95",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "95",
+          "priceCurrency": "CAD",
+          "unitText": "hour"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Importation de fichier Excel" },
+        "priceCurrency": "CAD",
+        "price": "100",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "100",
+          "priceCurrency": "CAD",
+          "unitText": "each"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Inventaire des équipements" },
+        "priceCurrency": "CAD",
+        "price": "95",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "95",
+          "priceCurrency": "CAD",
+          "unitText": "hour"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Étiquettes d’équipement (tags)" },
+        "priceCurrency": "CAD",
+        "price": "1.50",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "1.50",
+          "priceCurrency": "CAD",
+          "unitText": "each"
+        }
+      }
+    ]
+  },
+  "url": "{{ url_for('bp_public.services', _external=True) }}"
+}
+</script>
+{% endblock %}
+
+
 {% block content %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Gamme de services de CondoFix</title>
-    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
-    <meta name="keywords" content="gmao, entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
-    <!--    icone sur onglet-->
-    <link rel="icon" href="../static/ToolsIcon.png">
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="../static/bootstrap.css">
-    <link rel="stylesheet" href="../static/styles_1.css">
-</head>
+<style>
+/* ===== Page: Services (scoped) ===== */
+.services .lead-intro { max-width: 980px; }
 
-<body>
+/* Card container for table */
+.services .table-card{
+  background:#fff;
+  border-radius:.5rem;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+  overflow:hidden;
+}
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12  mt-4">
-            <h1>Services professionnels</h1>
-            <p>CondoFix est fourni avec une configuration de démarrage. Le client est responsable de saisir les données touchant son immeuble:</p>
-            <ul>
-              <li>Les intervenants, les équipements, les contacts, la documentation et les budgets</li>
-              <li>Les paramètres de l'immeuble et les réglages spécifiques au syndicat</li>
-              <li>Les interventions prévues dans le carnet d'entretien et dans l'étude du fonds de prévoyance</li>
-            </ul>
-            <br>
-            <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                    <tr>
-                        <th width="100px"><strong>Description du service</strong></th>
-                        <th width="60px"><strong>Tarif</strong></th>
-                        <th width="60px"><strong>Type de tarif</strong></th>
-                    </tr>
-                </thead>
-                <tr>
-                    <td width="100px">Formation</td>
-                    <td width="60px">95$</td>
-                    <td width="60px">Horaire</td>
-                </tr>
-                <tr>
-                    <td width="100px">Importation de fichier Excel (carnet d'entretien, interventions du fonds de prévoyance)</td>
-                    <td width="60px">100$</td>
-                    <td width="60px">Chacun</td>
-                </tr>
-                <tr>
-                    <td width="100px">Inventaire des équipements</td>
-                    <td width="60px">95$</td>
-                    <td width="60px">Horaire</td>
-                </tr>
-                <tr>
-                    <td width="100px">Étiquettes d'équipement ('Tags')</td>
-                    <td width="60px">1,50$</td>
-                    <td width="60px">Chacune</td>
-                </tr>
-            </table>
-            <p><small>Les frais de déplacement et les taxes sont en sus.</small></p>
-        </div>
-        <style>
-            #image1{
-              border: 1px solid #000;
-            }
-        </style>
-    </div>
-    <div class="row">
-        <a class="btn-lg btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
-        <a class="btn-lg text-black btn-warning btn-rounded mx-2 my-4" role="button" href="/video_infos">Vidéo 3 min.</a>
-        <a class="btn-lg text-white btn-danger btn-rounded my-4" role="button" href="/demo">Essai gratuit</a></div>
-    </div>
-</body>
-{% endblock content %}
+/* Softer table look */
+.services .table { margin-bottom:0; }
+.services .table thead th{
+  background:#f3f6f9;            /* softer than .thead-light default */
+  border-color:#e6eaef;
+}
+.services .table-bordered{
+  border-color:#e6eaef;
+}
+.services .table-bordered td,
+.services .table-bordered th{
+  border-color:#e6eaef;
+}
+.services .table-striped tbody tr:nth-of-type(odd){
+  background-color:#f8fafc;      /* very light gray-blue */
+}
+.services .table tbody tr:hover{
+  background:#f1f5f9;            /* gentle hover */
+}
+
+/* CTA buttons — clear roles + distinct hovers */
+.services .cta-row .btn-cta{
+  min-width:160px;
+  border-radius:.5rem;
+  font-weight:600;
+  padding:.5rem 1rem;
+}
+
+/* “Nos offres” — solid dark with clearer hover, no motion */
+.services .btn-cta.btn-dark{
+  background:#2a3a48;           /* base (slightly lighter than before) */
+  border-color:#2a3a48;
+  color:#fff;
+  transition: background-color .15s ease, box-shadow .15s ease; /* no transform */
+}
+
+.services .btn-cta.btn-dark:hover{
+  background:#142430;           /* a clear step darker */
+  border-color:#142430;
+  color:#fff;
+  /* very soft outer shadow to signal hover without moving */
+  box-shadow: 0 .15rem .35rem rgba(0,0,0,.18);
+}
+
+.services .btn-cta.btn-dark:active{
+  background:#0d1a22;           /* pressed state */
+  border-color:#0d1a22;
+  box-shadow: 0 .05rem .2rem rgba(0,0,0,.2) inset;
+}
+
+.services .btn-cta.btn-dark:focus{
+  outline:0;
+  /* steel-colored focus ring for keyboard users */
+  box-shadow: 0 0 0 .22rem rgba(95,120,138,.35);
+}
+
+
+/* “Vidéo 3 min.” → steel outline that fills on hover */
+.services .btn-cta.btn-outline-dark{
+  color:#5f788a;                  /* steel */
+  border-color:#5f788a;
+  background:#fff;
+}
+.services .btn-cta.btn-outline-dark:hover,
+.services .btn-cta.btn-outline-dark:focus{
+  background:#5f788a;
+  color:#fff;
+  border-color:#5f788a;
+}
+
+/* “Essai gratuit” → danger with a stronger hover */
+.services .btn-cta.btn-danger{
+  background:#dc3545;
+  border-color:#dc3545;
+}
+.services .btn-cta.btn-danger:hover,
+.services .btn-cta.btn-danger:focus{
+  background:#bd2130;            /* darker red */
+  border-color:#b31f2e;
+}
+
+/* mobile */
+@media (max-width:575.98px){
+  .services .cta-row{ flex-direction:column; }
+  .services .cta-row .btn-cta{ width:100%; }
+}
+</style>
+
+
+<section class="mt-3">
+  <h1 class="mb-3">Services professionnels</h1>
+
+  <p class="text-muted lead-intro">
+    CondoFix est fourni avec une configuration de démarrage. Le client est responsable de saisir les données
+    touchant son immeuble :
+  </p>
+  <ul class="mb-4">
+    <li>Les intervenants, les équipements, les contacts, la documentation et les budgets</li>
+    <li>Les paramètres de l’immeuble et les réglages spécifiques au syndicat</li>
+    <li>Les interventions prévues dans le carnet d’entretien et dans l’étude du fonds de prévoyance</li>
+  </ul>
+
+  <!-- Table as a "card" for consistent look -->
+  <div class="table-card table-responsive mb-2">
+    <table class="table table-striped table-bordered mb-0">
+      <thead class="thead-light">
+        <tr>
+          <th>Description du service</th>
+          <th>Tarif</th>
+          <th>Type de tarif</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Formation</td>
+          <td>95$</td>
+          <td>Horaire</td>
+        </tr>
+        <tr>
+          <td>Importation de fichier Excel (carnet d’entretien, interventions du fonds de prévoyance)</td>
+          <td>100$</td>
+          <td>Chacun</td>
+        </tr>
+        <tr>
+          <td>Inventaire des équipements</td>
+          <td>95$</td>
+          <td>Horaire</td>
+        </tr>
+        <tr>
+          <td>Étiquettes d’équipement (« Tags »)</td>
+          <td>1,50$</td>
+          <td>Chacune</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-muted"><small>Les frais de déplacement et les taxes sont en sus.</small></p>
+
+  <!-- CTAs aligned with global palette -->
+  <div class="cta-row d-flex flex-wrap">
+    <a class="btn btn-dark btn-cta mr-2 mb-2" href="{{ url_for('bp_public.produits') }}"
+       aria-label="Voir nos offres">Nos offres</a>
+
+    <a class="btn btn-outline-dark btn-cta mr-2 mb-2" href="/video_infos"
+       aria-label="Regarder la vidéo de 3 minutes">Vidéo 3 min.</a>
+
+    <a class="btn btn-danger btn-cta mb-2" href="/demo"
+       aria-label="Essayer CondoFix gratuitement">Essai gratuit</a>
+  </div>
+</section>
+
+{% endblock %}

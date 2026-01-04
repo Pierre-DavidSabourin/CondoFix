@@ -9,29 +9,56 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="../static/bootstrap.css">
     <link rel="stylesheet" href="../static/styles_1.css">
+    <style>
+        .flash-container {
+    max-width: 900px;
+    margin: 90px auto 20px auto;   /* pushes under navbar */
+}
+
+.flash-container .alert {
+    border-radius: 6px;
+    padding: 12px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    font-size: 16px;
+}
+    </style>
 </head>
 <body>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div class="alert alert-{{ category }}">
-    {{ message }}
+<div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
 </div>
-{% endfor %}
-{% endif %}
-{% endwith %}
 <header class="site-header">
     <input type="hidden" name="ident_list" value="{{ ident_list }}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse"
+                data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
+                aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <a class="pull-left navbar-brand" href="#">
-            <img src="../static/ToolsIcon.png" alt="Logo" style="padding: 8px;" width="50" height="50">
+
+        <!-- CLICKABLE ICON + TEXT -->
+        <a class="navbar-brand d-flex align-items-center"
+           href="{{ url_for('bp_public.home') }}">
+
+            <img src="../static/ToolsIcon.png"
+                 alt="Logo"
+                 width="50"
+                 height="50"
+                 style="padding: 8px;">
+
             <span class="mb-0 h2">CondoFix</span>
         </a>
     </nav>
 </header>
+
 <script>
 function affiche_mp() {
       var x = document.getElementById("mot_passe");
@@ -68,7 +95,4 @@ function affiche_mp() {
         </div>
     </div>
 </div>
-
-
-
 </body>

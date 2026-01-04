@@ -1,17 +1,16 @@
 import sys
 import os
-# hello world - Test ajouté par Donald de Sherbrooke Qc.
+
 #sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..'))
 #-*-coding: Utf-8-*-
 
 __author__ = 'donald'
 
-from flask import Flask, request
+from flask import Flask, request, Response, url_for
 import matplotlib
-from datetime import timedelta
+from datetime import timedelta, date
 from flask_dropzone import Dropzone
-
 
 import smtplib
 from werkzeug.exceptions import HTTPException
@@ -42,7 +41,7 @@ from bp_rapports.routes import bp_rapports
 from bp_signalements.routes import bp_signalements
 from bp_parametres.routes import bp_parametres
 from bp_ocr.routes import bp_ocr
-from bp_sinistres.routes import bp_sinistres
+#from bp_sinistres.routes import bp_sinistres
 
 app.register_blueprint(bp_public)
 app.register_blueprint(bp_admin)
@@ -63,7 +62,74 @@ app.register_blueprint(bp_rapports)
 app.register_blueprint(bp_signalements)
 app.register_blueprint(bp_parametres)
 app.register_blueprint(bp_ocr)
-app.register_blueprint(bp_sinistres)
+#app.register_blueprint(bp_sinistres)
+
+# =========================
+# SEO infrastructure routes
+# =========================
+
+@app.route("/robots.txt")
+def robots_txt():
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /login",
+        "Sitemap: https://www.condofix.ca/sitemap.xml",
+    ]
+    resp = Response("\n".join(lines) + "\n", mimetype="text/plain; charset=utf-8")
+    resp.headers["Cache-Control"] = "public, max-age=86400"  # 24h
+    return resp
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    base = "https://www.condofix.ca"
+
+    # Per-URL lastmod (update only when the page meaningfully changes)
+    URL_LASTMOD = {
+        "/": "2026-01-03",
+        "/produits": "2026-01-03",
+        "/services": "2026-01-03",
+        "/carnet_entretien": "2025-12-30",
+        "/module_fdp": "2025-12-30",
+        "/demande_info": "2025-12-10",
+        "/tarifs/1": "2026-01-03",
+    }
+
+    # (path, changefreq, priority)
+    url_config = [
+        ("/",                 "weekly",  "1.0"),
+        ("/produits",         "monthly", "0.9"),
+        ("/services",         "monthly", "0.9"),
+        ("/carnet_entretien", "yearly",  "0.8"),
+        ("/module_fdp",       "yearly",  "0.8"),
+        ("/demande_info",     "monthly", "0.7"),
+        ("/tarifs/1",         "monthly", "0.8"),
+    ]
+
+    urls_xml = []
+    for path, changefreq, priority in url_config:
+        loc = f"{base}{path}"
+
+        lastmod = URL_LASTMOD.get(path)
+        lastmod_xml = f"\n    <lastmod>{lastmod}</lastmod>" if lastmod else ""
+
+        urls_xml.append(
+f"""  <url>
+    <loc>{loc}</loc>{lastmod_xml}
+    <changefreq>{changefreq}</changefreq>
+    <priority>{priority}</priority>
+  </url>"""
+        )
+
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{chr(10).join(urls_xml)}
+</urlset>
+"""
+
+    resp = Response(xml, mimetype="application/xml; charset=utf-8")
+    resp.headers["Cache-Control"] = "public, max-age=86400"  # 24h
+    return resp
 
 
 app.config['SECRET_KEY'] = 'OHOSZO5D382UAL9J'

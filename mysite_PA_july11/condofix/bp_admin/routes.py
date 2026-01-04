@@ -12,266 +12,537 @@ bp_admin = Blueprint('bp_admin', __name__)
 
 @bp_admin.route('/login', methods=['GET', 'POST'])
 def login():
-    """ * Rechercher les données de login pour l'usager dans la bd sqlite 'Central'
-     * Vérification du mot de passe et capture des infos d'usager dans 'session'
-     * Vérifier si on doit mettre à jour les entretiens préventifs (si date actuelle est premier du mois)
-     * Vérifier si envoi du rapport d'activité requis (selon intervalle en jours saisis dans paramètres)
-     * Ouverture de l'application en privé sur la page des 'tickets en cours'
     """
-    # vérifier s'il y a des caractères 'dangereux' dans le nom d'usager ou le mot de passe
-    if request.method == 'POST':
-        matches = ["--", "#", "/","*","%",";","+","=","<",">","|"]
-        if any(x in request.form['password'] for x in matches) or any(x in request.form['usager'] for x in matches):
-            flash('Caractères non valides. Veuillez saisir de nouveau.', "warning")
-            return render_template('login_page.html')
+    * Rechercher les données de login pour l'usager dans la BD SQLite 'Central'
+    * Vérifier le mot de passe et enregistrer les infos d'usager dans 'session'
+    * Vérifier si la mise à jour des entretiens préventifs est requise
+    * Vérifier si un rapport d'activité doit être envoyé (selon la fréquence configurée)
+    * Ouvrir l'application sur la page appropriée ('tickets en cours' ou proprios)
+    """
 
-    user_list=[]
-    ident_list=[]
-    error = None
-    env=str()
-    if request.method == 'POST':
-        # vérifier s'il y a des caractères 'dangereux' dans le nom d'usager ou le mot de passe
-        matches = ["--", "#", "/","*","%",";","+","=","<",">","|"]
-        if any(x in request.form['password'] for x in matches) or any(x in request.form['usager'] for x in matches):
-            flash('Caractères non valides. Veuillez saisir de nouveau.', "warning")
+    # -------------------------------------------------------------------------
+    # Fonctions utilitaires
+    # -------------------------------------------------------------------------
+
+    def get_tentatives():
+        """Retourne les tentatives restantes, initialise à 3 si manquant."""
+        if 'solde_tentatives' not in session or session['solde_tentatives'] is None:
+            session['solde_tentatives'] = 3
+        return session['solde_tentatives']
+
+    def safe_decrement_attempts():
+        """Décrémente les tentatives en sécurité et redirige si session expirée."""
+        nbr = get_tentatives()
+
+        if nbr not in (3, 0):
+            flash(
+                f"Il vous reste encore {nbr} tentatives de saisie de code d'accès avant que la session se termine.",
+                "warning",
+            )
+
+        if nbr == 0:
+            session.clear()
+            return redirect(url_for('bp_public.home'))
+
+        session['solde_tentatives'] = nbr - 1
+        return None
+
+    # GET → simple affichage
+    if request.method == 'GET':
+        return render_template('login_page.html')
+
+    # -------------------------------------------------------------------------
+    # POST — Vérification des identifiants
+    # -------------------------------------------------------------------------
+
+    matches = ["--", "#", "/", "*", "%", ";", "+", "=", "<", ">", "|"]
+    if any(x in request.form['password'] for x in matches) or any(x in request.form['usager'] for x in matches):
+        flash("Caractères non valides. Veuillez saisir de nouveau.", "warning")
+        return render_template('login_page.html')
+
+    login_usager = str(request.form['usager'])
+
+
+    # -------------------------------------------------------------------------
+    # Détection de l'environnement + chemin SQLite
+    # -------------------------------------------------------------------------
+    env_path = str(Path.cwd())
+    if 'home/CondoFix/QA' in env_path:
+        env = 'QA';    dbpath = '/home/CondoFix/mysite/condofix/Central.db'
+    elif 'home/CondoFix/mysite' in env_path:
+        env = 'APP';   dbpath = '/home/CondoFix/mysite/condofix/Central.db'
+    elif 'mysite_PA_july11' in env_path:
+        env = 'DEV';   dbpath = 'Central.db'
+    elif 'CondoFixBeta' in env_path:
+        env = 'BETA';  dbpath = '/home/CondoFix/CondoFixBeta/mysite_PA_july11/condofix/Central.db'
+    else:
+        env = 'APP';   dbpath = '/home/CondoFix/mysite/condofix/Central.db'
+
+
+    # -------------------------------------------------------------------------
+    # Récupération de l'usager
+    # -------------------------------------------------------------------------
+    g.db = sqlite3.connect(dbpath)
+    cur = g.db.execute(
+        "SELECT IDUsager, IDClient, NomUsager, IDTypeUsager, EMail, MotPasse, Actif "
+        "FROM Usagers WHERE NomUsager=?",
+        (login_usager,)
+    )
+
+    try:
+        row = cur.fetchone()
+        if row is None:
+            raise ValueError("Usager inexistant")
+
+        user_ident, client_ident, user_nom, type_ident, user_email, password, actif = row
+
+        if actif == 0:
+            flash("Usager non actif", "warning")
+            result = safe_decrement_attempts()
+            if result: return result
             return redirect(url_for('bp_admin.login'))
-        login_usager = str(request.form['usager'])
-        # vérifier si l'app est utilisé en dev (pycharm) ou en prod (QA,demo ou app chez PythonAnywhere (PA))
-        environnement = Path.cwd()
-        if 'home/CondoFix/QA' in str(environnement):
-            env = 'QA'
-        if 'home/CondoFix/mysite' in str(environnement):
-            env = 'APP'
-        if 'mysite_PA_july11' in str(environnement):
-            env = 'DEV'
-        if 'CondoFixBeta' in str(environnement):
-            env = 'BETA'
 
-        if env=='DEV':
-            g.db=sqlite3.connect(str('Central.db'))
-        if env == 'QA' or env == 'APP':
-            g.db = sqlite3.connect(str('/home/CondoFix/mysite/condofix/Central.db'))
-        if env == 'BETA':
-            g.db = sqlite3.connect('/home/CondoFix/CondoFixBeta/mysite_PA_july11/condofix/Central.db')
+        # ---------------------------------------------------------------------
+        # Récupération du client
+        # ---------------------------------------------------------------------
+        cur = g.db.execute(
+            "SELECT Nom, Actif, ModuleRez, CarnetPlus, Database FROM Clients WHERE IDClient=?",
+            (client_ident,)
+        )
+        row_client = cur.fetchone()
+        if row_client is None:
+            raise ValueError("Client inexistant")
 
-        # pour environnement demo, on utilise la liste de prospects pour 'matcher' le code d'accès
-        # utiliser le bp_admin de 'demos' pour celui-ci car beaucoup moins de code
-        cur = g.db.execute("SELECT IDUsager,IDClient, NomUsager, IDTypeUsager,EMail,MotPasse,Actif FROM Usagers WHERE NomUsager=?", (login_usager,))
-        try:
-            for row in cur.fetchone():
-                user_list.append(row)
-            password=user_list[5]
-            user_ident =user_list[0]
-            user_nom= user_list[2]
-            client_ident =user_list[1]
-            type_ident=user_list[3]
-            actif=user_list[6]
-            module_rez=int()
-            if actif==0:
-                flash('Usager non actif', "warning")
-                # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
-                nbr_essais = session.get('solde_tentatives')
-                if nbr_essais != 3 and nbr_essais != 0:
-                    flash("Il vous reste encore " + str(
-                        nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.",
-                          "warning")
-                if nbr_essais == 0:
-                    session.clear()
-                    return redirect(url_for('bp_public.home'))
-                nbr_essais -= 1
-                session['solde_tentatives'] = nbr_essais
-                return redirect(url_for('bp_admin.login'))
-            ident_list.append(client_ident)
-            ident_list.append(user_ident)
-            ident_list.append(type_ident)
-            client_name = str()
-            carnet_plus = str()
-            cur = g.db.execute("SELECT Nom, Actif, ModuleRez, CarnetPlus, Database FROM Clients WHERE IDClient=?",(client_ident,))
-            for row_1 in cur.fetchall():
-                if row_1[1]==0:
-                    flash('Client non actif', "warning")
-                    # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
-                    nbr_essais = session.get('solde_tentatives')
-                    if nbr_essais != 3 and nbr_essais != 0:
-                        flash("Il vous reste encore " + str(
-                            nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.",
-                              "warning")
-                    if nbr_essais == 0:
-                        session.clear()
-                        return redirect(url_for('bp_public.home'))
-                    nbr_essais -= 1
-                    session['solde_tentatives'] = nbr_essais
-                    return redirect(url_for('bp_admin.login'))
-                client_name=row_1[0]
-                module_rez=row_1[2]
-                carnet_plus=row_1[3]
-                dbase=row_1[4]
-            ident_list.append(client_name)
-            ident_list.append(user_nom)
-            ident_list.append(module_rez)
-            ident_list.append(carnet_plus)
-            ident_list.append(dbase)
-            g.db.close()
-            if request.form['password'] != password:
-                flash('Mot de passe invalide.', "warning")
-                # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
-                nbr_essais = session.get('solde_tentatives')
-                if nbr_essais != 3 and nbr_essais != 0:
-                    flash("Il vous reste encore " + str(
-                        nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.",
-                          "warning")
-                if nbr_essais == 0:
-                    session.clear()
-                    return redirect(url_for('bp_public.home'))
-                nbr_essais -= 1
-                session['solde_tentatives'] = nbr_essais
-                return render_template('login_page.html')
-            else:
+        client_name, client_actif, module_rez, carnet_plus, dbase = row_client
 
-                ident_list.append(env)
+        if client_actif == 0:
+            flash("Client non actif", "warning")
+            result = safe_decrement_attempts()
+            if result: return result
+            return redirect(url_for('bp_admin.login'))
 
-                session['logged_in'] = True
-                # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
-                session.permanent = True
-                # profil d'usager pour permissions et IDs pour enregistrements
+        g.db.close()
 
-                session['ProfilUsager'] = ident_list
-                # trouver le mode de connexion (Dev ou PA)
-                profile_list = session.get('ProfilUsager')
-                mode_connexion = profile_list[8]
-
-                # enregistrer le login pour l'achalandage
-                cnx = connect_db(mode_connexion)
-                cur = cnx.cursor()
-                mois=int()
-                mois_suivant=int()
-                mois_encours=int(datetime.now().month)
-
-                cur.execute("SELECT * from achalandage WHERE IDClient=%s AND TypeUsager=%s",(client_ident,type_ident))
-                for row in cur.fetchall():
-                    index=mois_encours+2 #on ajoute 2 pour tomber sur le mois en cours dans la liste de rubriques
-                    cum_logins_mois = row[index]
-                    if cum_logins_mois==None:
-                        cum_logins_mois=1
-                    else:
-                        cum_logins_mois += 1
-                    cum_logins_debut= row[16]
-                    if mois_encours==1:
-                        mois= 'Jan'
-                        mois_suivant='Fev'
-                    elif mois_encours==2:
-                        mois= 'Fev'
-                        mois_suivant ='Mars'
-                    elif mois_encours==3:
-                        mois= 'Mars'
-                        mois_suivant = 'Avril'
-                    elif mois_encours==4:
-                        mois= 'Avril'
-                        mois_suivant= 'Mai'
-                    elif mois_encours==5:
-                        mois= 'Mai'
-                        mois_suivant= 'Juin'
-                    elif mois_encours==6:
-                        mois= 'Juin'
-                        mois_suivant= 'Juil'
-                    elif mois_encours==7:
-                        mois= 'Juil'
-                        mois_suivant= 'Aout'
-                    elif mois_encours==8:
-                        mois= 'Aout'
-                        mois_suivant='Sept'
-                    elif mois_encours==9:
-                        mois= 'Sept'
-                        mois_suivant='Oct'
-                    elif mois_encours==10:
-                        mois= 'Oct'
-                        mois_suivant='Nov'
-                    elif mois_encours==11:
-                        mois= 'Nov'
-                        mois_suivant='Dec'
-                    elif mois_encours==12:
-                        mois= 'Dec'
-                        mois_suivant='Jan'
-                    # print('mois sélectionné:', mois_encours)
-                    # print('row:',row)
-                    # print('mois actuel:',mois)
-                    cum_logins_debut += 1
-                    cur.reset()
-                    cur.execute("UPDATE achalandage SET `{}`=%s, CumLogins=%s WHERE IDClient = %s AND TypeUsager=%s".format(mois),
-                                (cum_logins_mois, cum_logins_debut, client_ident, type_ident))
-                    cnx.commit()
-                    # mettre mois suivant à zéro
-                    cur.execute("UPDATE achalandage SET `{}`=%s WHERE IDClient = %s AND TypeUsager=%s".format(mois_suivant),
-                        (0, client_ident, type_ident))
-                    cnx.commit()
-
-                # vérifier si date de fin de budget est atteinte
-                cur.execute("SELECT DateDebutBudget FROM parametres WHERE IDClient=%s", (client_ident,))
-                for item in cur.fetchall():
-                    date_debut = item[0]
-                    date_today = datetime.now().date()
-                    end_date = date_debut + relativedelta(years=1)
-                    if date_today >= end_date:
-                        # on met à jour la date de début un an plus tard
-                        cur.execute("UPDATE parametres SET DateDebutBudget=%s WHERE IDClient=%s", (end_date, client_ident))
-                        cnx.commit()
-
-                # vérifier si on doit mettre à jour les entretiens préventifs ou si envoi du rapport d'activité requis
-
-                cur.execute("SELECT Date_MAJ_Preventif, DateRapportActivite, FreqRapportActivite  FROM parametres WHERE IDClient=%s",(client_ident,))
-                date_rapport_activite=str()
-                for row_2 in cur.fetchall():
-                    freq_rapport=int(row_2[2])#jours entre chaque rapport
-
-                    #on vérifie si la maj du calendrier d'entretien est requise
-                    date_format = "%Y-%m-%d"
-                    date_visee=row_2[0]
-                    date_maj=str(date_visee)
-                    date_now=str(date.today())
-                    a = datetime.strptime(date_maj, date_format)
-                    b = datetime.strptime(date_now, date_format)
-                    delta=b-a
-                    if delta.days >=0: # on est rendu à la date de MAJ du calendrier d'entretien et du fonds de prévoyance
-                        cnx.close()
-                        return redirect(url_for('bp_admin.maj_calendriers',date_maj=date_maj))
-                    else:#MAJ du calendrier non requise
-
-                        #on vérifie si un rapport d'activité doit être envoyé
-                        date_format = "%Y-%m-%d"
-                        date_rapport_activite=str(row_2[1])
-                        date_now=str(date.today())
-                        a = datetime.strptime(date_rapport_activite, date_format)
-                        b = datetime.strptime(date_now, date_format)
-                        delta=b-a
-                        cnx.close()
-
-                        #return redirect(
-                        #     url_for('bp_rapports.envoi_rapport_activite', dernier_envoi=date_rapport_activite,
-                        #             type_usager=type_ident))
-                        #print('delta:',delta.days, 'fréquence rapport:',freq_rapport)
-                        if delta.days > (freq_rapport-1): # on est rendu à la date d'envoi d'un nouveau rapport
-                            return redirect(url_for('bp_rapports.envoi_rapport_activite',dernier_envoi=date_rapport_activite,type_usager=type_ident))
-                        else:#pas de rapport envoyé
-                            if type_ident==5:
-                                return redirect(url_for('bp_documentation.docs_table_proprios'))
-                                #return 'Page proprios'
-
-                            return redirect(url_for('bp_tickets.en_cours'))
-        except:
-            print(traceback.format_exc())
-            flash('Usager non valide', "warning")
-            # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
-            nbr_essais = session.get('solde_tentatives')
-            if nbr_essais != 3 and nbr_essais != 0:
-                flash("Il vous reste encore " + str(
-                    nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.", "warning")
-            if nbr_essais == 0:
-                session.clear()
-                return redirect(url_for('bp_public.home'))
-            nbr_essais -= 1
-            session['solde_tentatives'] = nbr_essais
+        # ---------------------------------------------------------------------
+        # Vérification du mot de passe
+        # ---------------------------------------------------------------------
+        if request.form['password'] != password:
+            flash("Mot de passe invalide.", "warning")
+            result = safe_decrement_attempts()
+            if result: return result
             return render_template('login_page.html')
-    return render_template('login_page.html')
+
+        # ---------------------------------------------------------------------
+        # Création de la session de l'usager
+        # ---------------------------------------------------------------------
+        ident_list = [
+            client_ident, user_ident, type_ident,
+            client_name, user_nom, module_rez,
+            carnet_plus, dbase, env
+        ]
+
+        session['logged_in'] = True       # Usager authentifié
+        session.permanent = True          # Timeout selon l'inactivité (voir flask_app.py)
+        session['ProfilUsager'] = ident_list  # Profil complet pour permissions
+
+        # ---------------------------------------------------------------------
+        # 1. ACHALANDAGE — Mise à jour du trafic mensuel
+        # ---------------------------------------------------------------------
+        cnx = connect_db(env)
+        cur = cnx.cursor()
+
+        mois_encours = datetime.now().month  # 1–12
+        # ------------------------------------------------------------
+        # ASSURER QUE LA LIGNE D'ACHALANDAGE EXISTE POUR (Client, TypeUsager)
+        # ------------------------------------------------------------
+        cur.execute(
+            "SELECT 1 FROM achalandage WHERE IDClient=%s AND TypeUsager=%s",
+            (client_ident, type_ident)
+        )
+        exists = cur.fetchone()
+
+        if not exists:
+            # Insérer une nouvelle ligne avec les valeurs initiales
+            cur.execute(
+                "INSERT INTO achalandage (IDClient, TypeUsager, Jan, Fev, Mars, Avril, Mai, Juin, "
+                "Juil, Aout, Sept, Oct, Nov, `Dec`, DateDebut, CumLogins) "
+                "VALUES (%s, %s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, %s, 0)",
+                (client_ident, type_ident, datetime.now().date())
+            )
+            cnx.commit()
+
+        cur.execute(
+            "SELECT `Jan`, `Fev`, `Mars`, `Avril`, `Mai`, `Juin`, `Juil`, `Aout`, "
+            "`Sept`, `Oct`, `Nov`, `Dec`, `DateDebut`, `CumLogins` "
+            "FROM achalandage WHERE IDClient=%s AND TypeUsager=%s",
+            (client_ident, type_ident)
+        )
+        row = cur.fetchone()
+
+        if row:
+            months = list(row[:12])
+            date_debut = row[12]
+            cum_logins_total = row[13] or 0
+
+            # Incrément du mois courant
+            cur_value = months[mois_encours - 1]
+            months[mois_encours - 1] = 1 if cur_value is None else cur_value + 1
+
+            # Remise à zéro du mois suivant
+            next_month = 1 if mois_encours == 12 else mois_encours + 1
+            months[next_month - 1] = 0
+
+            cum_logins_total += 1
+
+            update_sql = (
+                "UPDATE achalandage SET "
+                "`Jan`=%s, `Fev`=%s, `Mars`=%s, `Avril`=%s, `Mai`=%s, `Juin`=%s, "
+                "`Juil`=%s, `Aout`=%s, `Sept`=%s, `Oct`=%s, `Nov`=%s, `Dec`=%s, "
+                "`CumLogins`=%s "
+                "WHERE IDClient=%s AND TypeUsager=%s"
+            )
+            cur.execute(update_sql, (*months, cum_logins_total, client_ident, type_ident))
+            cnx.commit()
+
+        # ---------------------------------------------------------------------
+        # 2. VÉRIFICATION DU BUDGET — Renouvellement annuel
+        # ---------------------------------------------------------------------
+        cur.execute(
+            "SELECT DateDebutBudget FROM parametres WHERE IDClient=%s",
+            (client_ident,)
+        )
+        row_budget = cur.fetchone()
+
+        if row_budget:
+            date_debut_budget = row_budget[0]
+            date_today = datetime.now().date()
+            end_date = date_debut_budget + relativedelta(years=1)
+
+            if date_today >= end_date:
+                cur.execute(
+                    "UPDATE parametres SET DateDebutBudget=%s WHERE IDClient=%s",
+                    (end_date, client_ident)
+                )
+                cnx.commit()
+
+        # ---------------------------------------------------------------------
+        # 3. PRÉVENTIF + RAPPORT D'ACTIVITÉ
+        # ---------------------------------------------------------------------
+        cur.execute(
+            "SELECT Date_MAJ_Preventif, DateRapportActivite, FreqRapportActivite "
+            "FROM parametres WHERE IDClient=%s",
+            (client_ident,)
+        )
+        row_prev = cur.fetchone()
+
+        if row_prev:
+            date_preventif, date_rapport, freq_rapport = row_prev
+            today = datetime.today().date()
+
+            # MAJ du calendrier d'entretien ?
+            if today >= date_preventif:
+                cnx.close()
+                return redirect(url_for('bp_admin.maj_calendriers', date_maj=str(date_preventif)))
+
+            # Rapport d’activité ?
+            if (today - date_rapport).days >= freq_rapport:
+                cnx.close()
+                return redirect(url_for(
+                    'bp_rapports.envoi_rapport_activite',
+                    dernier_envoi=str(date_rapport),
+                    type_usager=type_ident
+                ))
+
+        cnx.close()
+
+        # ---------------------------------------------------------------------
+        # Redirection finale selon le type d'usager
+        # ---------------------------------------------------------------------
+        if type_ident == 5:
+            return redirect(url_for('bp_documentation.docs_table_proprios'))
+
+        return redirect(url_for('bp_tickets.en_cours'))
+
+    except Exception as e:
+        print(traceback.format_exc())
+        flash("Usager non valide", "warning")
+        result = safe_decrement_attempts()
+        if result: return result
+        return render_template('login_page.html')
+
+# @bp_admin.route('/login', methods=['GET', 'POST'])
+# def login():
+#     """ * Rechercher les données de login pour l'usager dans la bd sqlite 'Central'
+#      * Vérification du mot de passe et capture des infos d'usager dans 'session'
+#      * Vérifier si on doit mettre à jour les entretiens préventifs (si date actuelle est premier du mois)
+#      * Vérifier si envoi du rapport d'activité requis (selon intervalle en jours saisis dans paramètres)
+#      * Ouverture de l'application en privé sur la page des 'tickets en cours'
+#     """
+#     # vérifier s'il y a des caractères 'dangereux' dans le nom d'usager ou le mot de passe
+#     if request.method == 'POST':
+#         matches = ["--", "#", "/", "*", "%", ";", "+", "=", "<", ">", "|"]
+#         if any(x in request.form['password'] for x in matches) or any(x in request.form['usager'] for x in matches):
+#             flash('Caractères non valides. Veuillez saisir de nouveau.', "warning")
+#             return render_template('login_page.html')
+#
+#     user_list = []
+#     ident_list = []
+#     error = None
+#     env = str()
+#     if request.method == 'POST':
+#         # vérifier s'il y a des caractères 'dangereux' dans le nom d'usager ou le mot de passe
+#         matches = ["--", "#", "/", "*", "%", ";", "+", "=", "<", ">", "|"]
+#         if any(x in request.form['password'] for x in matches) or any(x in request.form['usager'] for x in matches):
+#             flash('Caractères non valides. Veuillez saisir de nouveau.', "warning")
+#             return redirect(url_for('bp_admin.login'))
+#         login_usager = str(request.form['usager'])
+#         # vérifier si l'app est utilisé en dev (pycharm) ou en prod (QA,demo ou app chez PythonAnywhere (PA))
+#         environnement = Path.cwd()
+#         if 'home/CondoFix/QA' in str(environnement):
+#             env = 'QA'
+#         if 'home/CondoFix/mysite' in str(environnement):
+#             env = 'APP'
+#         if 'mysite_PA_july11' in str(environnement):
+#             env = 'DEV'
+#         if 'CondoFixBeta' in str(environnement):
+#             env = 'BETA'
+#
+#         if env == 'DEV':
+#             g.db = sqlite3.connect(str('Central.db'))
+#         if env == 'QA' or env == 'APP':
+#             g.db = sqlite3.connect(str('/home/CondoFix/mysite/condofix/Central.db'))
+#         if env == 'BETA':
+#             g.db = sqlite3.connect('/home/CondoFix/CondoFixBeta/mysite_PA_july11/condofix/Central.db')
+#
+#         # pour environnement demo, on utilise la liste de prospects pour 'matcher' le code d'accès
+#         # utiliser le bp_admin de 'demos' pour celui-ci car beaucoup moins de code
+#         cur = g.db.execute(
+#             "SELECT IDUsager,IDClient, NomUsager, IDTypeUsager,EMail,MotPasse,Actif FROM Usagers WHERE NomUsager=?",
+#             (login_usager,))
+#         try:
+#             for row in cur.fetchone():
+#                 user_list.append(row)
+#             password = user_list[5]
+#             user_ident = user_list[0]
+#             user_nom = user_list[2]
+#             client_ident = user_list[1]
+#             type_ident = user_list[3]
+#             actif = user_list[6]
+#             module_rez = int()
+#             if actif == 0:
+#                 flash('Usager non actif', "warning")
+#                 # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
+#                 nbr_essais = session.get('solde_tentatives')
+#                 if nbr_essais != 3 and nbr_essais != 0:
+#                     flash("Il vous reste encore " + str(
+#                         nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.",
+#                           "warning")
+#                 if nbr_essais == 0:
+#                     session.clear()
+#                     return redirect(url_for('bp_public.home'))
+#                 nbr_essais -= 1
+#                 session['solde_tentatives'] = nbr_essais
+#                 return redirect(url_for('bp_admin.login'))
+#             ident_list.append(client_ident)
+#             ident_list.append(user_ident)
+#             ident_list.append(type_ident)
+#             client_name = str()
+#             carnet_plus = str()
+#             cur = g.db.execute("SELECT Nom, Actif, ModuleRez, CarnetPlus, Database FROM Clients WHERE IDClient=?",
+#                                (client_ident,))
+#             for row_1 in cur.fetchall():
+#                 if row_1[1] == 0:
+#                     flash('Client non actif', "warning")
+#                     # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
+#                     nbr_essais = session.get('solde_tentatives')
+#                     if nbr_essais != 3 and nbr_essais != 0:
+#                         flash("Il vous reste encore " + str(
+#                             nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.",
+#                               "warning")
+#                     if nbr_essais == 0:
+#                         session.clear()
+#                         return redirect(url_for('bp_public.home'))
+#                     nbr_essais -= 1
+#                     session['solde_tentatives'] = nbr_essais
+#                     return redirect(url_for('bp_admin.login'))
+#                 client_name = row_1[0]
+#                 module_rez = row_1[2]
+#                 carnet_plus = row_1[3]
+#                 dbase = row_1[4]
+#             ident_list.append(client_name)
+#             ident_list.append(user_nom)
+#             ident_list.append(module_rez)
+#             ident_list.append(carnet_plus)
+#             ident_list.append(dbase)
+#             g.db.close()
+#             if request.form['password'] != password:
+#                 flash('Mot de passe invalide.', "warning")
+#                 # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
+#                 nbr_essais = session.get('solde_tentatives')
+#                 if nbr_essais != 3 and nbr_essais != 0:
+#                     flash("Il vous reste encore " + str(
+#                         nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.",
+#                           "warning")
+#                 if nbr_essais == 0:
+#                     session.clear()
+#                     return redirect(url_for('bp_public.home'))
+#                 nbr_essais -= 1
+#                 session['solde_tentatives'] = nbr_essais
+#                 return render_template('login_page.html')
+#             else:
+#
+#                 ident_list.append(env)
+#
+#                 session['logged_in'] = True
+#                 # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
+#                 session.permanent = True
+#                 # profil d'usager pour permissions et IDs pour enregistrements
+#
+#                 session['ProfilUsager'] = ident_list
+#                 # trouver le mode de connexion (Dev ou PA)
+#                 profile_list = session.get('ProfilUsager')
+#                 mode_connexion = profile_list[8]
+#
+#                 # enregistrer le login pour l'achalandage
+#                 cnx = connect_db(mode_connexion)
+#                 cur = cnx.cursor()
+#                 mois = int()
+#                 mois_suivant = int()
+#                 mois_encours = int(datetime.now().month)
+#
+#                 cur.execute("SELECT * from achalandage WHERE IDClient=%s AND TypeUsager=%s", (client_ident, type_ident))
+#                 for row in cur.fetchall():
+#                     index = mois_encours + 2  # on ajoute 2 pour tomber sur le mois en cours dans la liste de rubriques
+#                     cum_logins_mois = row[index]
+#                     if cum_logins_mois == None:
+#                         cum_logins_mois = 1
+#                     else:
+#                         cum_logins_mois += 1
+#                     cum_logins_debut = row[16]
+#                     if mois_encours == 1:
+#                         mois = 'Jan'
+#                         mois_suivant = 'Fev'
+#                     elif mois_encours == 2:
+#                         mois = 'Fev'
+#                         mois_suivant = 'Mars'
+#                     elif mois_encours == 3:
+#                         mois = 'Mars'
+#                         mois_suivant = 'Avril'
+#                     elif mois_encours == 4:
+#                         mois = 'Avril'
+#                         mois_suivant = 'Mai'
+#                     elif mois_encours == 5:
+#                         mois = 'Mai'
+#                         mois_suivant = 'Juin'
+#                     elif mois_encours == 6:
+#                         mois = 'Juin'
+#                         mois_suivant = 'Juil'
+#                     elif mois_encours == 7:
+#                         mois = 'Juil'
+#                         mois_suivant = 'Aout'
+#                     elif mois_encours == 8:
+#                         mois = 'Aout'
+#                         mois_suivant = 'Sept'
+#                     elif mois_encours == 9:
+#                         mois = 'Sept'
+#                         mois_suivant = 'Oct'
+#                     elif mois_encours == 10:
+#                         mois = 'Oct'
+#                         mois_suivant = 'Nov'
+#                     elif mois_encours == 11:
+#                         mois = 'Nov'
+#                         mois_suivant = 'Dec'
+#                     elif mois_encours == 12:
+#                         mois = 'Dec'
+#                         mois_suivant = 'Jan'
+#                     # print('mois sélectionné:', mois_encours)
+#                     # print('row:',row)
+#                     # print('mois actuel:',mois)
+#                     cum_logins_debut += 1
+#                     cur.reset()
+#                     cur.execute(
+#                         "UPDATE achalandage SET `{}`=%s, CumLogins=%s WHERE IDClient = %s AND TypeUsager=%s".format(
+#                             mois),
+#                         (cum_logins_mois, cum_logins_debut, client_ident, type_ident))
+#                     cnx.commit()
+#                     # mettre mois suivant à zéro
+#                     cur.execute(
+#                         "UPDATE achalandage SET `{}`=%s WHERE IDClient = %s AND TypeUsager=%s".format(mois_suivant),
+#                         (0, client_ident, type_ident))
+#                     cnx.commit()
+#
+#                 # vérifier si date de fin de budget est atteinte
+#                 cur.execute("SELECT DateDebutBudget FROM parametres WHERE IDClient=%s", (client_ident,))
+#                 for item in cur.fetchall():
+#                     date_debut = item[0]
+#                     date_today = datetime.now().date()
+#                     end_date = date_debut + relativedelta(years=1)
+#                     if date_today >= end_date:
+#                         # on met à jour la date de début un an plus tard
+#                         cur.execute("UPDATE parametres SET DateDebutBudget=%s WHERE IDClient=%s",
+#                                     (end_date, client_ident))
+#                         cnx.commit()
+#
+#                 # vérifier si on doit mettre à jour les entretiens préventifs ou si envoi du rapport d'activité requis
+#
+#                 cur.execute(
+#                     "SELECT Date_MAJ_Preventif, DateRapportActivite, FreqRapportActivite  FROM parametres WHERE IDClient=%s",
+#                     (client_ident,))
+#                 date_rapport_activite = str()
+#                 for row_2 in cur.fetchall():
+#                     freq_rapport = int(row_2[2])  # jours entre chaque rapport
+#
+#                     # on vérifie si la maj du calendrier d'entretien est requise
+#                     date_format = "%Y-%m-%d"
+#                     date_visee = row_2[0]
+#                     date_maj = str(date_visee)
+#                     date_now = str(date.today())
+#                     a = datetime.strptime(date_maj, date_format)
+#                     b = datetime.strptime(date_now, date_format)
+#                     delta = b - a
+#                     if delta.days >= 0:  # on est rendu à la date de MAJ du calendrier d'entretien et du fonds de prévoyance
+#                         cnx.close()
+#                         return redirect(url_for('bp_admin.maj_calendriers', date_maj=date_maj))
+#                     else:  # MAJ du calendrier non requise
+#
+#                         # on vérifie si un rapport d'activité doit être envoyé
+#                         date_format = "%Y-%m-%d"
+#                         date_rapport_activite = str(row_2[1])
+#                         date_now = str(date.today())
+#                         a = datetime.strptime(date_rapport_activite, date_format)
+#                         b = datetime.strptime(date_now, date_format)
+#                         delta = b - a
+#                         cnx.close()
+#
+#                         # return redirect(
+#                         #     url_for('bp_rapports.envoi_rapport_activite', dernier_envoi=date_rapport_activite,
+#                         #             type_usager=type_ident))
+#                         # print('delta:',delta.days, 'fréquence rapport:',freq_rapport)
+#                         if delta.days > (freq_rapport - 1):  # on est rendu à la date d'envoi d'un nouveau rapport
+#                             return redirect(
+#                                 url_for('bp_rapports.envoi_rapport_activite', dernier_envoi=date_rapport_activite,
+#                                         type_usager=type_ident))
+#                         else:  # pas de rapport envoyé
+#                             if type_ident == 5:
+#                                 return redirect(url_for('bp_documentation.docs_table_proprios'))
+#                                 # return 'Page proprios'
+#
+#                             return redirect(url_for('bp_tickets.en_cours'))
+#         except:
+#             print(traceback.format_exc())
+#             flash('Usager non valide', "warning")
+#             # pour permettre un maximum de 3 tentatives de saisie de code d'accès par session
+#             nbr_essais = session.get('solde_tentatives')
+#             if nbr_essais != 3 and nbr_essais != 0:
+#                 flash("Il vous reste encore " + str(
+#                     nbr_essais) + " tentatives de saisie de code d'accès avant que la session se termine.", "warning")
+#             if nbr_essais == 0:
+#                 session.clear()
+#                 return redirect(url_for('bp_public.home'))
+#             nbr_essais -= 1
+#             session['solde_tentatives'] = nbr_essais
+#             return render_template('login_page.html')
+#     return render_template('login_page.html')
 
 
 # MAJ de la date du calendrier d'entretien et du fonds de prévoyance lors du premier jour de chaque mois

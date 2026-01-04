@@ -14,6 +14,9 @@
         $('#myModal').modal('show');
     });
 </script>
+<style>
+    .hp-wrap { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+</style>
 </head>
 <body>
 <div id="myModal" class="modal fade">
@@ -39,7 +42,10 @@
 </div>
 <div class="list-group">
     <form action="{{ url_for('bp_public.soumettre_info') }}" method=post class="form-horizontal" role="form">
-
+        <div class="hp-wrap" aria-hidden="true">
+          <label for="website">Website</label>
+          <input id="website" type="text" name="website" tabindex="-1" autocomplete="off" />
+        </div>
         <div class="row">
             <div class="container col-md-6 bg-form-bground p-4 rounded">
                 <div class="text-center mb-3" >

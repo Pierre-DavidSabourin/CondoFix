@@ -2,20 +2,21 @@ from flask import Blueprint, render_template,g,session,url_for,redirect,request
 import mysql.connector
 import collections
 from collections import Counter
+from utils import connect_db
 
 bp_sinistres = Blueprint('bp_sinistres', __name__)
 
 #ouverture de la base de données principale
-@bp_sinistres.route('/connect_db')
-def connect_db():
-    """Fonction de connexion à la base de données via objet mysql.connector.
-
-| Requise pour chaque blueprint"""
-    db=mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
-
-    #db=mysql.connector.connect(user='CondoFix', password='LacNations_1999',
-    #host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$condofix')
-    return db
+# @bp_sinistres.route('/connect_db')
+# def connect_db():
+#     """Fonction de connexion à la base de données via objet mysql.connector.
+#
+# | Requise pour chaque blueprint"""
+#     db=mysql.connector.connect(user='root', password='aholein1', host='127.0.0.1', database='condofix$condofix')
+#
+#     #db=mysql.connector.connect(user='CondoFix', password='LacNations_1999',
+#     #host='CondoFix.mysql.pythonanywhere-services.com', database='CondoFix$condofix')
+#     return db
 #********************SINISTRES****************************************
 
 #page de la liste de sinistres
@@ -30,7 +31,7 @@ def sinistres_table():
     fill_sinistres=[]
     Interv=str()
     client_ident=profile_list[0]
-    cnx = connect_db()
+    cnx = connect_db('DEV')
     cur = cnx.cursor()
     cur.execute("SELECT IDTicket,IDIntervenant, IntervenantAutre, DateCreation, Statut, Description_travail, Emplacement,"
                 "DateComplet, DateFermeture, NoFacture, CoutTotalTTC from tickets WHERE TypeTravail=%s AND IDClient=%s",(5,client_ident,))

@@ -898,73 +898,212 @@ def calcul_solde(args):
                                    values_2=fill_solde_base,
                                    values_3=fill_dep_ajust_par_an, values_4=fill_solde_ajust, fill_champs=fill_champs,
                                    bd=profile_list[3])
-@bp_fonds_prevoyance.route('/interventions_table', methods=['POST', 'GET'])
+
+@bp_fonds_prevoyance.route("/interventions_table", methods=["GET", "POST"])
 def interventions_table():
-    """Affichage de la page des interventions du fonds de prévoyance pour ajouts et modifs."""
-    if session.get('ProfilUsager') is None:
-        return render_template('session_ferme.html')
+    """
+    Affichage de la page des interventions du fonds de prévoyance
+    pour ajouts et modifications.
 
-    profile_list = session.get('ProfilUsager')
-    if profile_list[2] == 3 or profile_list[2] == 5:
-        return redirect(url_for('bp_admin.permission'))
+    - Filtre sur les interventions historiques (case à cocher)
+    - Enrichit chaque ligne avec :
+      * Type ("Maintenance"/"Remplacement")
+      * Description de la catégorie
+      * Description du groupe Uniformat
+      * Nom de l'intervenant
+      * Tag équipement (NumTag + Nom)
+      * Statut "Actif" (oui / non)
+    """
 
+    # --- Sécurité / permissions ------------------------------------------------
+    if session.get("ProfilUsager") is None:
+        # Session expirée
+        return render_template("session_ferme.html")
+
+    profile_list = session.get("ProfilUsager")
+
+    # Profils sans permission pour cette page
+    if profile_list[2] in (3, 5):
+        return redirect(url_for("bp_admin.permission"))
+
+    # --- Contexte de connexion -------------------------------------------------
     client_ident = profile_list[0]
     mode_connexion = profile_list[8]
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
 
-    # Vérifions si l'utilisateur veut voir les interventions historiques
-    voir_historique = request.form.get('show_historique') == 'on'
+    # --- Filtre : interventions historiques ou non ----------------------------
+    # Case à cocher "Historique" dans le formulaire
+    voir_historique = request.form.get("show_historique") == "on"
 
-    # Construction de la requête SQL selon le filtre historique
+    # Requête de base
     query = """
-        SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse,
-               ValeurActuelleInterv, FrequenceAns, AnProchain, IDIntervenant, CodeElementUniformat, PartSyndicat,
-               Inflation5ans, Inflation6a15ans, InflationPlus15ans, IDEquipement, Actif
+        SELECT IDFondsPrevoyance,
+               DescriptionDepense,
+               TypeMtceRempl,
+               IDCategorie,
+               RefGroupeUniformat,
+               RefAnalyse,
+               ValeurActuelleInterv,
+               FrequenceAns,
+               AnProchain,
+               IDIntervenant,
+               CodeElementUniformat,
+               PartSyndicat,
+               Inflation5ans,
+               Inflation6a15ans,
+               InflationPlus15ans,
+               IDEquipement,
+               Actif
         FROM fondsprevoyance
         WHERE IDClient = %s
     """
     params = [client_ident]
 
+    # Ajout de la condition sur la colonne historique
     if voir_historique:
         query += " AND historique = 1"
     else:
         query += " AND (historique IS NULL OR historique = 0)"
 
+    # --- Enrichissement des lignes pour affichage -----------------------------
     fill_table = []
+
     cur.execute(query, params)
 
     for item in cur.fetchall():
-        type_str = "Maintenance" if item[2] == 1 else "Remplacement" if item[2] == 2 else ""
-        item += (type_str,)  # 17
+        # Type d'intervention : Maintenance / Remplacement
+        type_str = (
+            "Maintenance" if item[2] == 1
+            else "Remplacement" if item[2] == 2
+            else ""
+        )
+        item += (type_str,)  # index 17
 
-        cur.execute("SELECT Description FROM categories WHERE IDCategorie=%s AND IDClient=%s", (item[3], client_ident))
+        # Catégorie
+        cur.execute(
+            "SELECT Description FROM categories "
+            "WHERE IDCategorie=%s AND IDClient=%s",
+            (item[3], client_ident),
+        )
         categorie = next((row[0] for row in cur.fetchall()), "")
-        item += (categorie,)  # 18
+        item += (categorie,)  # index 18
 
-        cur.execute("SELECT Descriptif FROM groupesuniformat WHERE IDGroupe=%s", (item[4],))
+        # Groupe Uniformat
+        cur.execute(
+            "SELECT Descriptif FROM groupesuniformat "
+            "WHERE IDGroupe=%s",
+            (item[4],),
+        )
         groupe_unif = next((row[0] for row in cur.fetchall()), "")
-        item += (groupe_unif,)  # 19
+        item += (groupe_unif,)  # index 19
 
-        cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s", (item[9], client_ident))
+        # Intervenant
+        cur.execute(
+            "SELECT NomIntervenant FROM intervenants "
+            "WHERE IDIntervenant=%s AND IDClient=%s",
+            (item[9], client_ident),
+        )
         nom_interv = next((row[0] for row in cur.fetchall()), "")
-        item += (nom_interv,)  # 20
+        item += (nom_interv,)  # index 20
 
-        if item[15] in [0, None]:
-            no_tag = ''
+        # Tag (équipement) : "NumTag Nom" ou vide
+        if item[15] in (0, None):
+            no_tag = ""
         else:
-            cur.execute("SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s", (item[15], client_ident))
+            cur.execute(
+                "SELECT NumTag, Nom FROM equipements "
+                "WHERE IDEquipement=%s AND IDClient=%s",
+                (item[15], client_ident),
+            )
             row = cur.fetchone()
-            no_tag = f"{row[0]} {row[1]}" if row else ''
-        item += (no_tag,)  # 21
+            no_tag = f"{row[0]} {row[1]}" if row else ""
+        item += (no_tag,)  # index 21
 
-        actif = 'oui' if item[16] == 1 else 'non'
-        item += (actif,)  # 22
+        # Actif : 1 -> "oui", autre -> "non"
+        actif = "oui" if item[16] == 1 else "non"
+        item += (actif,)  # index 22
 
         fill_table.append(item)
 
     cnx.close()
-    return render_template('interventions_FDP_table.html', fill_table=fill_table, bd=profile_list[3], show_historique=voir_historique)
+
+    return render_template(
+        "interventions_FDP_table.html",
+        fill_table=fill_table,
+        bd=profile_list[3],
+        show_historique=voir_historique,
+    )
+
+
+# @bp_fonds_prevoyance.route('/interventions_table', methods=['POST', 'GET'])
+# def interventions_table():
+#     """Affichage de la page des interventions du fonds de prévoyance pour ajouts et modifs."""
+#     if session.get('ProfilUsager') is None:
+#         return render_template('session_ferme.html')
+#
+#     profile_list = session.get('ProfilUsager')
+#     if profile_list[2] == 3 or profile_list[2] == 5:
+#         return redirect(url_for('bp_admin.permission'))
+#
+#     client_ident = profile_list[0]
+#     mode_connexion = profile_list[8]
+#     cnx = connect_db(mode_connexion)
+#     cur = cnx.cursor()
+#
+#     # Vérifions si l'utilisateur veut voir les interventions historiques
+#     voir_historique = request.form.get('show_historique') == 'on'
+#
+#     # Construction de la requête SQL selon le filtre historique
+#     query = """
+#         SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse,
+#                ValeurActuelleInterv, FrequenceAns, AnProchain, IDIntervenant, CodeElementUniformat, PartSyndicat,
+#                Inflation5ans, Inflation6a15ans, InflationPlus15ans, IDEquipement, Actif
+#         FROM fondsprevoyance
+#         WHERE IDClient = %s
+#     """
+#     params = [client_ident]
+#
+#     if voir_historique:
+#         query += " AND historique = 1"
+#     else:
+#         query += " AND (historique IS NULL OR historique = 0)"
+#
+#     fill_table = []
+#     cur.execute(query, params)
+#
+#     for item in cur.fetchall():
+#         type_str = "Maintenance" if item[2] == 1 else "Remplacement" if item[2] == 2 else ""
+#         item += (type_str,)  # 17
+#
+#         cur.execute("SELECT Description FROM categories WHERE IDCategorie=%s AND IDClient=%s", (item[3], client_ident))
+#         categorie = next((row[0] for row in cur.fetchall()), "")
+#         item += (categorie,)  # 18
+#
+#         cur.execute("SELECT Descriptif FROM groupesuniformat WHERE IDGroupe=%s", (item[4],))
+#         groupe_unif = next((row[0] for row in cur.fetchall()), "")
+#         item += (groupe_unif,)  # 19
+#
+#         cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s", (item[9], client_ident))
+#         nom_interv = next((row[0] for row in cur.fetchall()), "")
+#         item += (nom_interv,)  # 20
+#
+#         if item[15] in [0, None]:
+#             no_tag = ''
+#         else:
+#             cur.execute("SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s", (item[15], client_ident))
+#             row = cur.fetchone()
+#             no_tag = f"{row[0]} {row[1]}" if row else ''
+#         item += (no_tag,)  # 21
+#
+#         actif = 'oui' if item[16] == 1 else 'non'
+#         item += (actif,)  # 22
+#
+#         fill_table.append(item)
+#
+#     cnx.close()
+#     return render_template('interventions_FDP_table.html', fill_table=fill_table, bd=profile_list[3], show_historique=voir_historique)
 
 # @bp_fonds_prevoyance.route('/interventions_table', methods=['POST','GET'])
 # def interventions_table():
