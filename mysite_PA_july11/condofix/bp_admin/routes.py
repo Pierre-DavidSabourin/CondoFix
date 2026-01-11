@@ -134,6 +134,16 @@ def login():
 
         # ---------------------------------------------------------------------
         # Création de la session de l'usager
+        #   0 → client_ident   : Usagers.IDClient (FK → Clients.IDClient)
+        #   1 → user_ident     : Usagers.IDUsager (primary key of the user)
+        #   2 → type_ident     : Usagers.IDTypeUsager (role / permission type)
+        #   3 → client_name    : Clients.Nom (display name of the client)
+        #   4 → user_nom       : Usagers.NomUsager (username)
+        #   5 → module_rez     : Clients.ModuleRez (feature flag)
+        #   6 → carnet_plus    : Clients.CarnetPlus (feature flag)
+        #   7 → dbase          : Clients.Database (database name for this client)
+        #   8 → env            : Environment indicator (dev/test/prod)
+
         # ---------------------------------------------------------------------
         ident_list = [
             client_ident, user_ident, type_ident,

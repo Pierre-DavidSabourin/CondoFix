@@ -62,7 +62,7 @@ app.register_blueprint(bp_rapports)
 app.register_blueprint(bp_signalements)
 app.register_blueprint(bp_parametres)
 app.register_blueprint(bp_ocr)
-#app.register_blueprint(bp_sinistres)
+#app.register_blueprint(bp_sinistres) # feature will not be implemented
 
 # =========================
 # SEO infrastructure routes
