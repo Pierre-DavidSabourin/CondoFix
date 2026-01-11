@@ -263,8 +263,13 @@ def afficher_OCR(mode):
         liste_intervenants.append(row)
     liste_intervenants.sort(key=lambda x: x[1], reverse=False)
 
-    ch_fichier_jpg_taille_orig='../static/temp_images/'+'temp_image_'+profile_list[7]+'.jpg'
-    ch_fichier_pdf='../static/temp_images/'+'temp_image_'+profile_list[7]+'.pdf'
+    # issue with second invoice shwing as the previosu one
+    # ch_fichier_jpg_taille_orig='../static/temp_images/'+'temp_image_'+profile_list[7]+'.jpg'
+    # ch_fichier_pdf='../static/temp_images/'+'temp_image_'+profile_list[7]+'.pdf'
+
+    buster = str(int(time.time()))
+    ch_fichier_jpg_taille_orig = f"../static/temp_images/temp_image_{profile_list[7]}.jpg?v={buster}"
+    ch_fichier_pdf = f"../static/temp_images/temp_image_{profile_list[7]}.pdf?v={buster}"
 
     # vérifier si fournisseur trouvé dans la table des intervenants
     if contenu_OCR[3] == 'Autre':
@@ -403,37 +408,67 @@ def upload(args):
             if read_result.status not in ['notStarted', 'running']:
                 break
             time.sleep(1)
-        text_str=str()
-        text_list=[]
+        # text_str=str()
+        # text_list=[]
         # Print the detected text, line by line
+        text_list_all = []
+        text_str_all = ""
+
         if read_result.status == OperationStatusCodes.succeeded:
             for text_result in read_result.analyze_result.read_results:
-                last_line = ''
-                last_y_coord = float()
-                complete_line = ''
-                text_list = []
-                text_str = str()
-                for line in text_result.lines:
-                    #print(line.text)
-                    # print('x:',line.bounding_box[4],'y:',line.bounding_box[5])
+                last_y_coord = None
+                complete_line = ""
 
-                    # on prend les coordonnées y les plus basses de la boîte [1] avec une marge de 0.04
-                    if (last_y_coord - (0.01 * last_y_coord)) < line.bounding_box[5] < (
-                            last_y_coord + (0.01 * last_y_coord)):
+                for line in text_result.lines:
+                    y = line.bounding_box[5]
+
+                    if last_y_coord is not None and (last_y_coord * 0.99) < y < (last_y_coord * 1.01):
                         complete_line = complete_line + " " + line.text
                     else:
-                        # print(complete_line)
-                        complete_line = complete_line + ' /'
-                        line_formated = "(" + complete_line + ")"
-                        text_list.append(line_formated)
-                        text_str = text_str + " " + complete_line#  +str(line.bounding_box)
+                        if complete_line:
+                            text_list_all.append("(" + complete_line + ")")
+                            text_str_all += " " + complete_line
                         complete_line = line.text
-                    last_y_coord = line.bounding_box[5]
-                    last_line = line.text
-                #print(complete_line)# pour imprimer dernière ligne
-                line_formated = "(" + complete_line + ")"
-                text_list.append(line_formated)
-                text_str = text_str + " " + complete_line
+
+                    last_y_coord = y
+
+                # flush last line of the page
+                if complete_line:
+                    text_list_all.append("(" + complete_line + ")")
+                    text_str_all += " " + complete_line
+
+        text_list = text_list_all
+        text_str = text_str_all
+
+
+        # if read_result.status == OperationStatusCodes.succeeded:
+        #     for text_result in read_result.analyze_result.read_results:
+        #         last_line = ''
+        #         last_y_coord = float()
+        #         complete_line = ''
+        #         text_list = []
+        #         text_str = str()
+        #         for line in text_result.lines:
+        #             #print(line.text)
+        #             # print('x:',line.bounding_box[4],'y:',line.bounding_box[5])
+        #
+        #             # on prend les coordonnées y les plus basses de la boîte [1] avec une marge de 0.04
+        #             if (last_y_coord - (0.01 * last_y_coord)) < line.bounding_box[5] < (
+        #                     last_y_coord + (0.01 * last_y_coord)):
+        #                 complete_line = complete_line + " " + line.text
+        #             else:
+        #                 # print(complete_line)
+        #                 complete_line = complete_line + ' /'
+        #                 line_formated = "(" + complete_line + ")"
+        #                 text_list.append(line_formated)
+        #                 text_str = text_str + " " + complete_line#  +str(line.bounding_box)
+        #                 complete_line = line.text
+        #             last_y_coord = line.bounding_box[5]
+        #             last_line = line.text
+        #         #print(complete_line)# pour imprimer dernière ligne
+        #         line_formated = "(" + complete_line + ")"
+        #         text_list.append(line_formated)
+        #         text_str = text_str + " " + complete_line
             #print(text_list)
             #print(text_str)
     except:
@@ -1289,8 +1324,13 @@ def afficher_OCR_attente(args):
 
     # ch_fichier_jpg_taille_orig=chemin_ocr+'temp_image_'+nom_client+'.jpg'
     # ch_fichier_pdf=chemin_ocr+'temp_image_'+nom_client+'.pdf'
-    ch_fichier_jpg_taille_orig = '../static/temp_images/' + 'temp_image_' + profile_list[7] + '.jpg'
-    ch_fichier_pdf = '../static/temp_images/' + 'temp_image_' + profile_list[7] + '.pdf'
+    #issue with the second invoice showing as the last scan, adding buster
+    # ch_fichier_jpg_taille_orig = '../static/temp_images/' + 'temp_image_' + profile_list[7] + '.jpg'
+    # ch_fichier_pdf = '../static/temp_images/' + 'temp_image_' + profile_list[7] + '.pdf'
+    buster = str(int(time.time()))
+    ch_fichier_jpg_taille_orig = f"../static/temp_images/temp_image_{profile_list[7]}.jpg?v={buster}"
+    ch_fichier_pdf = f"../static/temp_images/temp_image_{profile_list[7]}.pdf?v={buster}"
+
     liste_ticket = []
     ticket_list = []
     IntervenantNom=str()
