@@ -160,136 +160,159 @@ def demande_info():
     session.permanent = True
     return render_template('-demande_info.html')
 
-
 @bp_public.route('/soumettre_info', methods=['POST', 'GET'])
-#page de demande d'information
 def soumettre_info():
     # --- Honeypot check (Task 132.1) ---
     hp = (request.form.get('website') or '').strip()
     if hp:
-        # minimal logging (no PII content)
         ip = request.headers.get('X-Forwarded-For', request.remote_addr)
         ua = request.headers.get('User-Agent', '')
         try:
             current_app.logger.info(f"HONEYPOT block on /soumettre_info ip={ip} ua={ua[:120]}")
         except Exception:
             pass
-        # Return the normal thank-you page; do NOT write to DB or send emails
         return render_template('-merci_demande_info.html')
     # --- end honeypot ---
+
     """envoi des données de demande de contact via email à l'équipe CondoFix et dans la bd démo"""
-    # vérifier si le formulaire a été 'hacké' avec la longueurs des chaînes soumises
-    if len(request.form['syndicat_nom']) > 40:
-        flash("Les données soumises ne sont pas conformes.",'warning')
-        return render_template('-demande_info.html')
-    elif len(request.form['contact_nom']) > 40:
-        flash("Les données soumises ne sont pas conformes.", 'warning')
-        return render_template('-demande_info.html')
-    elif len(request.form['nbre_portes']) > 3:
-        flash("Les données soumises ne sont pas conformes.", 'warning')
-        return render_template('-demande_info.html')
-    elif len(request.form['contact_email']) > 40:
-        flash("Les données soumises ne sont pas conformes.", 'warning')
-        return render_template('-demande_info.html')
-    elif len(request.form['contact_tel']) > 12:
-        flash("Les données soumises ne sont pas conformes.", 'warning')
-        return render_template('-demande_info.html')
-    elif len(request.form['commentaires']) > 200:
+
+    # Helper: safe get (prevents KeyError if field missing)
+    def f(name, default=''):
+        return (request.form.get(name) or default).strip()
+
+    # --- Validate lengths / basic tampering checks ---
+    syndicat_nom = f('syndicat_nom')
+    contact_prenom = f('contact_prenom')
+    contact_nom = f('contact_nom')
+    nbre_portes = f('nbre_portes')
+    contact_email = f('contact_email')
+    contact_tel = f('contact_tel')
+    commentaires = f('commentaires')
+    role = f('options_role')
+    id_demande = f('options_demande')
+
+    if len(syndicat_nom) > 40:
         flash("Les données soumises ne sont pas conformes.", 'warning')
         return render_template('-demande_info.html')
 
+    # NEW: split fields (per your HTML maxlength=30)
+    if len(contact_prenom) > 30 or len(contact_nom) > 30:
+        flash("Les données soumises ne sont pas conformes.", 'warning')
+        return render_template('-demande_info.html')
 
-    # accès bd des emplacements d'URL
+    if len(nbre_portes) > 3:
+        flash("Les données soumises ne sont pas conformes.", 'warning')
+        return render_template('-demande_info.html')
+
+    if len(contact_email) > 40:
+        flash("Les données soumises ne sont pas conformes.", 'warning')
+        return render_template('-demande_info.html')
+
+    if len(contact_tel) > 12:
+        flash("Les données soumises ne sont pas conformes.", 'warning')
+        return render_template('-demande_info.html')
+
+    if len(commentaires) > 200:
+        flash("Les données soumises ne sont pas conformes.", 'warning')
+        return render_template('-demande_info.html')
+
+    # Build full contact name (for DB + email)
+    nom_contact = f"{contact_prenom} {contact_nom}".strip()
+
+    # --- GEO lookup ---
     GEO_IP_API_URL = 'http://ip-api.com/json/'
-    # adresse URL du visiteur
-    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-        IP_TO_SEARCH = request.environ['REMOTE_ADDR']
-    else:
-        IP_TO_SEARCH = request.environ['HTTP_X_FORWARDED_FOR']  # if behind a proxy
 
+    if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+        IP_TO_SEARCH = request.environ.get('REMOTE_ADDR', '')
+    else:
+        IP_TO_SEARCH = request.environ.get('HTTP_X_FORWARDED_FOR', '')
 
     try:
-        # Creating request object to GeoLocation API
         req = urllib.request.Request(GEO_IP_API_URL + IP_TO_SEARCH)
-        # Getting in response JSON
         response = urllib.request.urlopen(req).read()
-        # Loading JSON from text to object
         json_response = json.loads(response.decode('utf-8'))
         ville = str()
-        ville_brut = json_response['city']
-        pays = json_response['country']
+        ville_brut = json_response.get('city', '')
+        pays = json_response.get('country', '')
         if pays == 'Canada':
-            ville=json_response['country']
-            # enlever accents
-            #ville = ''.join((c for c in unicodedata.normalize('NFD', ville_brut) if unicodedata.category(c) != 'Mn'))
-    except:
-        ville='Inconnue'
+            ville = json_response.get('city', '')  # <-- was accidentally setting country
+        else:
+            ville = ville_brut or 'Inconnue'
+    except Exception:
+        ville = 'Inconnue'
 
-    #préparation et envoi du courriel à CondoFix
-    nom_syndicat=request.form['syndicat_nom']
-    nom_contact=request.form['contact_nom']
-    note=request.form['commentaires']
-    nbre_unites=request.form['nbre_portes']
-    role=request.form.get('options_role')
-    id_demande = request.form['options_demande']
-    demande=str()
-    email=request.form['contact_email']
-    no_tel=request.form['contact_tel']
+    # --- Demand mapping ---
+    demande = ''
+    try:
+        if int(id_demande) == 1:
+            demande = 'Code pour démo'
+        elif int(id_demande) == 2:
+            demande = 'Appel téléphonique'
+        elif int(id_demande) == 3:
+            demande = 'Démo à distance'
+    except Exception:
+        demande = 'Inconnue'
 
-    if int(id_demande)==1:
-        demande='Code pour démo'
-    elif int(id_demande)==2:
-        demande='Appel téléphonique'
-    elif int(id_demande)==3:
-        demande='Démo à distance'
+    # --- DB insert ---
     cnx = connect_dbase()
     cur = cnx.cursor()
-    # enregistrer dans bd demo
-    cur.execute("INSERT INTO demandes_info (Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande,Commentaires) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                [datetime.now(), nom_contact, nom_syndicat, ville, nbre_unites, email, no_tel, role, id_demande, note])
+    cur.execute(
+        "INSERT INTO demandes_info (Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande, Commentaires) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        [datetime.now(), nom_contact, syndicat_nom, ville, nbre_portes, contact_email, contact_tel, role, id_demande, commentaires]
+    )
     cnx.commit()
     cnx.close()
-    #envoi de courriel
+
+    # --- Email ---
     mail_to = 'donald.boileau@gmail.com,sabourinpd@outlook.com'
-    email_list=mail_to.split(',')
+    email_list = mail_to.split(',')
+
     yahoo_mail_user = 'condofix.ca@yahoo.com'
     yahoo_mail_password = 'spyvlumgfwscqfkc'
 
     msg = MIMEMultipart("related")
     msg['Subject'] = 'Demande de prospect CondoFix'
     msg['From'] = yahoo_mail_user
+
     html = """
-        <html><body>
-        <p><b>Syndicat:</b>&nbsp;{nom_syndicat}<br/>
-        <b>Soumis par:</b>&nbsp;{nom_contact}<br/>
+    <html><body>
+      <p>
+        <b>Syndicat:</b>&nbsp;{syndicat}<br/>
+        <b>Soumis par:</b>&nbsp;{prenom} {nom}<br/>
         <b>Rôle:</b>&nbsp;{role}<br/>
-        <b>Nombre de portes:</b>&nbsp;{nbre_unites}<br/>
+        <b>Nombre de portes:</b>&nbsp;{portes}<br/>
         <b>Courriel:</b>&nbsp;{email}<br/>
-        <b>Téléphone:</b>&nbsp;{no_tel}<br/>
+        <b>Téléphone:</b>&nbsp;{tel}<br/>
         <b>Type de demande:</b>&nbsp;{demande}<br/>
-        <b>Note:</b>&nbsp;{note}</p>
-        </body></html>
-        """
+        <b>Note:</b>&nbsp;{note}
+      </p>
+    </body></html>
+    """
 
-    html = html.format(nom_syndicat=nom_syndicat,nom_contact=nom_contact,role=role,nbre_unites=nbre_unites,email=email,
-                       no_tel=no_tel,demande=demande,note=note)
+    html = html.format(
+        syndicat=syndicat_nom,
+        prenom=contact_prenom,
+        nom=contact_nom,
+        role=role,
+        portes=nbre_portes,
+        email=contact_email,
+        tel=contact_tel,
+        demande=demande,
+        note=commentaires
+    )
 
-    # enregistrer le MIME pour l'HTML
-    contenu = MIMEText(html, 'html')
-    # attacher le contenu au 'container' du message
-    msg.attach(contenu)
+    msg.attach(MIMEText(html, 'html'))
+
     try:
         server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
         server.ehlo()
         server.login(yahoo_mail_user, yahoo_mail_password)
-        # sendmail function takes 3 arguments: sender's address, recipient's address
-        # and message to send - here it is sent as one string.
-        for i in range(len(email_list)):
-            server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
+        for addr in email_list:
+            server.sendmail(yahoo_mail_user, addr.strip(), msg.as_string())
         server.quit()
         return render_template('-merci_demande_info.html')
-    except:
+    except Exception:
         print(traceback.format_exc())
         return render_template('-merci_demande_info.html')
 

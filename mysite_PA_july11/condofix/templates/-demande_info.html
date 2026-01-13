@@ -1,144 +1,412 @@
 {% extends "-public_layout_new.html" %}
-{% block content %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Formulaire de contact CondoFix</title>
-    <!--    icone sur onglet-->
-    <link rel="icon" href="../static/ToolsIcon.png">
-    <!-- Bootstrap CSS -->
-    <script src="../static/jquery-3.5.1.js"></script>
 
-<script type="text/javascript">
-    $(window).on('load', function() {
-        $('#myModal').modal('show');
-    });
-</script>
+{% block meta_title %}CondoFix — Demande d'information{% endblock %}
+{% block meta_description %}Demande d'information — CondoFix.{% endblock %}
+{% block head_extra %}
 <style>
-    .hp-wrap { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+  /* Honeypot */
+  .hp-wrap {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* Page spacing */
+  .contact-card {
+    background: #f2f2f2;
+    border-radius: .5rem;
+    padding: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .contact-card { padding: 1.5rem 1.75rem; }
+  }
+
+  /* Header (normalized spacing) */
+  .contact-header {
+    text-align: center;
+
+    /* This is what makes spacing proportional */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+
+    margin-bottom: 1.1rem;
+  }
+
+  .contact-header .title {
+    font-size: 1.45rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0; /* override old spacing */
+  }
+
+  .contact-header .brand {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0; /* override old spacing */
+  }
+
+  .contact-header .meta {
+    font-size: .92rem;
+    line-height: 1.25;
+    color: #6c757d;
+    margin-top: .1rem;
+  }
+
+  .contact-header .meta div { margin: .1rem 0; }
+  .contact-header .meta a { font-weight: 600; text-decoration: none; }
+  .contact-header .meta a:hover { text-decoration: underline; }
+  .contact-header .meta div:last-child { color: #6c757d; }
+
+  /* Labels */
+  .field-label {
+    font-size: .85rem;
+    color: #222;
+    margin-bottom: .25rem;
+  }
+
+  /* Radio groups: spacing + vertical alignment */
+  .radio-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem 1.25rem;
+    align-items: center;
+    margin-top: .25rem;
+  }
+
+  .radio-item {
+    display: flex;
+    padding: .2rem 0;
+    align-items: center;
+    gap: .4rem;
+    margin: 0;
+  }
+
+  .radio-item input[type="radio"] {
+    margin: 0;
+    transform: translateY(-.5px);
+  }
+
+  .radio-item span {
+    font-size: .92rem;
+    line-height: 1.1;
+  }
+
+  .radio-box {
+    border: 1px solid rgba(0, 0, 0, .12);
+    background: rgba(255, 255, 255, .55);
+    border-radius: .35rem;
+    padding: .55rem .75rem;
+  }
+
+  /* “Je voudrais” options as cards */
+  .choice-list {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: .5rem;
+    margin-top: .25rem;
+  }
+
+  .choice {
+    border: 1px solid rgba(0, 0, 0, .12);
+    width: 100%;
+    background: #fff;
+    border-radius: .4rem;
+    padding: .7rem .8rem;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    cursor: pointer;
+  }
+
+  .choice:hover { border-color: rgba(0, 0, 0, .22); }
+  .choice input[type="radio"] { margin: 0; }
+
+  .choice .choice-text {
+    font-size: .92rem;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  /* Make inputs feel consistent */
+  .input-group-text i {
+    width: 1rem;
+    text-align: center;
+  }
+
+  /* Submit */
+  .btn-submit { min-width: 140px; }
+
+  /* Commentaires: keep adjustable but never unreadable */
+  textarea.form-control { width: 100%; }
+
+  textarea[name="commentaires"] {
+    resize: vertical;     /* vertical only */
+    min-height: 40px;     /* your preference */
+    overflow: auto;
+  }
 </style>
-</head>
-<body>
-<div id="myModal" class="modal fade">
-    <div class="modal-dialog">
+{% endblock %}
+
+
+{% block content %}
+
+<!-- Modal Confidentialité -->
+<div id="myModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="privacyTitle" aria-hidden="true">
+  <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Confidentialité</h5>
+        <h5 class="modal-title" id="privacyTitle">Confidentialité</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        <p>En cliquant sur « Continuer », vous acceptez le stockage et l'utilisation de vos données personnelles
-            pour nos analyses et pour contribuer à nos efforts de marketing.</p>
-        <p>Pour plus d'informations, consultez notre <a href="{{ url_for('bp_public.confidentialite') }}">politique de confidentialité.</a></p>
+        <p>
+          En cliquant sur « Continuer », vous acceptez le stockage et l'utilisation de vos données personnelles
+          pour nos analyses et pour contribuer à nos efforts de marketing.
+        </p>
+        <p>
+          Pour plus d'informations, consultez notre
+          <a href="{{ url_for('bp_public.confidentialite') }}">politique de confidentialité.</a>
+        </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-dismiss="modal">Continuer</button>
-        <button type="button" onclick="window.location.href='{{ url_for( 'bp_public.home' ) }}';" class="btn btn-secondary">Retour à l'accueil</button>
+        <button type="button" onclick="window.location.href='{{ url_for('bp_public.home') }}';" class="btn btn-secondary">
+          Retour à l'accueil
+        </button>
       </div>
     </div>
   </div>
 </div>
-<div class="list-group">
-    <form action="{{ url_for('bp_public.soumettre_info') }}" method=post class="form-horizontal" role="form">
-        <div class="hp-wrap" aria-hidden="true">
-          <label for="website">Website</label>
-          <input id="website" type="text" name="website" tabindex="-1" autocomplete="off" />
-        </div>
-        <div class="row">
-            <div class="container col-md-6 bg-form-bground p-4 rounded">
-                <div class="text-center mb-3" >
-                    <h4 class="text-secondary">Demande d'information</h4>
-                    <p class="mb-0">CONDOSYS</p>
-                    <p class="mb-0"><small>255 Bellevue Suite 506, Sherbrooke QC, J1J 0B1</small></p>
-                    <p class="mb-0"><small>(819) 620-3167</small></p>
-                </div>
-                <div class="row">
-                    <div class="col-md-8">
-                        <p class="mb-0"><small>Nom du syndicat</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-group"></i></span>
-                            </div>
-                            <input type="text" class="form-control border-right-0" maxlength="40" name="syndicat_nom" placeholder="Nom du syndicat"
-                              aria-label="syndicat_nom" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <p class="mb-0"><small>Nombre de portes</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-home"></i></span>
-                            </div>
-                            <input type="number" class="form-control border-right-0" maxlength="3" name="nbre_portes"  placeholder="Portes"
-                                  aria-label="nbre_portes" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p class="mb-0"><small>Nom et prénom</small></p>
-                        <div class="input-group mb-2">
-                           <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-address-book"></i></span>
-                           </div>
-                           <input type="text" class="form-control border-right-0" maxlength="30" name="contact_nom" placeholder="Nom et prénom"
-                                  aria-label="contact_nom" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-0"><small>Courriel</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-envelope"></i></span>
-                           </div>
-                           <input type="email" class="form-control border-right-0" maxlength="40" name="contact_email" placeholder="Courriel"
-                                  aria-label="contact_email" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-7">
-                        <p class="mb-0"><small>Votre rôle:</small></p>
-                        <div class="input-group mb-2">
-                            <div class="form-group form-inline justify-content-between">
-                                    <input type="radio" name="options_role" id="option1" value="administrateur"><small>&nbsp;administrateur&nbsp;</small><br>
-                                    <input type="radio" name="options_role" id="option2" value="gestionnaire"><small>&nbsp;gestionnaire&nbsp;</small><br>
-                                    <input type="radio" name="options_role" id="option3" value="coproprietaire"><small>&nbsp;copropriétaire</small><br>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-5">
-                        <p class="mb-0"><small>Téléphone (000-000-0000)</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-phone-square"></i></span>
-                           </div>
-                           <input type="text" class="form-control border-right-0" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" name="contact_tel" placeholder="Téléphone"
-                                  aria-label="contact_tel" maxlength="12" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-8">
-                        <p class="mb-1"><small>Je voudrais:</small></p>
-                        <input type="radio" name="options_demande" id="optionA" value="1"><small>&nbsp;un code pour accéder au site démo (courriel requis)</small><br />
-                        <input type="radio" name="options_demande" id="optionB" value="2" required="required"><small>&nbsp;un appel pour discuter de mes besoins</small><br />
-                        <input type="radio" name="options_demande" id="optionC" value="3"><small>&nbsp;une démonstration à distance du logiciel (20 minutes)</small><br>
-                    </div>
-                    <div class="col-md-4">
 
-                    </div>
-                </div>
-                <p class="mt-2 mb-0"><small>Commentaires</small></p>
-                    <div class="input-group mb-2">
-                       <textarea class="form-control form-control-sm mb-3 text-align:left" maxlength="200" rows="3" name="commentaires" placeholder="Veuillez inscrire vos commentaires" autofocus="autofocus" required></textarea>
-                    </div>
-            <button type="submit" class="btn bg-steel btn-rounded text-white float-right">Soumettre</button>
+<form action="{{ url_for('bp_public.soumettre_info') }}" method="post" class="form-horizontal" role="form" novalidate>
+  <div class="hp-wrap" aria-hidden="true">
+    <label for="website">Website</label>
+    <input id="website" type="text" name="website" tabindex="-1" autocomplete="off" />
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-7 col-xl-6">
+      <div class="contact-card">
+
+        <!-- Header -->
+        <div class="contact-header">
+          <div class="title">Demande d'information</div>
+          <div class="brand">CondoFix</div>
+          <div class="meta">
+            <div><a href="tel:8196203167">(819) 620-3167</a></div>
+            <div>186 Rue des Grands-Châteaux, Gatineau, QC J9H 7S4</div>
+          </div>
+        </div>
+
+        <!-- Nom du syndicat + Portes -->
+        <div class="row">
+          <div class="col-12 col-md-8">
+            <div class="field-label">Nom du syndicat</div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend bg-white">
+                <span class="input-group-text bg-white"><i class="fa fa-group"></i></span>
+              </div>
+              <input type="text" class="form-control" maxlength="40" name="syndicat_nom"
+                     placeholder="Nom du syndicat" aria-label="syndicat_nom" autofocus required>
             </div>
-    </form>
-</div>
-</body>
-<script src="../static/jquery-3.5.1.min.js"></script>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <div class="field-label">Nombre de portes</div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend bg-white">
+                <span class="input-group-text bg-white"><i class="fa fa-home"></i></span>
+              </div>
+              <input type="number" class="form-control" name="nbre_portes"
+                     placeholder="Portes" min="1" max="999" step="1"
+                     inputmode="numeric" aria-label="nbre_portes" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prénom + Nom -->
+        <div class="row">
+          <div class="col-12 col-md-6">
+            <div class="field-label">Prénom</div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend bg-white">
+                <span class="input-group-text bg-white"><i class="fa fa-user"></i></span>
+              </div>
+              <input type="text" class="form-control" maxlength="30" name="contact_prenom"
+                     placeholder="Prénom" aria-label="contact_prenom" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="field-label">Nom</div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend bg-white">
+                <span class="input-group-text bg-white"><i class="fa fa-user"></i></span>
+              </div>
+              <input type="text" class="form-control" maxlength="30" name="contact_nom"
+                     placeholder="Nom" aria-label="contact_nom" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Courriel -->
+        <div class="row">
+          <div class="col-12">
+            <div class="field-label">Courriel</div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend bg-white">
+                <span class="input-group-text bg-white"><i class="fa fa-envelope"></i></span>
+              </div>
+              <input type="email" class="form-control" maxlength="40" name="contact_email"
+                     placeholder="Courriel" aria-label="contact_email" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Téléphone + Rôle (IMPORTANT: row properly closed) -->
+        <div class="row">
+          <div class="col-12 col-md-6">
+            <div class="field-label">Téléphone</div>
+            <div class="input-group mb-3">
+              <div class="input-group-prepend bg-white">
+                <span class="input-group-text bg-white"><i class="fa fa-phone-square"></i></span>
+              </div>
+              <input id="contact_tel" type="tel" class="form-control" name="contact_tel"
+                     placeholder="000-000-0000" inputmode="numeric" autocomplete="tel"
+                     maxlength="12" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="field-label">Votre rôle</div>
+            <div class="radio-box mb-3">
+              <div class="radio-row">
+                <label class="radio-item">
+                  <input type="radio" name="options_role" value="administrateur" required>
+                  <span>administrateur</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="options_role" value="gestionnaire">
+                  <span>gestionnaire</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="options_role" value="coproprietaire">
+                  <span>copropriétaire</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Je voudrais (full width) -->
+        <div class="row">
+          <div class="col-12">
+            <div class="field-label">Je voudrais</div>
+            <div class="choice-list mb-3">
+              <label class="choice">
+                <input type="radio" name="options_demande" value="1" required>
+                <p class="choice-text mb-0">Un code pour accéder au site démo (courriel requis)</p>
+              </label>
+              <label class="choice">
+                <input type="radio" name="options_demande" value="2">
+                <p class="choice-text mb-0">Un appel pour discuter de mes besoins</p>
+              </label>
+              <label class="choice">
+                <input type="radio" name="options_demande" value="3">
+                <p class="choice-text mb-0">Une démonstration à distance du logiciel (20 minutes)</p>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Commentaires (full width) -->
+        <div class="row">
+          <div class="col-12">
+            <div class="field-label">Commentaires</div>
+            <div class="input-group mb-3">
+              <textarea class="form-control" maxlength="200" rows="4" name="commentaires"
+                        placeholder="Veuillez inscrire vos commentaires" required></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn bg-steel btn-rounded text-white btn-submit">Soumettre</button>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- /.contact-card -->
+    </div>   <!-- /.col -->
+  </div>     <!-- /.row -->
+</form>
+
 {% endblock content %}
+
+{% block body_extra %}
+<script>
+(function () {
+  // Show privacy modal after Bootstrap + jQuery are loaded (layout loads them at end)
+  if (window.jQuery) {
+    jQuery(function () { jQuery('#myModal').modal('show'); });
+  }
+
+  // Phone formatter: 000-000-0000
+  const el = document.getElementById("contact_tel");
+  if (!el) return;
+
+  function formatPhone(value) {
+    const digits = (value || "").replace(/\D/g, "").slice(0, 10);
+    const a = digits.slice(0, 3);
+    const b = digits.slice(3, 6);
+    const c = digits.slice(6, 10);
+    if (digits.length <= 3) return a;
+    if (digits.length <= 6) return `${a}-${b}`;
+    return `${a}-${b}-${c}`;
+  }
+
+  el.addEventListener("input", () => {
+    const start = el.selectionStart;
+    const before = el.value;
+    el.value = formatPhone(el.value);
+
+    const delta = el.value.length - before.length;
+    const pos = (start || 0) + delta;
+    try { el.setSelectionRange(pos, pos); } catch (e) {}
+  });
+
+  const doors = document.querySelector('input[name="nbre_portes"]');
+  if (!doors) return;
+
+  doors.addEventListener('wheel', function (e) {
+    // Make wheel affect the number field even if not focused
+    e.preventDefault();
+
+    const step = parseFloat(doors.step || "1") || 1;
+    const min = doors.min !== "" ? parseFloat(doors.min) : null;
+    const max = doors.max !== "" ? parseFloat(doors.max) : null;
+
+    let val = doors.value === "" ? 0 : parseFloat(doors.value);
+    if (Number.isNaN(val)) val = 0;
+
+    // Wheel up => increment, wheel down => decrement
+    val += (e.deltaY < 0 ? step : -step);
+
+    if (min !== null) val = Math.max(min, val);
+    if (max !== null) val = Math.min(max, val);
+
+    doors.value = String(val);
+    doors.dispatchEvent(new Event('input', { bubbles: true }));
+    doors.dispatchEvent(new Event('change', { bubbles: true }));
+  }, { passive: false });
+
+})();
+</script>
+{% endblock body_extra %}
