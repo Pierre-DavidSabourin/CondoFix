@@ -2,125 +2,158 @@
 
 {% block meta_title %}CondoFix — Demande d'information{% endblock %}
 {% block meta_description %}Demande d'information — CondoFix.{% endblock %}
-
 {% block head_extra %}
 <style>
   /* Honeypot */
-  .hp-wrap { position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden; }
+  .hp-wrap {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
 
   /* Page spacing */
-  .contact-card{
-    background: #f2f2f2;               /* matches your current tone */
+  .contact-card {
+    background: #f2f2f2;
     border-radius: .5rem;
     padding: 1.25rem;
   }
 
-  @media (min-width: 768px){
-    .contact-card{ padding: 1.5rem 1.75rem; }
+  @media (min-width: 768px) {
+    .contact-card { padding: 1.5rem 1.75rem; }
   }
 
-  /* Header */
-  .contact-header{
-    text-align:center;
-    margin-bottom: 1rem;
+  /* Header (normalized spacing) */
+  .contact-header {
+    text-align: center;
+
+    /* This is what makes spacing proportional */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35rem;
+
+    margin-bottom: 1.1rem;
   }
-  .contact-header .title{
+
+  .contact-header .title {
     font-size: 1.45rem;
     font-weight: 600;
-    color:#6c757d; /* bootstrap secondary */
-    margin-bottom: .25rem;
+    color: #6c757d;
+    margin-bottom: 0; /* override old spacing */
   }
-  .contact-header .brand{
+
+  .contact-header .brand {
     font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: .35rem;
+    margin-bottom: 0; /* override old spacing */
   }
-  .contact-header .meta{
+
+  .contact-header .meta {
     font-size: .92rem;
     line-height: 1.25;
-    color:#6c757d;
+    color: #6c757d;
+    margin-top: .1rem;
   }
-  .contact-header .meta a{ font-weight:600; }
-.contact-header .meta div:last-child{ color:#6c757d; }
-  .contact-header .meta a:hover{ text-decoration:underline; }
+
+  .contact-header .meta div { margin: .1rem 0; }
+  .contact-header .meta a { font-weight: 600; text-decoration: none; }
+  .contact-header .meta a:hover { text-decoration: underline; }
+  .contact-header .meta div:last-child { color: #6c757d; }
 
   /* Labels */
-  .field-label{
+  .field-label {
     font-size: .85rem;
-    color:#222;
+    color: #222;
     margin-bottom: .25rem;
   }
 
   /* Radio groups: spacing + vertical alignment */
-  .radio-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap: .75rem 1.25rem;     /* breathing room */
-    align-items:center;
+  .radio-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem 1.25rem;
+    align-items: center;
     margin-top: .25rem;
   }
-  .radio-item{
-    display:flex;
+
+  .radio-item {
+    display: flex;
     padding: .2rem 0;
-    align-items:center;      /* centers text to button */
+    align-items: center;
     gap: .4rem;
-    margin:0;
+    margin: 0;
   }
-  .radio-item input[type="radio"]{
-    margin:0;               /* avoid baseline weirdness */
-    transform: translateY(-.5px); /* tiny optical alignment */
+
+  .radio-item input[type="radio"] {
+    margin: 0;
+    transform: translateY(-.5px);
   }
-  .radio-item span{
+
+  .radio-item span {
     font-size: .92rem;
     line-height: 1.1;
   }
 
-  .radio-box{
-  border: 1px solid rgba(0,0,0,.12);
-  background: rgba(255,255,255,.55);
-  border-radius: .35rem;
-  padding: .55rem .75rem;
-}
+  .radio-box {
+    border: 1px solid rgba(0, 0, 0, .12);
+    background: rgba(255, 255, 255, .55);
+    border-radius: .35rem;
+    padding: .55rem .75rem;
+  }
 
   /* “Je voudrais” options as cards */
-  .choice-list{
-    display:flex;
+  .choice-list {
+    display: flex;
     width: 100%;
-    flex-direction:column;
+    flex-direction: column;
     gap: .5rem;
     margin-top: .25rem;
   }
-  .choice{
-    border: 1px solid rgba(0,0,0,.12);
+
+  .choice {
+    border: 1px solid rgba(0, 0, 0, .12);
     width: 100%;
     background: #fff;
     border-radius: .4rem;
     padding: .7rem .8rem;
-    display:flex;
-    align-items:center;
+    display: flex;
+    align-items: center;
     gap: .55rem;
-    cursor:pointer;
+    cursor: pointer;
   }
-  .choice:hover{ border-color: rgba(0,0,0,.22); }
-  .choice input[type="radio"]{ margin:0; }
-  .choice .choice-text{
+
+  .choice:hover { border-color: rgba(0, 0, 0, .22); }
+  .choice input[type="radio"] { margin: 0; }
+
+  .choice .choice-text {
     font-size: .92rem;
     line-height: 1.2;
-    margin:0;
+    margin: 0;
   }
 
   /* Make inputs feel consistent */
-  .input-group-text i{ width: 1rem; text-align:center; }
-
-  /* Submit */
-  .btn-submit{
-    min-width: 140px;
+  .input-group-text i {
+    width: 1rem;
+    text-align: center;
   }
 
+  /* Submit */
+  .btn-submit { min-width: 140px; }
+
+  /* Commentaires: keep adjustable but never unreadable */
   textarea.form-control { width: 100%; }
 
+  textarea[name="commentaires"] {
+    resize: vertical;     /* vertical only */
+    min-height: 40px;     /* your preference */
+    overflow: auto;
+  }
 </style>
 {% endblock %}
+
 
 {% block content %}
 
