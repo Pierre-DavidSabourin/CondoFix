@@ -269,18 +269,18 @@ def soumettre_info():
         ville = 'Inconnue'
 
     # --- DB insert ---
-    # cnx = connect_dbase()
-    # cur = cnx.cursor()
-    # cur.execute(
-    #     "INSERT INTO demandes_info (Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande, Commentaires) "
-    #     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-    #     [datetime.now(), nom_contact, syndicat_nom, ville, nbre_portes, contact_email, contact_tel, role, type_demande_db, commentaires]
-    # )
-    # cnx.commit()
-    # cnx.close()
+    cnx = connect_dbase()
+    cur = cnx.cursor()
+    cur.execute(
+        "INSERT INTO demandes_info (Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande, Commentaires) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        [datetime.now(), nom_contact, syndicat_nom, ville, nbre_portes, contact_email, contact_tel, role, type_demande_db, commentaires]
+    )
+    cnx.commit()
+    cnx.close()
 
     # --- Email ---
-    mail_to = 'sabourinpd@outlook.com'
+    mail_to = 'donald.boileau@gmail.com, sabourinpd@outlook.com'
     email_list = [e.strip() for e in mail_to.split(',') if e.strip()]
 
     yahoo_mail_user = 'condofix.ca@yahoo.com'
