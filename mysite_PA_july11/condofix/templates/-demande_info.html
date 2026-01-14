@@ -104,7 +104,21 @@
     padding: .55rem .75rem;
   }
 
-  /* “Je voudrais” options as cards */
+  /* Group validation styling (Bootstrap-like) */
+.radio-box.is-invalid{
+  border-color: #dc3545; /* Bootstrap danger */
+}
+
+.choice-list.is-invalid .choice{
+  border-color: #dc3545;
+}
+
+/* Ensure invalid-feedback shows nicely even without native :invalid */
+.invalid-feedback{
+  display: none;
+}
+
+
   .choice-list {
     display: flex;
     width: 100%;
@@ -126,7 +140,25 @@
   }
 
   .choice:hover { border-color: rgba(0, 0, 0, .22); }
-  .choice input[type="radio"] { margin: 0; }
+  .choice input[type="radio"],
+  .choice input[type="checkbox"] { margin: 0; }
+
+  /* Checkbox alignment (same look as radios) */
+.choice input[type="checkbox"]{
+  transform: translateY(-1px);
+}
+
+/* Slightly better affordance when checked */
+.choice input[type="checkbox"]:checked + .choice-text{
+  font-weight: 600;
+}
+
+/* Make the whole card feel selected */
+.choice:has(input[type="checkbox"]:checked){
+  border-color: rgba(0,0,0,.25);
+  background: rgba(255,255,255,.92);
+}
+
 
   .choice .choice-text {
     font-size: .92rem;
@@ -187,7 +219,12 @@
   </div>
 </div>
 
-<form action="{{ url_for('bp_public.soumettre_info') }}" method="post" class="form-horizontal" role="form" novalidate>
+<form id="demandeInfoForm"
+      action="{{ url_for('bp_public.soumettre_info') }}"
+      method="post"
+      class="form-horizontal needs-validation"
+      role="form"
+      novalidate>
   <div class="hp-wrap" aria-hidden="true">
     <label for="website">Website</label>
     <input id="website" type="text" name="website" tabindex="-1" autocomplete="off" />
@@ -291,7 +328,7 @@
             <div class="radio-box mb-3">
               <div class="radio-row">
                 <label class="radio-item">
-                  <input type="radio" name="options_role" value="administrateur" required>
+                  <input type="radio" name="options_role" id="role_adm" value="administrateur" required>
                   <span>administrateur</span>
                 </label>
                 <label class="radio-item">
@@ -304,29 +341,44 @@
                 </label>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Je voudrais (full width) -->
-        <div class="row">
-          <div class="col-12">
-            <div class="field-label">Je voudrais</div>
-            <div class="choice-list mb-3">
-              <label class="choice">
-                <input type="radio" name="options_demande" value="1" required>
-                <p class="choice-text mb-0">Un code pour accéder au site démo (courriel requis)</p>
-              </label>
-              <label class="choice">
-                <input type="radio" name="options_demande" value="2">
-                <p class="choice-text mb-0">Un appel pour discuter de mes besoins</p>
-              </label>
-              <label class="choice">
-                <input type="radio" name="options_demande" value="3">
-                <p class="choice-text mb-0">Une démonstration à distance du logiciel (20 minutes)</p>
-              </label>
+            <div id="roleFeedback" class="invalid-feedback mt-1" style="display:none;">
+              Veuillez sélectionner votre rôle.
             </div>
           </div>
         </div>
+
+        <!-- Je souhaite (full width) -->
+        <div class="row">
+          <div class="col-12">
+            <div class="field-label">Je souhaite :</div>
+
+            <div class="choice-list mb-3" id="demandeChoices">
+              <label class="choice">
+                <input type="checkbox" name="options_demande" value="demo_acces">
+                <p class="choice-text mb-0">Recevoir un accès démo (code envoyé par courriel)</p>
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="options_demande" value="demo_planifier">
+                <p class="choice-text mb-0">Planifier une démonstration en ligne (20 min)</p>
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="options_demande" value="soumission_devis">
+                <p class="choice-text mb-0">Recevoir une soumission / un devis (tarification selon le nombre de portes)</p>
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="options_demande" value="implantation_demarrage">
+                <p class="choice-text mb-0">Être contacté pour l’implantation / démarrage (mise en place, paramètres, formation)</p>
+              </label>
+            </div>
+            <div id="demandeFeedback" class="invalid-feedback mt-1" style="display:none;">
+              Veuillez sélectionner au moins une option dans « Je souhaite ».
+            </div>
+          </div>
+        </div>
+
 
         <!-- Commentaires (full width) -->
         <div class="row">
@@ -353,60 +405,146 @@
 {% block body_extra %}
 <script>
 (function () {
-  // Show privacy modal after Bootstrap + jQuery are loaded (layout loads them at end)
+  // Show privacy modal after Bootstrap + jQuery are loaded
   if (window.jQuery) {
     jQuery(function () { jQuery('#myModal').modal('show'); });
   }
 
   // Phone formatter: 000-000-0000
-  const el = document.getElementById("contact_tel");
-  if (!el) return;
+  const tel = document.getElementById("contact_tel");
+  if (tel) {
+    function formatPhone(value) {
+      const digits = (value || "").replace(/\D/g, "").slice(0, 10);
+      const a = digits.slice(0, 3);
+      const b = digits.slice(3, 6);
+      const c = digits.slice(6, 10);
+      if (digits.length <= 3) return a;
+      if (digits.length <= 6) return `${a}-${b}`;
+      return `${a}-${b}-${c}`;
+    }
 
-  function formatPhone(value) {
-    const digits = (value || "").replace(/\D/g, "").slice(0, 10);
-    const a = digits.slice(0, 3);
-    const b = digits.slice(3, 6);
-    const c = digits.slice(6, 10);
-    if (digits.length <= 3) return a;
-    if (digits.length <= 6) return `${a}-${b}`;
-    return `${a}-${b}-${c}`;
+    tel.addEventListener("input", () => {
+      const start = tel.selectionStart;
+      const before = tel.value;
+      tel.value = formatPhone(tel.value);
+
+      const delta = tel.value.length - before.length;
+      const pos = (start || 0) + delta;
+      try { tel.setSelectionRange(pos, pos); } catch (e) {}
+    });
   }
 
-  el.addEventListener("input", () => {
-    const start = el.selectionStart;
-    const before = el.value;
-    el.value = formatPhone(el.value);
-
-    const delta = el.value.length - before.length;
-    const pos = (start || 0) + delta;
-    try { el.setSelectionRange(pos, pos); } catch (e) {}
-  });
-
+  // Doors wheel behavior
   const doors = document.querySelector('input[name="nbre_portes"]');
-  if (!doors) return;
+  if (doors) {
+    doors.addEventListener('wheel', function (e) {
+      e.preventDefault();
 
-  doors.addEventListener('wheel', function (e) {
-    // Make wheel affect the number field even if not focused
-    e.preventDefault();
+      const step = parseFloat(doors.step || "1") || 1;
+      const min = doors.min !== "" ? parseFloat(doors.min) : null;
+      const max = doors.max !== "" ? parseFloat(doors.max) : null;
 
-    const step = parseFloat(doors.step || "1") || 1;
-    const min = doors.min !== "" ? parseFloat(doors.min) : null;
-    const max = doors.max !== "" ? parseFloat(doors.max) : null;
+      let val = doors.value === "" ? 0 : parseFloat(doors.value);
+      if (Number.isNaN(val)) val = 0;
 
-    let val = doors.value === "" ? 0 : parseFloat(doors.value);
-    if (Number.isNaN(val)) val = 0;
+      val += (e.deltaY < 0 ? step : -step);
 
-    // Wheel up => increment, wheel down => decrement
-    val += (e.deltaY < 0 ? step : -step);
+      if (min !== null) val = Math.max(min, val);
+      if (max !== null) val = Math.min(max, val);
 
-    if (min !== null) val = Math.max(min, val);
-    if (max !== null) val = Math.min(max, val);
+      doors.value = String(val);
+      doors.dispatchEvent(new Event('input', { bubbles: true }));
+      doors.dispatchEvent(new Event('change', { bubbles: true }));
+    }, { passive: false });
+  }
 
-    doors.value = String(val);
-    doors.dispatchEvent(new Event('input', { bubbles: true }));
-    doors.dispatchEvent(new Event('change', { bubbles: true }));
-  }, { passive: false });
+  // Validation (Bootstrap-like, no alerts)
+  const form = document.getElementById('demandeInfoForm');
+  if (!form) return;
 
+  form.addEventListener('submit', function (e) {
+    // Reset custom UI state
+    const roleBox = form.querySelector('.radio-box');
+    const roleFeedback = document.getElementById('roleFeedback');
+    const demandeBox = document.getElementById('demandeChoices');
+    const demandeFeedback = document.getElementById('demandeFeedback');
+
+    if (roleBox) roleBox.classList.remove('is-invalid');
+    if (demandeBox) demandeBox.classList.remove('is-invalid');
+    if (roleFeedback) roleFeedback.style.display = 'none';
+    if (demandeFeedback) demandeFeedback.style.display = 'none';
+
+    // 1) Checkbox group validation
+    const checks = form.querySelectorAll('input[name="options_demande"]:checked');
+    const okDemande = checks.length > 0;
+
+    // Clear role error on change
+form.querySelectorAll('input[name="options_role"]').forEach(r => {
+  r.addEventListener('change', () => {
+    if (roleBox) roleBox.classList.remove('is-invalid');
+    if (roleFeedback) roleFeedback.style.display = 'none';
+    r.setCustomValidity('');
+  });
+});
+
+// Clear demande error on change
+form.querySelectorAll('input[name="options_demande"]').forEach(c => {
+  c.addEventListener('change', () => {
+    if (demandeBox) demandeBox.classList.remove('is-invalid');
+    if (demandeFeedback) demandeFeedback.style.display = 'none';
+    c.setCustomValidity('');
+  });
+});
+
+
+    // Tie checkbox-group validity into HTML5 validity so checkValidity() fails properly
+    const firstCheckbox = form.querySelector('input[name="options_demande"]');
+    if (firstCheckbox) {
+      firstCheckbox.setCustomValidity(okDemande ? '' : 'Veuillez sélectionner au moins une option.');
+    }
+
+    if (!okDemande) {
+      if (demandeBox) demandeBox.classList.add('is-invalid');
+      if (demandeFeedback) demandeFeedback.style.display = 'block';
+    }
+
+    // 1.5) Radio group validation (Votre rôle)
+    const roleChecked = form.querySelectorAll('input[name="options_role"]:checked').length > 0;
+
+    // Tie radio-group validity into HTML5 validity
+    const firstRole = document.getElementById('role_adm') || form.querySelector('input[name="options_role"]');
+    if (firstRole) {
+      firstRole.setCustomValidity(roleChecked ? '' : 'Veuillez sélectionner votre rôle.');
+    }
+
+    if (!roleChecked) {
+      if (roleBox) roleBox.classList.add('is-invalid');
+      if (roleFeedback) roleFeedback.style.display = 'block';
+    }
+
+
+    // 2) Let HTML5 validate ALL required fields (email, tel, doors, etc.)
+    // This restores “old validation” without alerts
+    const okNative = form.checkValidity();
+
+    // 3) Trigger Bootstrap-like display
+    form.classList.add('was-validated');
+
+    if (!okNative) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Scroll to first invalid input/group
+      const firstInvalid =
+        form.querySelector('.is-invalid') ||
+        form.querySelector(':invalid');
+
+      if (firstInvalid) {
+        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, false);
 })();
 </script>
 {% endblock body_extra %}
+
