@@ -106,6 +106,12 @@ def calendrier_rez(usager):
             if idx < len(colors):
                 color_by_ressource[res_id] = colors[idx]
 
+    # Also keep description by resource id (for tooltips)
+    desc_by_ressource = {}
+    for res_id, desc in liste_ress_actives:
+        if res_id and desc:
+            desc_by_ressource[res_id] = desc
+
     # ---------------------------------------------------------------------
     # 3) Réservations à partir d'aujourd'hui -> events_list
     #    - dict neuf par event (pas de "stale values")
@@ -145,11 +151,12 @@ def calendrier_rez(usager):
 
         events_list.append({
             "no_unite": row[5],
-            "date_heure": start_dt.isoformat(),  # <-- important
+            "date_heure": start_dt.isoformat(),
             "ressource": res_id,
             "duree": row[4],
             "couleur": color_by_ressource[res_id],
-            "note": row[6]
+            "note": row[6],
+            "ressource_desc": desc_by_ressource.get(res_id, "")
         })
 
     cnx.close()

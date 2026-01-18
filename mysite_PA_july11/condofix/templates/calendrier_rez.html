@@ -121,8 +121,7 @@
   .legend .ressource_9 { background-color: peru; }
   .legend .ressource_10 { background-color: purple; }
 
-  /* E) Let event text wrap a bit better on narrow screens */
-/* Desktop: allow a bit of wrapping if you want */
+  /* Desktop: allow a bit of wrapping if you want */
   @media (min-width: 769px){
     .fc-daygrid-event { white-space: normal; }
   }
@@ -136,8 +135,8 @@
     }
   }
 
-.fc .fc-event { cursor: pointer; }
-.fc { user-select: none; }
+  .fc .fc-event { cursor: pointer; }
+  .fc { user-select: none; }
 
   /* Better button padding/typography (esp. mobile) */
   .rez-btn{
@@ -153,7 +152,6 @@
       line-height: 44px;
     }
   }
-
 </style>
 {% endblock content %}
 
@@ -171,7 +169,13 @@
         {
           title: '{{event.no_unite}} ({{event.duree}} h)',
           start: '{{event.date_heure}}',
-          color: '{{event.couleur}}'
+          color: '{{event.couleur}}',
+          extendedProps: {
+            tooltip: '{{ event.ressource_desc }} — Unité {{ event.no_unite }} — {{ event.duree }} h'
+            {# Optional if you want notes too:
+               + (event.note ? " — " + event.note : "")
+            #}
+          }
         },
         {% endfor %}
       ];
@@ -191,6 +195,11 @@
           left: 'prev,next today',
           center: 'title',
           right: isMobile ? 'dayGridMonth,listWeek' : ''
+        },
+
+        eventDidMount: function(info) {
+          const tip = info.event.extendedProps.tooltip || info.event.title;
+          info.el.setAttribute('title', tip);
         }
       });
 
