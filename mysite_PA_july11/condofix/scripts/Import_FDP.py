@@ -259,17 +259,22 @@ def read_xlsx_rows(
 # DB operations
 # -----------------------------
 
-def archive_existing(cur: MySQLCursor, client_id: int) -> int:
-    cur.execute(
-        """
+def archive_existing(cur: MySQLCursor, client_id: int, part_syndicat: str = "all") -> int:
+    sql = """
         UPDATE fondsprevoyance
         SET historique = 1
-        WHERE IDClient = %s AND (historique IS NULL OR historique = 0)
-        """,
-        (client_id,),
-    )
-    return cur.rowcount
+        WHERE IDClient = %s
+          AND (historique IS NULL OR historique = 0)
+    """
+    params: List[Any] = [client_id]
 
+    if part_syndicat != "all":
+        # PartSyndicat is effectively 0/1 in your data model (owner vs syndicate responsibility)
+        sql += " AND PartSyndicat = %s"
+        params.append(int(part_syndicat))
+
+    cur.execute(sql, tuple(params))
+    return cur.rowcount
 
 def insert_fdp_rows(
     cur: MySQLCursor,
@@ -335,6 +340,8 @@ def main() -> int:
     ap.add_argument("--historique-new", type=int, default=0, choices=[0, 1], help="historique value for newly inserted rows")
     ap.add_argument("--dry-run", action="store_true", help="Rollback at end; prints what would happen")
     ap.add_argument("--max-errors", type=int, default=10, help="Max row errors to show before aborting")
+    ap.add_argument("--archive-part-syndicat",type=str,default="all",choices=["all", "0", "1"],help="When --archive-existing is used: archive only rows matching PartSyndicat (0 or 1). Default: all.",
+    )
 
     # Header mapping overrides
     ap.add_argument(
@@ -391,7 +398,7 @@ def main() -> int:
 
         archived_count = 0
         if args.archive_existing:
-            archived_count = archive_existing(cur, args.client_id)
+            archived_count = archive_existing(cur, args.client_id, args.archive_part_syndicat)
 
         inserted_count = insert_fdp_rows(cur, args.client_id, rows, args.historique_new)
 
