@@ -7,9 +7,10 @@ $env:CF_DB_NAME = 'condofix$condofix'
 
 
 python .\condofix\scripts\Import_FDP.py `
-  --client-id 1 `
+  --client-id 3 `
   --xlsx .\condofix\20260103_Urbano_Importation_FDP.xlsx `
   --archive-existing `
+  --archive-part-syndicat 1 `
   --dry-run
  ******************************************************************************
 test sql before
@@ -17,6 +18,12 @@ test sql before
 SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 1; -- 124
 SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 1 AND historique = 1; -- 0
 SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 1 AND (historique = 0 OR historique IS NULL); -- 124
+
+SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 3;
+SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 3 AND (historique = 0 OR historique IS NULL);
+SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 3 AND (historique = 0 OR historique IS NULL) AND PartSyndicat = 1;
+SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 3 AND (historique = 0 OR historique IS NULL) AND PartSyndicat = 0;
+
  ******************************************************************************
  To do the real run
  ******************************************************************************
@@ -24,7 +31,7 @@ python .\condofix\scripts\Import_FDP.py `
   --client-id 1 `
   --xlsx .\condofix\20260103_Urbano_Importation_FDP.xlsx `
   --archive-existing `
-
+  --archive-part-syndicat 1 `
 
  ******************************************************************************
  After
@@ -32,6 +39,10 @@ python .\condofix\scripts\Import_FDP.py `
 SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 1; -- 216
 SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 1 AND historique = 1; -- 124
 SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 1 AND (historique = 0 OR historique IS NULL); -- 92
+
+SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 3 AND historique = 1 AND PartSyndicat = 1;
+SELECT COUNT(*) FROM fondsprevoyance WHERE IDClient = 3 AND (historique = 0 OR historique IS NULL) AND PartSyndicat = 0;
+
 
 ******************************************************************************
 In PA use this
@@ -47,7 +58,8 @@ export CF_DB_NAME='CondoFix$condofix'
 
 
 python condofix/scripts/Import_FDP.py \
-  --client-id 1 \
+  --client-id 3 \
   --xlsx condofix/20260103_Urbano_Importation_FDP.xlsx \
   --archive-existing \
+  --archive-part-syndicat 1 \
   --dry-run
