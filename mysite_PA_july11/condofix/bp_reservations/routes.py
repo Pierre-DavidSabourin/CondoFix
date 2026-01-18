@@ -65,81 +65,110 @@ def calendrier_rez(usager):
     if session.get('ProfilUsager') is None:
         # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    # vérifier si le client a acheté le module réservations
 
+    profile_list = session.get('ProfilUsager')
+
+    # vérifier si le client a acheté le module réservations
     if profile_list[5] == 0:
         return redirect(url_for('bp_admin.permission'))
-    client_ident=profile_list[0]
+
+    client_ident = profile_list[0]
     mode = profile_list[8]
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
-    liste_ress_actives=[]
 
-    # fixer couleurs pour chaque ressource active
-    cur.execute("SELECT IDRessource,Description from ressources WHERE Actif=1 and IDClient=%s",(client_ident,))
+    # ---------------------------------------------------------------------
+    # 1) Ressources actives + padding à 10 (on garde pour compat CSS .ressource_1..10)
+    # ---------------------------------------------------------------------
+    liste_ress_actives = []
+    cur.execute(
+        "SELECT IDRessource, Description FROM ressources WHERE Actif=1 AND IDClient=%s",
+        (client_ident,)
+    )
     for item in cur.fetchall():
         liste_ress_actives.append(item)
-    # s'assurer qu'il y a 10 items dans la liste
-    while len(liste_ress_actives)<10:
-                addition=(0,'')
-                liste_ress_actives.append(addition)
 
-    # obtenir réservations en cours à partir d'aujourd'hui
-    cur.execute("SELECT IDReservation, IDRessource, Date, HeureDebut, DureeHres, NoUnite, Note from reservations "
-                "WHERE Date>=%s AND IDClient=%s",(datetime.now().strftime('%Y-%m-%d'),client_ident))
-    event={}
-    events_list=[]
+    while len(liste_ress_actives) < 10:
+        liste_ress_actives.append((0, ''))
+
+    # ---------------------------------------------------------------------
+    # 2) Map IDRessource -> couleur (basé sur l'ordre de liste_ress_actives)
+    #    (ignore les placeholders (0,''))
+    # ---------------------------------------------------------------------
+    colors = [
+        'black', 'lawngreen', 'blue', 'red', 'orange',
+        'pink', 'lightslategrey', 'magenta', 'peru', 'purple'
+    ]
+    color_by_ressource = {}
+    for idx, (res_id, desc) in enumerate(liste_ress_actives):
+        if res_id and desc:
+            if idx < len(colors):
+                color_by_ressource[res_id] = colors[idx]
+
+    # ---------------------------------------------------------------------
+    # 3) Réservations à partir d'aujourd'hui -> events_list
+    #    - dict neuf par event (pas de "stale values")
+    #    - start en ISO string (FullCalendar friendly)
+    #    - skip si ressource inactive / non mappée
+    # ---------------------------------------------------------------------
+    cur.execute(
+        "SELECT IDReservation, IDRessource, Date, HeureDebut, DureeHres, NoUnite, Note "
+        "FROM reservations "
+        "WHERE Date >= %s AND IDClient = %s",
+        (datetime.now().strftime('%Y-%m-%d'), client_ident)
+    )
+
+    events_list = []
     for row in cur.fetchall():
-        date_1=row[2]
-        time_delta=row[3]
-        date=str(date_1)
-        time=str(time_delta)
-        # régler problème avec heures ayant seulement 1 caractère (ex. 9:00 vs. 13:00)
-        if time.index(':')==1:
-            time_1=time[0]
-            # formatter pour acceptation du module calendrier (boite noire)
-            a = datetime(int(date[0:4]),int(date[5:7]), int(date[8:10]),int(time_1),int(time[2:4]),int(time[5:7]))
-        else:
-            time_1=time[0:2]
-            a = datetime(int(date[0:4]),int(date[5:7]), int(date[8:10]),int(time_1),int(time[3:5]),int(time[6:8]))
-        # la couleur de la ressource est fixée ici:
-        indice=int()
-        for t in liste_ress_actives:
-            if t[0]==row[1]:
-                event["no_unite"]=row[5]
-                event["date_heure"]=a
-                event["ressource"]=row[1]
-                event["duree"]=row[4]
-                #indice= liste_ress_actives.index(row[1])
-                indice=liste_ress_actives.index(t)
+        res_id = row[1]
 
-        if indice==0:
-            event["couleur"]='black'
-        elif indice==1:
-            event["couleur"]='lawngreen'
-        elif indice==2:
-            event["couleur"]='blue'
-        elif indice==3:
-            event["couleur"]='red'
-        elif indice==4:
-            event["couleur"]='orange'
-        elif indice==5:
-            event["couleur"]='pink'
-        elif indice==6:
-            event["couleur"]='lightslategrey'
-        elif indice==7:
-            event["couleur"]='magenta'
-        elif indice==8:
-            event["couleur"]='peru'
-        elif indice==9:
-            event["couleur"]='purple'
-        events_list.append(event.copy())
+        # ignorer réservations dont la ressource n'est pas active / pas mappée
+        if res_id not in color_by_ressource:
+            continue
+
+        date_s = str(row[2])          # YYYY-MM-DD
+        time_s = str(row[3])          # H:MM:SS ou HH:MM:SS
+
+        # parsing robuste HH/MM/SS
+        parts = time_s.split(':')
+        hh = int(parts[0])
+        mm = int(parts[1]) if len(parts) > 1 else 0
+        ss = int(parts[2]) if len(parts) > 2 else 0
+
+        start_dt = datetime(
+            int(date_s[0:4]),
+            int(date_s[5:7]),
+            int(date_s[8:10]),
+            hh, mm, ss
+        )
+
+        events_list.append({
+            "no_unite": row[5],
+            "date_heure": start_dt.isoformat(),  # <-- important
+            "ressource": res_id,
+            "duree": row[4],
+            "couleur": color_by_ressource[res_id],
+            "note": row[6]
+        })
+
     cnx.close()
-    if usager=='admin':
-        return render_template('calendrier_rez_admin.html', events_list=events_list,fill_ressources=liste_ress_actives,bd=profile_list[3])
-    else:#proprio
-        return render_template('calendrier_rez.html', events_list=events_list,fill_ressources=liste_ress_actives,bd=profile_list[3])
+
+    if usager == 'admin':
+        return render_template(
+            'calendrier_rez_admin.html',
+            events_list=events_list,
+            fill_ressources=liste_ress_actives,
+            bd=profile_list[3]
+        )
+    else:  # proprio
+        return render_template(
+            'calendrier_rez.html',
+            events_list=events_list,
+            fill_ressources=liste_ress_actives,
+            bd=profile_list[3]
+        )
+
 
 #fonctions pour afficher page d'ajout de rez
 @bp_reservations.route("/reservation_affiche_admin", methods=['GET','POST'])

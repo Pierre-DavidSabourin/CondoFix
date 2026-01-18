@@ -79,8 +79,8 @@ h1, h2, h3, h4, h5, h6 {
   text-decoration: underline;
 }
 
-/* Optional: smaller screens—stack spacing nicely */
 @media (max-width: 767.98px) {
+  body { padding-top: 120px; } /* adjust after quick test */
   .site-footer { padding-top: 20px; padding-bottom: 24px; }
 }
 
