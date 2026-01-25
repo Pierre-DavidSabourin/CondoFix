@@ -563,74 +563,87 @@ def maj_calendriers(date_maj):
     2- si premier du mois: recherche de tous les entretiens actifs dans mysql
     3- si date prochaine due: création d'un ticket"""
 
-    profile_list=session.get('ProfilUsager')
-    client_ident= profile_list[0]
-    usager_id=profile_list[1]
+    profile_list = session.get('ProfilUsager')
+    client_ident = profile_list[0]
+    usager_id = profile_list[1]
+
     # trouver le mode de connexion (Dev ou PA)
     profile_list = session.get('ProfilUsager')
     mode_connexion = profile_list[8]
 
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
-    mois_courant=0
-    annee_courant=0
+    mois_courant = 0
+    annee_courant = 0
+
     # ***************** 1- maj calendrier d'entretien ********************************************************
     # recherche de tous les entretiens préventifs actifs
-    cur.execute("SELECT IDPreventif, Description, Emplacement, HresEstimees, IDIntervenant, IDEquipement, IDCategorie, FreqAns, DateProchain, "
-                "Janv, Fev, Mars, Avril, Mai, Juin, Juil, Aout, Sept, Oct, Nov, `Dec` FROM preventif WHERE IDClient=%s",(client_ident,))
+    cur.execute(
+        "SELECT IDPreventif, Description, Emplacement, HresEstimees, IDIntervenant, IDEquipement, IDCategorie, FreqAns, DateProchain, "
+        "Janv, Fev, Mars, Avril, Mai, Juin, Juil, Aout, Sept, Oct, Nov, `Dec` FROM preventif WHERE IDClient=%s",
+        (client_ident,)
+    )
     date_format = "%Y-%m-%d"
     for row in cur.fetchall():
         a = datetime.strptime(str(row[8]), date_format)
         b = datetime.strptime(date_maj, date_format)
-        delta=b-a
-        if delta.days>=0:#la date prochaine de l'enregistrement est égale ou inférieure à la date de MAJ
+        delta = b - a
+        if delta.days >= 0:  # la date prochaine de l'enregistrement est égale ou inférieure à la date de MAJ
             # calcul de prochaine date de cet entretien préventif
             date_cour = datetime.strptime(date_maj, "%Y-%m-%d")
-            mois_courant=date_cour.month
-            annee_courant=date_cour.year
-            freq_annuelle=row[7]
-            mois_trouve=False
+            mois_courant = date_cour.month
+            annee_courant = date_cour.year
+            freq_annuelle = row[7]
+            mois_trouve = False
+
             # créer liste de la valeur de chaque mois de l'enregistrement
-            liste_calendar=row[9:21]
+            liste_calendar = row[9:21]
+
             # valider si mois suivant prévu est dans liste_calendar
             i = 0
             while i < 12:
-                if liste_calendar[i]==1:
-                    if i+1>mois_courant:
-                        d = datetime(annee_courant+(freq_annuelle-1), i+1, 1)
+                if liste_calendar[i] == 1:
+                    if i + 1 > mois_courant:
+                        d = datetime(annee_courant + (freq_annuelle - 1), i + 1, 1)
                         date_suivante = d.date()
-                        mois_trouve=True
-                if mois_trouve==True:
-                # on passe à l'autre enregistrement
+                        mois_trouve = True
+                if mois_trouve is True:
+                    # on passe à l'autre enregistrement
                     break
                 else:
-                    i+=1
+                    i += 1
 
             # le mois suivant prévu n'est pas dans la même année
-            if mois_trouve==False:
-                date_suivante=str()
+            if mois_trouve is False:
+                date_suivante = str()
                 j = 0
-                annee_courant=annee_courant+1
+                annee_courant = annee_courant + 1
                 while j < 12:
-                    if liste_calendar[j]==1:
-                        d = datetime(annee_courant+(freq_annuelle-1), j+1, 1)
+                    if liste_calendar[j] == 1:
+                        d = datetime(annee_courant + (freq_annuelle - 1), j + 1, 1)
                         date_suivante = d.date()
                         break
                     else:
-                        j=j+1
+                        j = j + 1
+
             # on met à jour l'enregistrement en cours
-            cur.execute("UPDATE preventif SET DateProchain=%s WHERE IDPreventif = %s AND IDClient=%s",(date_suivante,row[0],client_ident,))
-            cnx.commit()
-            #création d'un nouveau ticket
-            cur.execute('INSERT INTO tickets (IDClient, IDUsager, IDIntervenant, DateCreation, Emplacement, Statut, Priorite, TypeTravail, '
-                        'Description_travail, IDCategorie, IDEquipement, DatePrevue, HeuresEstimees, CoutTotalTTC, CoutMainOeuvre, CoutMateriel) '
-                        'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-                         [ client_ident, usager_id, row[4], time.strftime('%Y-%m-%d %H:%M'),row[2],"2", "4", "3" , row[1],row[6],row[5],row[8],
-                           row[3], 0, 0, 0])
+            cur.execute(
+                "UPDATE preventif SET DateProchain=%s WHERE IDPreventif = %s AND IDClient=%s",
+                (date_suivante, row[0], client_ident,)
+            )
             cnx.commit()
 
+            # création d'un nouveau ticket
+            cur.execute(
+                'INSERT INTO tickets (IDClient, IDUsager, IDIntervenant, DateCreation, Emplacement, Statut, Priorite, TypeTravail, '
+                'Description_travail, IDCategorie, IDEquipement, DatePrevue, HeuresEstimees, CoutTotalTTC, CoutMainOeuvre, CoutMateriel) '
+                'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                [client_ident, usager_id, row[4], time.strftime('%Y-%m-%d %H:%M'), row[2], "2", "4", "3",
+                 row[1], row[6], row[5], row[8], row[3], 0, 0, 0]
+            )
+            cnx.commit()
 
-    # ***************** 1- maj fonds de prévoyance ********************************************************
+    # ***************** 2- maj fonds de prévoyance ********************************************************
 
     date_cour = datetime.now()
     mois_courant = date_cour.month
@@ -641,46 +654,77 @@ def maj_calendriers(date_maj):
     cur.execute(
         "SELECT IDFondsPrevoyance,IDIntervenant,IDCategorie,DescriptionDepense,TypeMtceRempl,RefGroupeUniformat,RefAnalyse,"
         "ValeurActuelleInterv,IDEquipement,PartSyndicat,AnProchain,Actif from fondsprevoyance WHERE IDClient=%s and Actif=1",
-        (client_ident,))
+        (client_ident,)
+    )
 
     for row in cur.fetchall():
-        if row[10] == annee_courant:
-            # traitement selon IDGroupeUniformat et mois courant
-            # nouveau code Uniformat 'Z' (ID=9) pour Parties communes à usage restreint avec création de ticket en mai
-            if (row[5]<3 and mois_courant==4) or (row[5]==3 and mois_courant==1) or (3<row[5]<6 and mois_courant==10)\
-                    or (5<row[5]<9 and mois_courant==7) or (row[5]==9 and mois_courant==5):
+        # --- Robust parsing / null guards (hotfix) ---
+        try:
+            an_prochain = int(row[10])  # AnProchain
+            ref_groupe = int(row[5])    # RefGroupeUniformat
+        except (TypeError, ValueError):
+            # junk/incomplete record -> skip
+            continue
 
-                # création d'un nouveau ticket
-                # modification de la description pour ajouter le coût et le numéro d'item de l'étude du FDP (MAX 200 cars.)
-                desc_trav=str(row[3])
-                # texte ajouté à description (37 cars)
-                add_text=" Valeur: " + str(row[7]) + "$ Item " + str(row[6] +" à " + str(100*row[9])+"%")
-                if len(desc_trav)<163:
-                    desc_trav=desc_trav+add_text
-                else:
-                    desc_trav=desc_trav[0:164]+add_text
-                # enlever les 35 derniers caractères si plus grand que 200 et laisser tel quel si 164 cars ou moins
-                # 35 cars: "coût estimé: $xxxxxx Item 3.4.4R1"
-                cur.execute('INSERT INTO tickets (IDClient, IDUsager, IDIntervenant, DateCreation, Statut, Priorite, '
-                            'TypeTravail, Description_travail, IDCategorie, IDEquipement, DatePrevue, HeuresEstimees,'
-                            'CoutTotalTTC, CoutMainOeuvre, CoutMateriel) '
-                            'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-                            [client_ident, usager_id, row[1], date_cour, "2", "4", "2", desc_trav, row[2], row[8], date_cour, 0, 0, 0, 0])
-                cnx.commit()
+        if an_prochain != annee_courant:
+            continue
 
-    #mettre à jour la date de prochaine MAJ dans les paramètres
+        # traitement selon IDGroupeUniformat et mois courant
+        # nouveau code Uniformat 'Z' (ID=9) pour Parties communes à usage restreint avec création de ticket en mai
+        if ((ref_groupe < 3 and mois_courant == 4) or
+            (ref_groupe == 3 and mois_courant == 1) or
+            (3 < ref_groupe < 6 and mois_courant == 10) or
+            (5 < ref_groupe < 9 and mois_courant == 7) or
+            (ref_groupe == 9 and mois_courant == 5)):
+
+            # création d'un nouveau ticket
+            # modification de la description pour ajouter la valeur et le numéro d'item de l'étude du FDP (MAX 200 cars.)
+            desc_trav = str(row[3] or "")
+
+            valeur = row[7]
+            try:
+                valeur = float(valeur) if valeur is not None else 0.0
+            except (TypeError, ValueError):
+                valeur = 0.0
+
+            item = "" if row[6] is None else str(row[6])
+
+            part = row[9]
+            try:
+                part = float(part) if part is not None else 0.0
+            except (TypeError, ValueError):
+                part = 0.0
+
+            pct = int(round(part * 100))
+            add_text = f" Valeur: {valeur}$ Item {item} à {pct}%"
+
+            # enforce max length 200 chars
+            desc_trav = (desc_trav + add_text)[:200]
+
+            cur.execute(
+                'INSERT INTO tickets (IDClient, IDUsager, IDIntervenant, DateCreation, Statut, Priorite, '
+                'TypeTravail, Description_travail, IDCategorie, IDEquipement, DatePrevue, HeuresEstimees,'
+                'CoutTotalTTC, CoutMainOeuvre, CoutMateriel) '
+                'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                [client_ident, usager_id, row[1], date_cour, "2", "4", "2",
+                 desc_trav, row[2], row[8], date_cour, 0, 0, 0, 0]
+            )
+            cnx.commit()
+
+    # mettre à jour la date de prochaine MAJ dans les paramètres
     date_cour = datetime.strptime(date_maj, "%Y-%m-%d")
-    date_res = date_cour+ relativedelta(months=1)
+    date_res = date_cour + relativedelta(months=1)
     date_prochaine_maj = date_res.date()
-    cur.execute("UPDATE parametres SET Date_MAJ_Preventif=%s WHERE IDClient=%s", (date_prochaine_maj,client_ident,))
+    cur.execute("UPDATE parametres SET Date_MAJ_Preventif=%s WHERE IDClient=%s", (date_prochaine_maj, client_ident,))
     cnx.commit()
-    #g.db.close()
+    # g.db.close()
 
-    #ouverture de l'application selon le type d'usager
-    if profile_list[2]==5:#proprios
-        return redirect(url_for('bp_reservations.calendrier_rez',usager='proprio'))
+    # ouverture de l'application selon le type d'usager
+    if profile_list[2] == 5:  # proprios
+        return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
     else:
         return redirect(url_for('bp_tickets.en_cours'))
+
 
 @bp_admin.route('/logout')
 def logout():
