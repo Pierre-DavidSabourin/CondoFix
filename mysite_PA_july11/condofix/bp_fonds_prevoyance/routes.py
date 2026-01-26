@@ -1,3 +1,4 @@
+import ast
 import sys
 
 from flask import Blueprint, render_template,json,session,request,redirect,url_for,flash,send_file
@@ -28,149 +29,245 @@ def import_excel():
 def admin():
     return render_template('fonds_prevoyance_admin.html')
 
-@bp_fonds_prevoyance.route('/calcul_dep/<args>')
-def calcul_dep (args):
-    """ fonction de calcul des dépenses selon les 3 arguments (args) soient 'usager' (syndicat et coproprios), 'mode' (base, scenario, ajuste)
-     et 'taux' (taux d'inflation utilisé pour scenario ou ajuste...égal à '0' pour base). Celle-ci est intégrée dans les fonctions de graphique
-    'depenses_fdp' et 'solde_fdp' et 'solde_fdp_ajuste'. Seulement l'usager 'syndicat' utilisé pour les dépenses utilisées dans le graphique du
-    fonds de prévoyance.
-        """
+@bp_fonds_prevoyance.route("/calcul_dep/<args>")
+def calcul_dep(args):
+    """
+    Fonction de calcul des dépenses selon les 3 arguments (args) soient:
+      - 'usager' (syndicat et coproprios)
+      - 'mode' (base, scenario, ajuste)
+      - 'taux' (taux d'inflation utilisé pour scenario ou ajuste... égal à '0' pour base)
 
-    # ***************************compilation de 50 ans de dépenses prévues
+    Celle-ci est intégrée dans les fonctions de graphique:
+      - 'depenses_fdp'
+      - 'solde_fdp'
+      - 'solde_fdp_ajuste'
+
+    Seulement l'usager 'syndicat' utilisé pour les dépenses utilisées dans le graphique du fonds de prévoyance.
+    """
+
+    # *************************** compilation de 50 ans de dépenses prévues ***************************
     # processus de programmation:
     # 1- débuter avec l'année de la dernière analyse de fonds de prévoyance
     # 2- selon l'usager choisi (syndicat ou coproprios), sélectionner toutes les interventions du fonds de prévoyance
-        # syndicat: PartSyndicat>0   coproprios: PartSyndicat<1
+    #       syndicat: PartSyndicat>0   coproprios: PartSyndicat<1
     # 3- identifier les enregistrements qui ont plus d'un cycle d'intervention (année prochain plus fréquence<= 50 ans)
     # 4- créer de nouveaux items pour ceux-ci et ajouter à la liste en modifiant l'élément 'an_Prochain'
-    # 5- selon le mode (base, scenario ou ajusté), appliquer le taux d'inflation indiqué et la part du syndicat à chaque élément de la liste à partir de l'année suivant celle de l'analyse et
-    #     #    utilisant l'année prévue pour l'intervention:
-    #   a) pour base: selon 5-10-15+ de chaque intervention
-    #   b) pour scenario: taux global appliqué à toutes les années
-    #   c) pour ajusté: taux réel de l'ICC appliqué durant les années oû la statistique est compilée puis retour au taux inflation annuel
-    #                   moyen calculé à partir des valeurs (5-10-15+) de toutes les interventions
+    # 5- selon le mode (base, scenario ou ajusté), appliquer le taux d'inflation indiqué et la part du syndicat à chaque
+    #    élément de la liste à partir de l'année suivant celle de l'analyse et utilisant l'année prévue pour l'intervention:
+    #       a) pour base: selon 5-10-15+ de chaque intervention
+    #       b) pour scenario: taux global appliqué à toutes les années
+    #       c) pour ajusté: taux réel de l'ICC appliqué durant les années où la statistique est compilée puis retour au
+    #          taux inflation annuel moyen calculé à partir des valeurs (5-10-15+) de toutes les interventions
     # 6- trier la liste en ordre croissant par 'an_prochain'
-
+    #
     # LA LISTE PEUT MAINTENANT ÊTRE UTILISÉE POUR LES 2 FONCTIONS DE GRAPHIQUES ET POUR LE TABLEAU DYNAMIQUE DES DÉPENSES PRÉVUES
 
-    if session.get('ProfilUsager') is None:
+    if session.get("ProfilUsager") is None:
         # probablement délai de session atteint
-        return render_template('session_ferme.html')
-    profile_list = session.get('ProfilUsager')
+        return render_template("session_ferme.html")
+
+    profile_list = session.get("ProfilUsager")
+
     # vérifier type d'usager (pas employé)
     if profile_list[2] == 3:
-        return redirect(url_for('bp_admin.permission'))
+        return redirect(url_for("bp_admin.permission"))
+
     client_ident = profile_list[0]
-    mode_connexion=profile_list[8]
+    mode_connexion = profile_list[8]
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
 
     # mettre en valeur les arguments de la fonction
-    usager= args[0]# syndicat ou coproprios
-    mode= args[1]# base ou scenario ou ajuste
+    args = ast.literal_eval(args) if isinstance(args, str) else args
+    usager = args[0]  # syndicat ou coproprios
+    mode = args[1]  # base ou scenario ou ajuste
+    taux_applicable = args[2]  # 0 ou taux du scenario ou taux réel (ajusté)
 
-    taux_applicable= args[2]# 0 ou taux du scenario ou taux réel (ajusté)
-
-
-    date_anal = datetime
-
+    # ----------------------------------------------------------------------------------------------
+    # 1) Débuter avec l'année de la dernière analyse de fonds de prévoyance
+    #    Guardrail: DateAnalPrevoyance peut être NULL en DB
+    # ----------------------------------------------------------------------------------------------
     cur.execute("SELECT DateAnalPrevoyance FROM parametres WHERE IDClient=%s", (client_ident,))
-    # 1- débuter avec l'année de la dernière analyse de fonds de prévoyance
-    for item in cur.fetchall():
-        date_anal = item[0]
+    row = cur.fetchone()
+    date_anal = row[0] if row and row[0] is not None else None
 
-    # 2- mettre tous les enregistrements de la table de fonds de prévoyance dans une liste
+    if date_anal is None:
+        # Impossible de calculer les projections FDP sans date d'analyse.
+        # (On retourne une structure valide pour éviter le crash côté UI.)
+        return [[], (0, 0)]
+
+    # ----------------------------------------------------------------------------------------------
+    # 2) Mettre tous les enregistrements de la table de fonds de prévoyance dans une liste
+    # ----------------------------------------------------------------------------------------------
     fill_brut = []
-    if usager=='syndicat':
+
+    if usager == "syndicat":
         cur.execute(
-            "SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse, ValeurActuelleInterv, "
-            "FrequenceAns, AnProchain, Inflation5ans, Inflation6a15ans, InflationPlus15ans, IDIntervenant, PartSyndicat "
-            "FROM fondsprevoyance WHERE PartSyndicat>%s AND Actif=%s AND IDClient=%s",(0,1,client_ident))
+            "SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse, "
+            "ValeurActuelleInterv, FrequenceAns, AnProchain, Inflation5ans, Inflation6a15ans, InflationPlus15ans, "
+            "IDIntervenant, PartSyndicat "
+            "FROM fondsprevoyance "
+            "WHERE PartSyndicat>%s AND Actif=%s AND IDClient=%s",
+            (0, 1, client_ident),
+        )
     else:
         cur.execute(
-            "SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse, ValeurActuelleInterv, "
-            "FrequenceAns, AnProchain, Inflation5ans, Inflation6a15ans, InflationPlus15ans, IDIntervenant, PartSyndicat "
-            "FROM fondsprevoyance WHERE PartSyndicat<%s AND Actif=%s AND IDClient=%s",(1,1,client_ident))
-    type=str()
-    desc_categ=str()
-    gr_uniformat=int()
-    desc_uniformat=str()
-    desc_intervenant=str()
-    taux_infl_moyen_anal = float()
-    fill_indice_moy=[]
+            "SELECT IDFondsPrevoyance, DescriptionDepense, TypeMtceRempl, IDCategorie, RefGroupeUniformat, RefAnalyse, "
+            "ValeurActuelleInterv, FrequenceAns, AnProchain, Inflation5ans, Inflation6a15ans, InflationPlus15ans, "
+            "IDIntervenant, PartSyndicat "
+            "FROM fondsprevoyance "
+            "WHERE PartSyndicat<%s AND Actif=%s AND IDClient=%s",
+            (1, 1, client_ident),
+        )
+
+    type_interv = ""
+    desc_categ = ""
+    gr_uniformat = 0
+    desc_uniformat = ""
+    desc_intervenant = ""
+    taux_infl_moyen_anal = 0.0
+
+    fill_indice_moy = []
+
     for item in cur.fetchall():
+        # TypeMtceRempl
         if item[2] == 1:
-            type = "Maintenance"
+            type_interv = "Maintenance"
         elif item[2] == 2:
-            type = "Remplacement"
-        item+=(type,)   #14
-        cur.execute("SELECT Description, IDGroupe FROM categories WHERE IDCategorie=%s AND IDClient=%s",
-                    (item[3], client_ident))
-        for row in cur.fetchall():
-            desc_categ= row[0]
-            gr_uniformat = row[1]
-        item += (desc_categ,) #15
-        item += (gr_uniformat,) #16
-        cur.execute("SELECT Descriptif FROM groupesuniformat WHERE IDGroupe=%s", (gr_uniformat,))
-        for row_1 in cur.fetchone():
-            desc_uniformat=row_1
-        item += (desc_uniformat,)  #17
-        if item[12]==0:
-            desc_intervenant=''
+            type_interv = "Remplacement"
         else:
-            cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s", (item[12],client_ident))
-            for row_1 in cur.fetchone():
-                desc_intervenant = row_1
+            type_interv = ""
+
+        item += (type_interv,)  # 14
+
+        # Catégorie (Description + IDGroupe)
+        cur.execute(
+            "SELECT Description, IDGroupe FROM categories WHERE IDCategorie=%s AND IDClient=%s",
+            (item[3], client_ident),
+        )
+        for row_cat in cur.fetchall():
+            desc_categ = row_cat[0]
+            gr_uniformat = row_cat[1]
+
+        item += (desc_categ,)  # 15
+        item += (gr_uniformat,)  # 16
+
+        # Groupe Uniformat
+        cur.execute("SELECT Descriptif FROM groupesuniformat WHERE IDGroupe=%s", (gr_uniformat,))
+        row_1 = cur.fetchone()
+        desc_uniformat = row_1[0] if row_1 and row_1[0] is not None else ""
+        item += (desc_uniformat,)  # 17
+
+        # Intervenant
+        # IDIntervenant can be NULL in DB -> treat None or 0 as "no intervenant"
+        if not item[12] or item[12] == 0:
+            desc_intervenant = ""
+        else:
+            cur.execute(
+                "SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
+                (item[12], client_ident),
+            )
+            row_1 = cur.fetchone()
+            desc_intervenant = row_1[0] if row_1 and row_1[0] is not None else ""
+
         item += (desc_intervenant,)  # 18
         fill_brut.append(item)
 
-        # pour le calcul du taux d'inflation moyen utilisé parmi toutes les interventions
-        ajout_indice = (item[9], item[10], item[11])
-        fill_indice_moy.append(ajout_indice)
+        # Pour le calcul du taux d'inflation moyen utilisé parmi toutes les interventions
+        # Guardrail (2): Inflation5ans / Inflation6a15ans / InflationPlus15ans peuvent être NULL -> traiter comme 0
+        infl_5 = item[9] if item[9] is not None else 0
+        infl_6_15 = item[10] if item[10] is not None else 0
+        infl_15p = item[11] if item[11] is not None else 0
 
-    # calcul du taux d'inflation moyen de toutes les interventions de l'analyse
+        fill_indice_moy.append((infl_5, infl_6_15, infl_15p))
+
+    # ----------------------------------------------------------------------------------------------
+    # Calcul du taux d'inflation moyen de toutes les interventions de l'analyse
+    # ----------------------------------------------------------------------------------------------
     cum_index = 0
     for record in fill_indice_moy:
         # pour période de 25 ans (5,10 et 10)
         cum_index += (1 + record[0]) ** 5 * (1 + record[1]) ** 10 * (1 + record[2]) ** 10
+
     if len(fill_indice_moy) != 0:
         avg_index_brut = float(cum_index / len(fill_indice_moy))
         avg_index_net = avg_index_brut ** (1 / 25)
         taux_infl_moyen_anal = round(avg_index_net - 1, 4)
 
-    # 3- fixer le nombre d'années applicables au traitement : ans_traites (5 , 25 ou autre)
+    # ----------------------------------------------------------------------------------------------
+    # 3) Fixer le nombre d'années applicables au traitement
+    # ----------------------------------------------------------------------------------------------
     annee_anal = date_anal.year
     date_fin_brut = date_anal + relativedelta(years=50)
     annee_fin = date_fin_brut.year
 
-    # 4- identifier les enregistrements qui ont plus d'un cycle d'intervention (année prochain plus fréquence>= ans_traites) et
-    # 5- créer de nouveaux items pour ceux-ci et ajouter à la liste en modifiant le champ 'an_Prochain'
+    # ----------------------------------------------------------------------------------------------
+    # 4) Identifier les enregistrements qui ont plus d'un cycle d'intervention et
+    # 5) Créer de nouveaux items pour ceux-ci et ajouter à la liste en modifiant le champ 'AnProchain'
+    # ----------------------------------------------------------------------------------------------
     fill_ajouts = []
+
     for item in fill_brut:
         # vérifier si plus d'un cycle d'intervention dans période fixée (période /fréquence_ans)
-        proch_interv = item[8]
-        freq = item[7]
+        proch_interv = item[8]  # AnProchain
+        freq = item[7]  # FrequenceAns
+
+        # Protection: si champs requis NULL / invalides, on ne peut pas calculer les cycles -> on ignore l'enregistrement
+        if proch_interv is None or freq is None:
+            continue
+
+        # Protection: forcer le type int (certaines sources DB peuvent ramener Decimal/str)
+        try:
+            proch_interv = int(proch_interv)
+            freq = int(freq)
+        except (TypeError, ValueError):
+            continue
+
+        # Protection: éviter boucle infinie / données incohérentes
+        if freq <= 0:
+            continue
+
         while proch_interv + freq <= annee_fin:
-            proch_interv = proch_interv + item[7]
+            proch_interv = proch_interv + freq
+
             # 'item' est un tuple et doit être transformé en liste pour remplacer un item puis ramené à un tuple
             a_list = list(item)
             a_list[8] = proch_interv
-            updated_tuple = tuple(a_list)
-            fill_ajouts.append(updated_tuple)
+            fill_ajouts.append(tuple(a_list))
 
-    # joindre les 2 listes (brut plus ajouts)
+    # Joindre les 2 listes (brut plus ajouts)
     fill_interv_50ans = fill_brut + fill_ajouts
-    # 6- trier la liste en ordre croissant par 'année d'intervention'
+
+    # 6- Trier la liste en ordre croissant par 'année d'intervention'
+    # Protection: certains enregistrements peuvent avoir AnProchain=NULL -> impossible à trier / traiter
+    fill_interv_50ans = [x for x in fill_interv_50ans if x[8] is not None]
+
+    # Protection: forcer AnProchain en int (au cas où Decimal/str)
+    safe_list = []
+    for x in fill_interv_50ans:
+        try:
+            x_list = list(x)
+            x_list[8] = int(x_list[8])
+            safe_list.append(tuple(x_list))
+        except (TypeError, ValueError):
+            # AnProchain non convertible -> on ignore
+            continue
+
+    fill_interv_50ans = safe_list
     fill_interv_50ans.sort(key=lambda x: x[8])
 
-    # 7- Appliquer les taux d'inflation et la part du syndicat à chaque intervention et ajouter à une nouvelle liste qui contiendra
-    #    seulement les données requises pour les graphiques, le solde du fonds et le tableau dynamique
+    # ----------------------------------------------------------------------------------------------
+    # 7) Appliquer les taux d'inflation et la part du syndicat à chaque intervention
+    #    et ajouter à une nouvelle liste qui contiendra seulement les données requises
+    # ----------------------------------------------------------------------------------------------
 
     # calculer l'indice du cout de construction réel depuis la date de l'analyse
     # 1 obtenir le dernier indice de la table
     indice_act = 0
     trimestre_act = 0
     annee_indice_act = 0
+
     cur.execute("SELECT * FROM indices WHERE IDIndice = (SELECT max(IDIndice) FROM indices)")
     for item in cur.fetchall():
         indice_act = item[4]
@@ -179,15 +276,18 @@ def calcul_dep (args):
 
     # 2 obtenir indice ICC au premier trimestre de la date du rapport
     indice_debut = 0
-    cur.execute("SELECT Valeur,Annee FROM indices WHERE Annee=%s AND Trimestre=%s",
-                (annee_anal, trimestre_act))  # datetime.now().year))
+    cur.execute(
+        "SELECT Valeur,Annee FROM indices WHERE Annee=%s AND Trimestre=%s",
+        (annee_anal, trimestre_act),
+    )
     for item in cur.fetchall():
         indice_debut = item[0]
 
-    croiss_ICC=float()
+    croiss_ICC = float()
     annee_chaine = date_anal.strftime("%Y%m%d")
     annee_deb = int(annee_chaine[0:4])
     delta_annees = annee_indice_act - annee_deb
+
     if delta_annees <= 0:
         # le taux statistique réel est remplacé par le taux moyen de toutes les interventions
         croiss_ICC = taux_infl_moyen_anal * 100
@@ -200,100 +300,150 @@ def calcul_dep (args):
         croiss_ICC = round((indice_act - indice_debut) / delta_annees, 2)
 
     indice = 1
-    inflation_taux = float()
-    fill_dep_50ans=[]
+    inflation_taux = 0.0
+    fill_dep_50ans = []
+
     annee_traitee = annee_anal
     taux_reel = float(croiss_ICC / 100)
-    annee_today=datetime.now().year
+    annee_today = datetime.now().year
+
     while annee_traitee <= annee_fin:
         for item in fill_interv_50ans:
-            if item[8] == annee_traitee:
-                # on ignore la première année soit celle de l'analyse du consultant
-                if indice==1:
-                    inflation_taux=1
-                else:
-                    if mode=='base':
-                        # selon indice (nombre d'années courues), on calcule le taux d'inflation approprié
-                        if indice < 6:
-                            # prendre 1ere valeur d'inflation (5 ans)
-                            inflation_taux = (1 + item[9]) ** (indice-1)
-                        elif 5 < indice < 16:
-                            # 2ème taux d'inflation pour ans 6 à 15
-                            inflation_taux = ((1 + item[9]) ** 5) * (1 + item[10]) ** (indice - 6)
-                        elif indice > 15:
-                            # 3ème taux d'inflation pour après 15 ans
-                            inflation_taux = ((1 + item[9]) ** 5) * ((1 + item[10]) ** 10) * ((1 + item[11]) ** (indice - 16))
-                    elif mode=='ajuste':
-                        # application du taux d'inflation pour données ajustées
-                        taux_infl_moyen_anal = float(taux_infl_moyen_anal)
-                        # SCÉNARIO DE RETOUR AU TAUX DE L'ANALYSE APRÈS X ANS AU TAUX RÉEL (X est le delta_annees)
-                        if indice <= delta_annees:
-                            inflation_taux = (1 + taux_reel) ** indice
-                        else:
-                            inflation_taux = ((1 + taux_reel) ** delta_annees) * (
-                                        (1 + taux_infl_moyen_anal) ** (indice - delta_annees))
-                    elif mode=='scenario':
-                        inflation_taux=(1+taux_applicable) ** indice
+            if item[8] != annee_traitee:
+                continue
 
-                # on applique le taux d'inflation et la part du syndicat à la valeur actuelle de l'intervention:
-                if item[13]==0:
-                    dep_actualisee = item[6] * inflation_taux
-                else:# le syndicat paie une part jusqu'à 100% ou le coût d'intervention est partagé
-                    if usager=='syndicat':
-                        dep_actualisee = decimal.Decimal(item[6]) * decimal.Decimal(inflation_taux) * decimal.Decimal(item[13])
+            # on ignore la première année soit celle de l'analyse du consultant
+            if indice == 1:
+                inflation_taux = 1
+            else:
+                # Guardrail (2): inflation fields can be NULL -> use 0
+                infl_5 = item[9] if item[9] is not None else 0
+                infl_6_15 = item[10] if item[10] is not None else 0
+                infl_15p = item[11] if item[11] is not None else 0
+
+                if mode == "base":
+                    # selon indice (nombre d'années courues), on calcule le taux d'inflation approprié
+                    if indice < 6:
+                        # prendre 1ere valeur d'inflation (5 ans)
+                        inflation_taux = (1 + infl_5) ** (indice - 1)
+                    elif 5 < indice < 16:
+                        # 2ème taux d'inflation pour ans 6 à 15
+                        inflation_taux = ((1 + infl_5) ** 5) * (1 + infl_6_15) ** (indice - 6)
+                    elif indice > 15:
+                        # 3ème taux d'inflation pour après 15 ans
+                        inflation_taux = ((1 + infl_5) ** 5) * ((1 + infl_6_15) ** 10) * (
+                            (1 + infl_15p) ** (indice - 16)
+                        )
+
+                elif mode == "ajuste":
+                    # application du taux d'inflation pour données ajustées
+                    taux_infl_moyen_anal = float(taux_infl_moyen_anal)
+
+                    # SCÉNARIO DE RETOUR AU TAUX DE L'ANALYSE APRÈS X ANS AU TAUX RÉEL (X est le delta_annees)
+                    if indice <= delta_annees:
+                        inflation_taux = (1 + taux_reel) ** indice
                     else:
-                        dep_actualisee = decimal.Decimal(item[6]) * decimal.Decimal(inflation_taux) * (1-decimal.Decimal(item[13]))
-                # on ajoute l'élément à la nouvelle liste
-                # CONTENU DE L'AJOUT=  ref_analyse, desc_intervention, frequence, dep_actualisee, annee de l'intervention,
-                # desc type intervention, description categorie, IDGroupe uniformat, description groupe uniformat, nom d'intervenant
+                        inflation_taux = ((1 + taux_reel) ** delta_annees) * (
+                            (1 + taux_infl_moyen_anal) ** (indice - delta_annees)
+                        )
 
-                # POUR DONNÉES AJUSTÉES: lignes 207: annee_today=datetime.now().year
-                # lignes 251 à 258, 262 à 288
-                # on vérifie si cette intervention devrait être exclue si elle est prévue durant une année qui précède l'année actuelle
-                if mode=='ajuste':
-                    if int(str(annee_traitee))<annee_today:
-                        #print('intervention omise:',item[5],int(str(annee_traitee)))
-                        continue
-                ajout=(item[5],item[1],str(item[7]),str(round(dep_actualisee,2)),str(annee_traitee),\
-                      item[14],item[15],str(item[16]),item[17],item[18])
-                fill_dep_50ans.append(ajout)
+                elif mode == "scenario":
+                    inflation_taux = (1 + taux_applicable) ** indice
+
+            # Guardrails: ValeurActuelleInterv and PartSyndicat can be NULL in DB
+            valeur = item[6]
+            part = item[13]
+
+            # If the cost itself is missing, this record is incomplete -> skip
+            if valeur is None:
+                continue
+
+            # If share is missing, treat as 0 (same behavior as your earlier ticket creation logic)
+            if part is None:
+                part = 0
+
+            # Ensure numeric types are safe for Decimal math
+            valeur_dec = decimal.Decimal(str(valeur))
+            inflation_dec = decimal.Decimal(str(inflation_taux))
+            part_dec = decimal.Decimal(str(part))
+
+            # on applique le taux d'inflation et la part du syndicat à la valeur actuelle de l'intervention:
+            if part_dec == 0:
+                # no sharing
+                dep_actualisee = valeur_dec * inflation_dec
+            else:
+                # le syndicat paie une part jusqu'à 100% ou le coût d'intervention est partagé
+                if usager == "syndicat":
+                    dep_actualisee = valeur_dec * inflation_dec * part_dec
+                else:
+                    dep_actualisee = valeur_dec * inflation_dec * (decimal.Decimal("1") - part_dec)
+
+            # on ajoute l'élément à la nouvelle liste
+            # CONTENU DE L'AJOUT=  ref_analyse, desc_intervention, frequence, dep_actualisee, annee de l'intervention,
+            # desc type intervention, description categorie, IDGroupe uniformat, description groupe uniformat, nom d'intervenant
+
+            # POUR DONNÉES AJUSTÉES: lignes 207: annee_today=datetime.now().year
+            # lignes 251 à 258, 262 à 288
+            # on vérifie si cette intervention devrait être exclue si elle est prévue durant une année qui précède l'année actuelle
+            if mode == "ajuste":
+                if int(str(annee_traitee)) < annee_today:
+                    # print('intervention omise:',item[5],int(str(annee_traitee)))
+                    continue
+
+            ajout = (
+                item[5],
+                item[1],
+                str(item[7]),
+                str(round(dep_actualisee, 2)),
+                str(annee_traitee),
+                item[14],
+                item[15],
+                str(item[16]),
+                item[17],
+                item[18],
+            )
+            fill_dep_50ans.append(ajout)
+
         annee_traitee += 1
         indice += 1
 
     # POUR DONNÉES AJUSTÉES: on ajoute toutes les dépenses liées au FDP effectuées entre l'année de début et celle qui précéde l'année actuelle
-    if mode == 'ajuste':
-        print('procedure pour ajout de dépenses actuelles')
+    if mode == "ajuste":
+        print("procedure pour ajout de dépenses actuelles")
 
         # obtenir dépenses des tickets fermés avec type de travail=2 (fonds de prévoyance)
         fill_tickets = []
         cur.execute(
-            "SELECT DateComplet, CoutTotalTTC, IDCategorie FROM tickets WHERE TypeTravail=%s AND DateComplet>%s AND IDClient=%s",
-            (2, date_anal, client_ident))
+            "SELECT DateComplet, CoutTotalTTC, IDCategorie FROM tickets "
+            "WHERE TypeTravail=%s AND DateComplet>%s AND IDClient=%s",
+            (2, date_anal, client_ident),
+        )
+
         for item in cur.fetchall():
-            cur.execute("SELECT IDGroupe FROM categories WHERE IDCategorie=%s AND IDClient=%s", (item[2], client_ident))
+            cur.execute(
+                "SELECT IDGroupe FROM categories WHERE IDCategorie=%s AND IDClient=%s",
+                (item[2], client_ident),
+            )
             for row in cur.fetchall():
-                ## tenir compte des interventions dans parties communes à usage restreint ('Z') IDGroupe=9
-                # if entite == 'syndicat' and row[0] != 9:
-                #     ajout_ticket = (item[0].year, int(item[1]), row[0])
-                #     fill_tickets.append(ajout_ticket)
-                # if entite == 'coproprios' and row[0] == 9:
-                #     ajout_ticket = (item[0].year, int(item[1]), row[0])
-                #     fill_tickets.append(ajout_ticket)
                 # sinon:
                 ajout_ticket = (item[0].year, int(item[1]), row[0])
                 fill_tickets.append(ajout_ticket)
+
         for unit in fill_tickets:
-            #CONTENU DE L'AJOUT=  ref_analyse, desc_intervention, frequence, dep_actualisee, annee de l'intervention,
+            # CONTENU DE L'AJOUT=  ref_analyse, desc_intervention, frequence, dep_actualisee, annee de l'intervention,
             # desc type intervention, description categorie, IDGroupe uniformat, description groupe uniformat, nom d'intervenant
-            dep_act=('','',0,unit[1],str(unit[0]),'','',unit[2],'','')
+            dep_act = ("", "", 0, unit[1], str(unit[0]), "", "", unit[2], "", "")
             fill_dep_50ans.append(dep_act)
 
     # tri de la table par ordre d'année croissante
-    fill_dep_50ans.sort(key=lambda x: x[4])
-    indices=(taux_infl_moyen_anal,croiss_ICC)
-    res=[fill_dep_50ans,indices]
+    # Guardrail (5): trier numériquement, pas lexicalement
+    fill_dep_50ans.sort(key=lambda x: int(x[4]) if x[4] else 0)
+
+    indices = (taux_infl_moyen_anal, croiss_ICC)
+    res = [fill_dep_50ans, indices]
 
     return res
+
 
 @bp_fonds_prevoyance.route('/depenses_fdp/<usager>', methods=['POST','GET'])
 def depenses_fdp(usager):
