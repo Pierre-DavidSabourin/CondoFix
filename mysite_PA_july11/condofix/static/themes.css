@@ -1,0 +1,1019 @@
+/* =========================================================
+   CondoFix UI Themes
+   18 palettes:
+   Light  : light-soft-saas, light-airy-powerbi, light-warm-admin, light-accessible-saas, light-mineral-luxe, light-coastal-gold-premium
+   Normal : normal-condofix-classic, normal-powerboard, normal-executive, normal-accessible-balanced, normal-ocean-gold-premium, normal-condofix-luxe-coastal
+   Dark   : dark-midnight-saas, dark-power-ops, dark-graphite-luxe, dark-accessible-contrast, dark-abyss-premium, dark-condofix-ocean-luxe
+   ========================================================= */
+
+/* ---------- safe default ---------- */
+:root,
+html[data-theme="normal-condofix-classic"] {
+    --theme-bg: #f5f7fb;
+    --theme-surface: #ffffff;
+    --theme-surface-alt: #eef2f7;
+    --theme-border: #d7dee8;
+    --theme-text: #142033;
+    --theme-text-muted: #5f7086;
+
+    --theme-priority-critical: #dc3545;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #f4b400;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #0d6efd;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #198754;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #e9ecef;
+    --theme-kpi-age-text: #142033;
+
+    --theme-kpi-hours: #5f788a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #0d6efd;
+    --theme-link-complete: #f59e0b;
+    --theme-link-delete: #dc3545;
+
+    --theme-chart-equipment: #2b8aa0;
+    --theme-chart-budget: #70889b;
+    --theme-chart-actual: #f4a300;
+    --theme-chart-preventive-employee: #15a9c4;
+    --theme-chart-preventive-supplier: #e0449b;
+}
+
+/* =========================================================
+   FAMILY BASES
+   ========================================================= */
+
+/* ---------- light family ---------- */
+html[data-theme^="light-"] {
+    --theme-bg: #f8fafc;
+    --theme-surface: #ffffff;
+    --theme-surface-alt: #eff4f8;
+    --theme-border: #d6e0ea;
+    --theme-text: #162338;
+    --theme-text-muted: #60728a;
+}
+
+/* ---------- normal family ---------- */
+html[data-theme^="normal-"] {
+    --theme-bg: #f4f6fa;
+    --theme-surface: #ffffff;
+    --theme-surface-alt: #eef2f6;
+    --theme-border: #d4dde7;
+    --theme-text: #142033;
+    --theme-text-muted: #607188;
+}
+
+/* ---------- dark family ---------- */
+html[data-theme^="dark-"] {
+    --theme-bg: #07111f;
+    --theme-surface: #0d1a30;
+    --theme-surface-alt: #1a2942;
+    --theme-border: #233754;
+    --theme-text: #f4f8ff;
+    --theme-text-muted: #b2c1d8;
+}
+
+/* =========================================================
+   LIGHT PALETTES
+   ========================================================= */
+
+html[data-theme="light-soft-saas"] {
+    --theme-priority-critical: #e11d48;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #f59e0b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2563eb;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #16a34a;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #dbeafe;
+    --theme-kpi-age-text: #142033;
+
+    --theme-kpi-hours: #0f766e;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #2563eb;
+    --theme-link-complete: #d97706;
+    --theme-link-delete: #dc2626;
+
+    --theme-chart-equipment: #4a97ab;
+    --theme-chart-budget: #6d89a1;
+    --theme-chart-actual: #f59e0b;
+    --theme-chart-preventive-employee: #14b8a6;
+    --theme-chart-preventive-supplier: #ec4899;
+}
+
+html[data-theme="light-airy-powerbi"] {
+    --theme-priority-critical: #d92d20;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #f79009;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #1570ef;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #12b76a;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #eaecf5;
+    --theme-kpi-age-text: #243447;
+
+    --theme-kpi-hours: #475467;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #1570ef;
+    --theme-link-complete: #f79009;
+    --theme-link-delete: #d92d20;
+
+    --theme-chart-equipment: #4b9fb4;
+    --theme-chart-budget: #66788f;
+    --theme-chart-actual: #f79009;
+    --theme-chart-preventive-employee: #06b6d4;
+    --theme-chart-preventive-supplier: #ef4444;
+}
+
+html[data-theme="light-warm-admin"] {
+    --theme-priority-critical: #c2410c;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #f59e0b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2563eb;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #3f8f3f;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #efe7da;
+    --theme-kpi-age-text: #3c2d1c;
+
+    --theme-kpi-hours: #7c5c3b;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #1d4ed8;
+    --theme-link-complete: #b45309;
+    --theme-link-delete: #b91c1c;
+
+    --theme-chart-equipment: #7aa3ab;
+    --theme-chart-budget: #8b7761;
+    --theme-chart-actual: #d18a13;
+    --theme-chart-preventive-employee: #14b8a6;
+    --theme-chart-preventive-supplier: #ec4899;
+}
+
+/* =========================================================
+   NORMAL PALETTES
+   ========================================================= */
+
+html[data-theme="normal-condofix-classic"] {
+    --theme-priority-critical: #dc3545;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #f4b400;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #0d6efd;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #198754;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #e9ecef;
+    --theme-kpi-age-text: #142033;
+
+    --theme-kpi-hours: #5f788a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #0d6efd;
+    --theme-link-complete: #f59e0b;
+    --theme-link-delete: #dc3545;
+
+    --theme-chart-equipment: #2f8798;
+    --theme-chart-budget: #70889b;
+    --theme-chart-actual: #f4a300;
+    --theme-chart-preventive-employee: #15a9c4;
+    --theme-chart-preventive-supplier: #e0449b;
+}
+
+html[data-theme="normal-powerboard"] {
+    --theme-priority-critical: #d64550;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #f0a202;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2f6fed;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #2a9d6f;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #d7dee8;
+    --theme-kpi-age-text: #22324a;
+
+    --theme-kpi-hours: #4f6d8a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #2f6fed;
+    --theme-link-complete: #d98b00;
+    --theme-link-delete: #cf3344;
+
+    --theme-chart-equipment: #3a9cab;
+    --theme-chart-budget: #617a93;
+    --theme-chart-actual: #ef9f15;
+    --theme-chart-preventive-employee: #20b1c9;
+    --theme-chart-preventive-supplier: #db4a91;
+}
+
+html[data-theme="normal-executive"] {
+    --theme-priority-critical: #c0394b;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #d4a017;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2c6acb;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #2f855a;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #d9e1ea;
+    --theme-kpi-age-text: #233141;
+
+    --theme-kpi-hours: #56687a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #2c6acb;
+    --theme-link-complete: #c08400;
+    --theme-link-delete: #c0394b;
+
+    --theme-chart-equipment: #4f92a0;
+    --theme-chart-budget: #66798d;
+    --theme-chart-actual: #d79a1f;
+    --theme-chart-preventive-employee: #18a4b9;
+    --theme-chart-preventive-supplier: #d34f86;
+}
+
+/* =========================================================
+   DARK PALETTES
+   ========================================================= */
+
+html[data-theme="dark-midnight-saas"] {
+    --theme-priority-critical: #f43f5e;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #fbbf24;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #3b82f6;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #22c55e;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #475569;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #0f766e;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #60a5fa;
+    --theme-link-complete: #fbbf24;
+    --theme-link-delete: #fb7185;
+
+    --theme-chart-equipment: #48b3c2;
+    --theme-chart-budget: #1f8b91;
+    --theme-chart-actual: #fbbf24;
+    --theme-chart-preventive-employee: #22d3ee;
+    --theme-chart-preventive-supplier: #f472b6;
+}
+
+html[data-theme="dark-power-ops"] {
+    --theme-priority-critical: #ef4444;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #f59e0b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #38bdf8;
+    --theme-priority-medium-text: #142033;
+
+    --theme-priority-low: #22c55e;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #64748b;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #2563eb;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #38bdf8;
+    --theme-link-complete: #f59e0b;
+    --theme-link-delete: #f87171;
+
+    --theme-chart-equipment: #33bac9;
+    --theme-chart-budget: #0f766e;
+    --theme-chart-actual: #f59e0b;
+    --theme-chart-preventive-employee: #22b8cf;
+    --theme-chart-preventive-supplier: #e24a98;
+}
+
+html[data-theme="dark-graphite-luxe"] {
+    --theme-priority-critical: #d95b6a;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #d9a441;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #5b8def;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #4db57c;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #6b7280;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #52718d;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #76a9fa;
+    --theme-link-complete: #e7b84d;
+    --theme-link-delete: #f07b87;
+
+    --theme-chart-equipment: #6fb3c0;
+    --theme-chart-budget: #52718d;
+    --theme-chart-actual: #d9a441;
+    --theme-chart-preventive-employee: #2ec4b6;
+    --theme-chart-preventive-supplier: #e26bb3;
+}
+/* =========================================================
+   ACCESSIBLE PALETTES
+   Fourth palette per family
+   ========================================================= */
+
+/* ---------- light accessible ---------- */
+html[data-theme="light-accessible-saas"] {
+    --theme-priority-critical: #b91c1c;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #b45309;
+    --theme-priority-high-text: #ffffff;
+
+    --theme-priority-medium: #1d4ed8;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #166534;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #cbd5e1;
+    --theme-kpi-age-text: #0f172a;
+
+    --theme-kpi-hours: #334155;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #1d4ed8;
+    --theme-link-complete: #b45309;
+    --theme-link-delete: #b91c1c;
+
+    --theme-chart-equipment: #3d7f90;
+    --theme-chart-budget: #64748b;
+    --theme-chart-actual: #b45309;
+    --theme-chart-preventive-employee: #0f766e;
+    --theme-chart-preventive-supplier: #be185d;
+}
+
+/* ---------- normal accessible ---------- */
+html[data-theme="normal-accessible-balanced"] {
+    --theme-priority-critical: #b91c1c;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #a16207;
+    --theme-priority-high-text: #ffffff;
+
+    --theme-priority-medium: #1e40af;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #166534;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #cbd5e1;
+    --theme-kpi-age-text: #1e293b;
+
+    --theme-kpi-hours: #475569;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #1e40af;
+    --theme-link-complete: #a16207;
+    --theme-link-delete: #b91c1c;
+
+    --theme-chart-equipment: #3f8795;
+    --theme-chart-budget: #64748b;
+    --theme-chart-actual: #a16207;
+    --theme-chart-preventive-employee: #0e7490;
+    --theme-chart-preventive-supplier: #be185d;
+}
+
+/* ---------- dark accessible ---------- */
+html[data-theme="dark-accessible-contrast"] {
+    --theme-priority-critical: #f87171;
+    --theme-priority-critical-text: #111827;
+
+    --theme-priority-high: #facc15;
+    --theme-priority-high-text: #111827;
+
+    --theme-priority-medium: #60a5fa;
+    --theme-priority-medium-text: #111827;
+
+    --theme-priority-low: #4ade80;
+    --theme-priority-low-text: #111827;
+
+    --theme-kpi-age: #64748b;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #38bdf8;
+    --theme-kpi-hours-text: #111827;
+
+    --theme-link-edit: #60a5fa;
+    --theme-link-complete: #facc15;
+    --theme-link-delete: #f87171;
+
+    --theme-chart-equipment: #4db7c4;
+    --theme-chart-budget: #64748b;
+    --theme-chart-actual: #facc15;
+    --theme-chart-preventive-employee: #22d3ee;
+    --theme-chart-preventive-supplier: #f472b6;
+}
+
+/* =========================================================
+   PREMIUM PALETTES
+   Added palettes for Light / Normal / Dark families
+   ========================================================= */
+
+/* ---------- light mineral luxe ---------- */
+html[data-theme="light-mineral-luxe"] {
+    --theme-priority-critical: #b64552;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #d4af37;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #4f7fa6;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #4f9b8f;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #d7e3ec;
+    --theme-kpi-age-text: #223142;
+
+    --theme-kpi-hours: #5f788a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #3f6f98;
+    --theme-link-complete: #b9922f;
+    --theme-link-delete: #b64552;
+
+    --theme-chart-equipment: #4fb0a8;
+    --theme-chart-budget: #7e97ac;
+    --theme-chart-actual: #e0ba68;
+    --theme-chart-preventive-employee: #5a88ad;
+    --theme-chart-preventive-supplier: #0b1f5b;
+}
+
+/* ---------- light coastal gold premium ---------- */
+html[data-theme="light-coastal-gold-premium"] {
+    --theme-priority-critical: #c45552;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #304b7a;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #56bca4;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #e5d5b1;
+    --theme-kpi-age-text: #243247;
+
+    --theme-kpi-hours: #5f798a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #c45552;
+
+    --theme-chart-equipment: #56bca4;
+    --theme-chart-budget: #394456;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+/* ---------- normal ocean gold premium ---------- */
+html[data-theme="normal-ocean-gold-premium"] {
+    --theme-priority-critical: #c44e5f;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #c9a227;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #38598b;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #2f8f83;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #c9d4df;
+    --theme-kpi-age-text: #1f2d3d;
+
+    --theme-kpi-hours: #516b84;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #38598b;
+    --theme-link-complete: #b38b1d;
+    --theme-link-delete: #c44e5f;
+
+    --theme-chart-equipment: #6b86a8;
+    --theme-chart-budget: #7b8ea8;
+    --theme-chart-actual: #c49b3d;
+    --theme-chart-preventive-employee: #2f4b75;
+    --theme-chart-preventive-supplier: #001f54;
+}
+
+/* ---------- normal condofix luxe coastal ---------- */
+html[data-theme="normal-condofix-luxe-coastal"] {
+    --theme-priority-critical: #c45552;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #304b7a;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #2595a3;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #dfe5eb;
+    --theme-kpi-age-text: #223142;
+
+    --theme-kpi-hours: #394456;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #c45552;
+
+    --theme-chart-equipment: #56bca4;
+    --theme-chart-budget: #5f798a;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+/* ---------- dark abyss premium ---------- */
+html[data-theme="dark-abyss-premium"] {
+    --theme-priority-critical: #d86a78;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #d4af37;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #4f79c6;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #3fa796;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #5f738a;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #6f88a6;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #79a6ff;
+    --theme-link-complete: #e0bc52;
+    --theme-link-delete: #f08a96;
+
+    --theme-chart-equipment: #5bc0be;
+    --theme-chart-budget: #3a506b;
+    --theme-chart-actual: #c7a24a;
+    --theme-chart-preventive-employee: #3a506b;
+    --theme-chart-preventive-supplier: #1c2541;
+}
+
+/* ---------- dark condofix ocean luxe ---------- */
+html[data-theme="dark-condofix-ocean-luxe"] {
+    --theme-priority-critical: #d86c72;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #4f76b8;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #56bca4;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #7f8ea3;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #5f798a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #7ea2e6;
+    --theme-link-complete: #e9d189;
+    --theme-link-delete: #f08a92;
+
+    --theme-chart-equipment: #56bca4;
+    --theme-chart-budget: #394456;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+/* =========================================================
+   LIGHT PREMIUM TEST PALETTES
+   Luxe minéral jade / Or côtier jade
+   + 6 new iterative variants
+   ========================================================= */
+
+/* ---------- light luxe minéral jade ---------- */
+html[data-theme="light-luxe-mineral-jade"] {
+    --theme-priority-critical: #b64552;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #d4af37;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #4f7fa6;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #4f9b8f;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #d7e3ec;
+    --theme-kpi-age-text: #223142;
+
+    --theme-kpi-hours: #5f788a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #3f6f98;
+    --theme-link-complete: #b9922f;
+    --theme-link-delete: #b64552;
+
+    --theme-chart-equipment: #4fb0a8;
+    --theme-chart-budget: #7e97ac;
+    --theme-chart-actual: #e0ba68;
+    --theme-chart-preventive-employee: #5a88ad;
+    --theme-chart-preventive-supplier: #0b1f5b;
+}
+
+/* ---------- light or côtier jade ---------- */
+html[data-theme="light-or-cotier-jade"] {
+    --theme-priority-critical: #c45552;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #304b7a;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #56bca4;
+    --theme-priority-low-text: #142033;
+
+    --theme-kpi-age: #e5d5b1;
+    --theme-kpi-age-text: #243247;
+
+    --theme-kpi-hours: #5f798a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #c45552;
+
+    --theme-chart-equipment: #56bca4;
+    --theme-chart-budget: #394456;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+/* ---------- light luxe minéral premium 1 ---------- */
+html[data-theme="light-luxe-mineral-premium-1"] {
+    --theme-priority-critical: #b84d5b;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2595a3;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #304b7a;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #d9e3ea;
+    --theme-kpi-age-text: #223142;
+
+    --theme-kpi-hours: #5f798a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #b84d5b;
+
+    --theme-chart-equipment: #5f798a;
+    --theme-chart-budget: #5f798a;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+html[data-theme="light-luxe-mineral-premium-2"] {
+    --theme-priority-critical: #b74a58;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #56bca4;
+    --theme-priority-medium-text: #142033;
+
+    --theme-priority-low: #2f325d;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #d7e0e7;
+    --theme-kpi-age-text: #223142;
+
+    --theme-kpi-hours: #6a8091;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #b74a58;
+
+    --theme-chart-equipment: #64798c;
+    --theme-chart-budget: #6a8091;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+html[data-theme="light-luxe-mineral-premium-3"] {
+    --theme-priority-critical: #bb5360;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #d6ae43;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2f8f98;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #3d5d86;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #dbe4ea;
+    --theme-kpi-age-text: #223142;
+
+    --theme-kpi-hours: #6c8394;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #3d5d86;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #bb5360;
+
+    --theme-chart-equipment: #708899;
+    --theme-chart-budget: #6c8394;
+    --theme-chart-actual: #d6ae43;
+    --theme-chart-preventive-employee: #2f8f98;
+    --theme-chart-preventive-supplier: #304b7a;
+}
+
+html[data-theme="light-or-ocean-premium-1"] {
+    --theme-priority-critical: #bf5562;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #56bca4;
+    --theme-priority-medium-text: #142033;
+
+    --theme-priority-low: #304b7a;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #e5d5b1;
+    --theme-kpi-age-text: #243247;
+
+    --theme-kpi-hours: #5f798a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #bf5562;
+
+    --theme-chart-equipment: #6c8394;
+    --theme-chart-budget: #5f798a;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+html[data-theme="light-or-ocean-premium-2"] {
+    --theme-priority-critical: #bc5160;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2595a3;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #2f325d;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #e7dcc0;
+    --theme-kpi-age-text: #243247;
+
+    --theme-kpi-hours: #647d90;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #bc5160;
+
+    --theme-chart-equipment: #5f798a;
+    --theme-chart-budget: #647d90;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+html[data-theme="light-or-ocean-premium-3"] {
+    --theme-priority-critical: #b7505f;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #d4aa38;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #3b9aa6;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #394456;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #e5d5b1;
+    --theme-kpi-age-text: #243247;
+
+    --theme-kpi-hours: #708899;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #b7505f;
+
+    --theme-chart-equipment: #6f8696;
+    --theme-chart-budget: #708899;
+    --theme-chart-actual: #d4aa38;
+    --theme-chart-preventive-employee: #3b9aa6;
+    --theme-chart-preventive-supplier: #304b7a;
+}
+
+html[data-theme="normal-luxe-mineral-premium-1"] {
+    --theme-priority-critical: #b84d5b;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2595a3;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #304b7a;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #d8e1e8;
+    --theme-kpi-age-text: #223142;
+
+    --theme-kpi-hours: #5f798a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #b84d5b;
+
+    --theme-chart-equipment: #5f798a;
+    --theme-chart-budget: #5f798a;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+html[data-theme="normal-or-ocean-premium-1"] {
+    --theme-priority-critical: #bf5562;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #3b9aa6;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #394456;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #e5d5b1;
+    --theme-kpi-age-text: #243247;
+
+    --theme-kpi-hours: #6b8293;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #304b7a;
+    --theme-link-complete: #976d01;
+    --theme-link-delete: #bf5562;
+
+    --theme-chart-equipment: #6b8293;
+    --theme-chart-budget: #6b8293;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #3b9aa6;
+    --theme-chart-preventive-supplier: #304b7a;
+}
+
+html[data-theme="dark-luxe-mineral-premium-1"] {
+    --theme-priority-critical: #d06b76;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #2595a3;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #304b7a;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #71859a;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #5f798a;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #7ea2e6;
+    --theme-link-complete: #e0bc52;
+    --theme-link-delete: #ef9aa2;
+
+    --theme-chart-equipment: #5f798a;
+    --theme-chart-budget: #394456;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #2595a3;
+    --theme-chart-preventive-supplier: #2f325d;
+}
+
+html[data-theme="dark-or-ocean-premium-1"] {
+    --theme-priority-critical: #d46f79;
+    --theme-priority-critical-text: #ffffff;
+
+    --theme-priority-high: #dbb13b;
+    --theme-priority-high-text: #142033;
+
+    --theme-priority-medium: #3b9aa6;
+    --theme-priority-medium-text: #ffffff;
+
+    --theme-priority-low: #394456;
+    --theme-priority-low-text: #ffffff;
+
+    --theme-kpi-age: #8a9aae;
+    --theme-kpi-age-text: #ffffff;
+
+    --theme-kpi-hours: #6a7f90;
+    --theme-kpi-hours-text: #ffffff;
+
+    --theme-link-edit: #8aadf0;
+    --theme-link-complete: #e9d189;
+    --theme-link-delete: #f2a2aa;
+
+    --theme-chart-equipment: #6a7f90;
+    --theme-chart-budget: #394456;
+    --theme-chart-actual: #dbb13b;
+    --theme-chart-preventive-employee: #3b9aa6;
+    --theme-chart-preventive-supplier: #304b7a;
+}

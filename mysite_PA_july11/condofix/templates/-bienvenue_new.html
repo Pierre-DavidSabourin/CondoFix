@@ -21,9 +21,7 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
 
 {% block head_extra %}
 <style>
-/* ===== HERO ===== */
-
-/* Two equal “cards” */
+/* ===== HERO PANELS ===== */
 .hero-panel{
   background: rgba(255,255,255,.08);
   border: 1px solid rgba(255,255,255,.10);
@@ -31,42 +29,177 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
   padding: 1rem;
 }
 
-@media (min-width: 992px){
-  .hero-panel{ padding: 1.25rem; }
+.hero-kicker{
+  display:inline-block;
+  font-size:.96rem;
+  font-weight:800;
+  letter-spacing:.035em;
+  text-transform:uppercase;
+  color:#ffd97a;
+  margin-bottom:.7rem;
 }
 
-.hero-bullets{
-  padding-left: 1.15rem;
-  margin: .5rem 0 1rem 0;
-}
-.hero-bullets li{
-  margin-bottom: .25rem;
-  line-height: 1.25;
-  font-size: 1rem;
-  opacity: .98;
-}
-
-/* Video contour */
 .hero-video-wrap{
   border-radius: .6rem;
   overflow: hidden;
   background: rgba(0,0,0,.15);
 }
 
-/* ===== SECTION 3 (Mémoire collective) ===== */
-/* Make the image behave like a true "cover" and avoid edge artifacts */
-.memoire-img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  min-height: 220px;
-  transform: scale(1.015);      /* keep if it solves edge artifacts */
-  transform-origin: center;
+/* ===== HERO SHORTCUTS ===== */
+.hero-shortcuts{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:.65rem;
+  margin: 1rem 0 1rem 0;
+}
+
+.hero-shortcut{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.8rem;
+  padding:.82rem .95rem;
+  border-radius:.75rem;
+  text-decoration:none;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+  transition:
+    background-color .16s ease,
+    border-color .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+.hero-shortcut:hover,
+.hero-shortcut:focus{
+  text-decoration:none;
+  background:rgba(255,255,255,.15);
+  border-color:rgba(255,217,122,.45);
+  box-shadow:0 12px 24px rgba(0,0,0,.12);
+  transform:translateY(-2px);
+}
+
+.hero-shortcut-copy{
+  min-width:0;
+}
+
+.hero-shortcut-title{
+  display:block;
+  color:#ffe4a1;
+  font-weight:800;
+  line-height:1.2;
+  margin-bottom:.14rem;
+  font-size:1.02rem;
+}
+
+.hero-shortcut-desc{
+  display:block;
+  color:rgba(255,255,255,.97);
+  font-size:.96rem;
+  line-height:1.33;
+}
+
+.hero-shortcut-arrow{
+  flex:0 0 auto;
+  color:#ffd97a;
+  font-size:1.04rem;
+  transition:transform .16s ease, color .16s ease;
+}
+
+.hero-shortcut:hover .hero-shortcut-arrow,
+.hero-shortcut:focus .hero-shortcut-arrow{
+  color:#fff1c6;
+  transform:translateX(4px);
+}
+
+/* ===== HERO CTA BUTTONS ===== */
+.hero-cta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.75rem;
+  align-items:center;
+  margin-top:.25rem;
+}
+
+.hero-cta-row-split{
+  flex-wrap:nowrap;
+}
+
+.hero-main-cta{
+  flex:1 1 auto;
+  background:#f3c316;
+  border-color:#f3c316;
+  color:#1f2f3d;
+  font-weight:800;
+  box-shadow:0 8px 18px rgba(0,0,0,.10);
+}
+
+.hero-main-cta:hover,
+.hero-main-cta:focus{
+  background:#ffd24d;
+  border-color:#ffd24d;
+  color:#1f2f3d;
+}
+
+.hero-secondary-cta{
+  flex:0 0 auto;
+  min-width:150px;
+  background:transparent;
+  border:1px solid rgba(255,255,255,.42);
+  color:#ffffff;
+  font-weight:700;
+  box-shadow:none;
+}
+
+.hero-secondary-cta:hover,
+.hero-secondary-cta:focus{
+  background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.62);
+  color:#ffffff;
 }
 
 @media (max-width: 767.98px){
-  .memoire-img{ min-height: 180px; }
+  .hero-cta-row-split{
+    flex-wrap:wrap;
+  }
+
+  .hero-main-cta,
+  .hero-secondary-cta{
+    width:100%;
+    flex:1 1 100%;
+    max-width:none;
+  }
+}
+
+/* ===== SECTION IMAGE ===== */
+.memoire-img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  min-height:220px;
+  transform:scale(1.015);
+  transform-origin:center;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (min-width: 992px){
+  .hero-panel{
+    padding:1.25rem;
+  }
+}
+
+@media (max-width: 767.98px){
+  .memoire-img{
+    min-height:180px;
+  }
+
+  .hero-main-cta,
+  .hero-contact-cta{
+    width:100%;
+    max-width:none;
+    flex:1 1 100%;
+  }
 }
 </style>
 
@@ -102,54 +235,70 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
 </script>
 {% endblock %}
 
-
 {% block content %}
-<!-- Hero -->
 <section class="bg-steel text-white rounded mb-4 p-4 p-lg-5">
-
-  <!-- Title -->
   <div class="row mb-3">
     <div class="col-12">
-<h1 class="h2 text-white mb-0">
-  Carnet d’entretien numérique et conformité à la Loi 16<br class="d-none d-md-block">
-  pour votre copropriété
-</h1>
-
+      <span class="hero-kicker">CondoFix</span>
+      <h1 class="h2 text-white mb-0">
+        Carnet d’entretien numérique et conformité à la Loi 16<br class="d-none d-md-block">
+        pour votre copropriété
+      </h1>
     </div>
   </div>
 
-  <!-- Two equal-height boxes -->
   <div class="row align-items-stretch">
-    <!-- LEFT BOX -->
     <div class="col-lg-6 mb-3 mb-lg-0">
       <div class="hero-panel h-100 d-flex flex-column">
         <p class="mb-3">
           Au Québec, la <strong>Loi 16</strong> oblige les syndicats de copropriété à tenir un
           <strong>carnet d’entretien</strong>, à suivre le <strong>fonds de prévoyance</strong> et à documenter les travaux majeurs.
-          <strong>CondoFix</strong> centralise tout cela (entretien, documents, équipements) et facilite la préparation de l’attestation d’état de copropriété.
+          <strong>CondoFix</strong> centralise tout cela et facilite aussi la préparation de l’attestation d’état de copropriété.
         </p>
 
-        <ul class="hero-bullets mb-3">
-          <li>Carnet d’entretien numérique complet</li>
-          <li>Suivi du fonds de prévoyance</li>
-          <li>Préparation de l’attestation Loi&nbsp;16</li>
-        </ul>
+        <div class="hero-shortcuts">
+          <a class="hero-shortcut" href="{{ url_for('bp_public.carnet_entretien') }}">
+            <span class="hero-shortcut-copy">
+              <span class="hero-shortcut-title">Carnet d’entretien</span>
+              <span class="hero-shortcut-desc">Tenue, mise à jour annuelle et suivi structuré du carnet d’entretien.</span>
+            </span>
+            <span class="hero-shortcut-arrow"><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
+          </a>
 
-        <!-- Button anchored near the bottom -->
-        <div class="mt-auto">
-          <a class="btn btn-warning text-dark font-weight-bold btn-lg"
+          <a class="hero-shortcut" href="{{ url_for('bp_public.module_fdp') }}">
+            <span class="hero-shortcut-copy">
+              <span class="hero-shortcut-title">Fonds de prévoyance</span>
+              <span class="hero-shortcut-desc">Suivi du fonds et intégration de l’étude à renouveler tous les 5 ans.</span>
+            </span>
+            <span class="hero-shortcut-arrow"><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
+          </a>
+
+          <a class="hero-shortcut" href="https://attestationcondo-condofix.pythonanywhere.com/" target="_blank" rel="noopener">
+            <span class="hero-shortcut-copy">
+              <span class="hero-shortcut-title">Attestation</span>
+              <span class="hero-shortcut-desc">Générer l’attestation requise lors de la vente d’une unité.</span>
+            </span>
+            <span class="hero-shortcut-arrow"><i class="fa fa-external-link" aria-hidden="true"></i></span>
+          </a>
+        </div>
+
+        <div class="mt-auto hero-cta-row hero-cta-row-split">
+          <a class="btn btn-lg hero-main-cta"
              href="{{ url_for('bp_public.produits') }}">
             Voir les offres CondoFix
+          </a>
+
+          <a class="btn btn-lg hero-secondary-cta"
+             href="{{ url_for('bp_public.demande_info') }}">
+            Nous joindre
           </a>
         </div>
       </div>
     </div>
 
-    <!-- RIGHT BOX -->
     <div class="col-lg-6">
       <div class="hero-panel h-100 d-flex align-items-center">
         <div class="w-100">
-          <!-- Bootstrap 4 responsive video -->
           <div class="embed-responsive embed-responsive-16by9 hero-video-wrap">
             <video class="embed-responsive-item" controls autoplay loop muted playsinline>
               <source src="{{ url_for('static', filename='images_publiques/VideoHomePage.mp4') }}"
@@ -162,7 +311,6 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
   </div>
 </section>
 
-<!-- Testimonials -->
 <section class="mb-4">
   <div class="row">
     <div class="col-md-6 mb-3">
@@ -211,11 +359,9 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
   </div>
 </section>
 
-<!-- Mémoire collective -->
 <section class="mb-4">
   <div class="card mb-4 overflow-hidden">
     <div class="row no-gutters align-items-stretch">
-      <!-- Image -->
       <div class="col-md-4">
         <img
           src="{{ url_for('static', filename='images_publiques/condofix-board-dashboard-illustration.png') }}"
@@ -224,7 +370,6 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
           loading="lazy">
       </div>
 
-      <!-- Texte -->
       <div class="col-md-8">
         <div class="card-body p-4">
           <h2 class="h4 mb-3">Carnet d’entretien numérique et mémoire de la copropriété</h2>
@@ -249,7 +394,6 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
     </div>
   </div>
 
-  <!-- Section finale -->
   <div class="card bg-light">
     <div class="card-body p-4">
       <h2 class="h4 mb-2">Développé au Québec pour les syndicats de copropriété</h2>
@@ -261,7 +405,6 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
       </p>
 
       <div class="row">
-        <!-- Valeur -->
         <div class="col-md-6 mb-3 mb-md-0">
           <h3 class="h6 text-uppercase mb-2 text-secondary">Ce qui vous distingue</h3>
           <ul class="mb-0">
@@ -272,7 +415,6 @@ loi 16, attestation loi 16, carnet d'entretien copropriété, fonds de prévoyan
           </ul>
         </div>
 
-        <!-- Modules -->
         <div class="col-md-6">
           <h3 class="h6 text-uppercase mb-2 text-secondary">Modules clés</h3>
           <ul class="mb-0">
