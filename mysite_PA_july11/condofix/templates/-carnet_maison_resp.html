@@ -1,0 +1,300 @@
+{% extends "-public_layout_new.html" %}
+
+{% block meta_title %}CondoFix — Agenda partagé, système hybride ou GMAO{% endblock %}
+{% block meta_description %}
+Mini-guide pour choisir une méthode de suivi d’entretien en copropriété : agenda partagé, système hybride ou GMAO selon la taille et les besoins de l’immeuble.
+{% endblock %}
+{% block meta_keywords %}
+agenda partagé copropriété, système hybride, gmao copropriété, carnet d'entretien, condo, CondoFix
+{% endblock %}
+{% block canonical %}
+<link rel="canonical" href="{{ url_for('bp_public.agenda', _external=True) }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .agenda-hero {
+    background: #6d8496;
+    color: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  }
+
+  .agenda-panel {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: .9rem;
+    padding: 1.2rem;
+    height: 100%;
+  }
+
+  .agenda-kicker {
+    display: inline-block;
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+    color: #ffd97a;
+    margin-bottom: .7rem;
+  }
+
+  .agenda-hero p,
+  .agenda-hero li {
+    color: rgba(255,255,255,.96);
+  }
+
+  .agenda-image-wrap img,
+  .agenda-figure img {
+    width: 100%;
+    display: block;
+    border-radius: .8rem;
+  }
+
+  .agenda-image-wrap {
+    border-radius: .9rem;
+    overflow: hidden;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.10);
+  }
+
+  .agenda-bullets {
+    padding-left: 1.15rem;
+    margin-bottom: 0;
+  }
+
+  .agenda-bullets li {
+    margin-bottom: .5rem;
+    line-height: 1.45;
+  }
+
+  .section-card,
+  .guide-card,
+  .figure-card {
+    border: 1px solid #dde5ec;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0,0,0,.04);
+  }
+
+  .section-card .card-body,
+  .guide-card .card-body,
+  .figure-card .card-body {
+    padding: 1.35rem;
+  }
+
+  .section-intro {
+    color: #627180;
+    line-height: 1.6;
+  }
+
+  .figure-caption {
+    font-size: .95rem;
+    color: #31404d;
+  }
+
+  .mini-kicker {
+    display: inline-block;
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: #6b7f90;
+    margin-bottom: .45rem;
+  }
+
+  .cta-band {
+    background: #f3f7fa;
+    border: 1px solid #dbe4ec;
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+
+  .soft-blue {
+    background: #f7fbff;
+    border-color: #d9e7f2;
+  }
+
+  .soft-sand {
+    background: #fffaf1;
+    border-color: #ead9b6;
+  }
+
+  @media (max-width: 991.98px) {
+    .agenda-hero {
+      padding: 1.2rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <section class="agenda-hero mb-4">
+    <div class="row align-items-stretch">
+      <div class="col-lg-6 mb-3 mb-lg-0 d-flex">
+        <div class="agenda-panel w-100 d-flex flex-column">
+          <div>
+            <span class="agenda-kicker">Choix d’outil pour le carnet d’entretien</span>
+            <h1 class="h2 text-white mb-3">Agenda partagé, système hybride ou GMAO?</h1>
+            <p class="mb-3">
+              Vous avez maintenant en main le carnet d’entretien préparé pour votre immeuble et vous devez choisir un moyen concret
+              pour organiser le suivi au quotidien. Le bon outil dépend surtout du volume d’interventions, du nombre d’unités
+              et de la facilité avec laquelle l’information doit être partagée.
+            </p>
+            <ul class="agenda-bullets">
+              <li>Un agenda partagé peut suffire dans les cas les plus simples.</li>
+              <li>Un système hybride ajoute de la structure, mais demande plus de rigueur.</li>
+              <li>Un GMAO (gestion de maintenance assistée par ordinateur) devient pertinent lorsque les interventions, les équipements et les usagers se multiplient.</li>
+            </ul>
+          </div>
+
+          <div class="mt-4 d-flex flex-wrap" style="gap:.75rem;">
+            <a class="btn btn-warning text-dark font-weight-bold" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+            <a class="btn btn-light" href="/video_infos">Vidéo 3 min.</a>
+            <a class="btn btn-danger text-white" href="/demo">Essai gratuit</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6 d-flex">
+        <div class="agenda-panel w-100 d-flex flex-column justify-content-center">
+          <div class="agenda-image-wrap mb-3">
+            <img src="{{ url_for('static', filename='images_publiques/Choix_Outil.png') }}" alt="Grille de choix d’outil pour le suivi de l’entretien">
+          </div>
+          <p class="mb-0">
+            La figure ci-contre illustre que le nombre d’unités privatives est un facteur important, mais qu’il faut aussi tenir compte
+            de l’effort requis, du niveau d’organisation recherché et des ressources disponibles pour suivre l’entretien.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="section-card">
+      <div class="card-body">
+        <h2 class="h3 mb-2">Comment lire ce mini-guide</h2>
+        <p class="section-intro mb-0">
+          L’objectif n’est pas d’imposer un seul modèle à toutes les copropriétés, mais d’aider les administrateurs à choisir une solution réaliste,
+          progressive et adaptée à leur contexte. Une petite copropriété peut très bien commencer simplement, puis évoluer vers un outil plus structuré au besoin.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <div class="guide-card soft-blue">
+          <div class="card-body">
+            <span class="mini-kicker">Pour les petites copropriétés</span>
+            <h2 class="h4 mb-3">Commencer simplement sans perdre le fil</h2>
+            <p class="mb-3">
+              Pour les petites copropriétés, un <strong>agenda partagé</strong> comme Google™ Agenda peut suffire lorsqu’il est accompagné
+              d’un classement clair des factures et documents d’entretien.
+            </p>
+            <p class="mb-0">
+              Lorsque le nombre d’interventions augmente, un <strong>système hybride</strong> — par exemple un agenda partagé combiné à
+              un chiffrier Excel™ ou Google™ Sheets — peut offrir une solution accessible. Cette approche reste toutefois plus sensible
+              aux erreurs de saisie et au partage entre plusieurs intervenants.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="figure-card">
+          <div class="card-body">
+            <p class="section-intro mb-3">
+              Voici deux exemples concrets d’utilisation d’un agenda partagé pour visualiser les interventions prévues et les consulter sous forme de liste.
+            </p>
+            <div class="row">
+              <div class="col-lg-6 mb-4 mb-lg-0 d-flex">
+                <div class="w-100 d-flex flex-column">
+                  <div class="agenda-figure mb-3">
+                    <img src="{{ url_for('static', filename='images_publiques/Calendrier_Mois.png') }}" alt="Exemple de calendrier d’entretien sur Agenda Google">
+                  </div>
+                  <div class="text-center mt-auto">
+                    <span class="figure-caption"><strong>Figure 2</strong> — Exemple de calendrier d’entretien sur Agenda Google™</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-6 d-flex">
+                <div class="w-100 d-flex flex-column">
+                  <div class="agenda-figure mb-3">
+                    <img src="{{ url_for('static', filename='images_publiques/Calendrier_Liste.png') }}" alt="Exemple de liste priorisée d’interventions sur Agenda Google">
+                  </div>
+                  <div class="text-center mt-auto">
+                    <span class="figure-caption"><strong>Figure 3</strong> — Exemple de liste priorisée d’interventions sur Agenda Google™</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="row align-items-stretch">
+      <div class="col-lg-7 mb-3 mb-lg-0">
+        <div class="guide-card soft-sand h-100">
+          <div class="card-body">
+            <span class="mini-kicker">Quand les besoins augmentent</span>
+            <h2 class="h4 mb-3">Quand un GMAO devient un meilleur choix</h2>
+            <p>
+              Lorsque l’immeuble comporte davantage d’équipements, plus d’interventions et plusieurs usagers appelés à collaborer,
+              un <strong>GMAO</strong> comme CondoFix devient plus avantageux. Il permet d’intégrer le calendrier, les interventions,
+              la saisie des factures, le tableau de bord et la consultation de l’information dans un même environnement.
+            </p>
+            <p>
+              Un autre avantage important en copropriété est l’<strong>intégration de la facturation</strong>. Comme une grande part des travaux
+              est confiée à des fournisseurs, il devient utile de rattacher les coûts de main-d’œuvre et de matériel aux bons équipements
+              et aux bonnes interventions.
+            </p>
+            <p class="mb-0">
+              Les <strong>notifications</strong> et les événements récurrents permettent aussi de refléter plus fidèlement la fréquence
+              recommandée dans le carnet d’entretien, tout en facilitant la coordination entre les administrateurs et les intervenants.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="figure-card h-100">
+          <div class="card-body">
+            <h3 class="h5 mb-3">Figure 4 — Exemple de système hybride</h3>
+            <div class="agenda-figure mb-3">
+              <img src="{{ url_for('static', filename='images_publiques/GoogleSheetsScreenShot.jpg') }}" alt="Exemple de suivi d’interventions dans Google Sheets">
+            </div>
+            <p class="section-intro mb-0">
+              Cet exemple illustre une méthode intermédiaire basée sur un chiffrier partagé. Elle peut dépanner dans certains contextes,
+              mais devient vite plus exigeante à maintenir lorsqu’il faut coordonner plusieurs interventions, priorités et utilisateurs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8 mb-3 mb-lg-0">
+        <h2 class="h4 mb-2">Vous voulez choisir une méthode adaptée à votre immeuble?</h2>
+        <p class="mb-0 section-intro">
+          CondoFix peut vous aider à passer d’un suivi minimal à une gestion d’entretien plus structurée, selon la réalité de votre copropriété.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-right">
+        <a class="btn btn-primary mr-2" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('bp_public.produits') }}">Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

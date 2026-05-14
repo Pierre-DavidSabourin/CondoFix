@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="../static/bootstrap.css">
     <link rel="stylesheet" href="../static/styles_1.css">
     <style>
-        .flash-container {
+.flash-container {
     max-width: 900px;
-    margin: 90px auto 20px auto;   /* pushes under navbar */
+    margin: 90px auto 20px auto;
 }
 
 .flash-container .alert {
@@ -20,6 +20,67 @@
     padding: 12px 18px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     font-size: 16px;
+}
+
+.login-shell {
+    min-height: calc(100vh - 100px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 28px 16px 48px 16px;
+}
+
+.login-card {
+    border: 1px solid #d7dde2;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    background: #ffffff;
+}
+
+.login-card .card-header {
+    background: #f7f7f7;
+    border-bottom: 1px solid #d7dde2;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2f3a43;
+}
+
+.login-brand-svg {
+    width: 40px;
+    height: 40px;
+    display: block;
+    flex: 0 0 auto;
+}
+
+.login-brand-text {
+    line-height: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.login-brand-subtitle {
+    display: block;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #f4dfa1;
+    margin-top: 3px;
+    letter-spacing: 0.01em;
+}
+
+@media (max-width: 767.98px) {
+    body { padding-top: 72px; }
+    .flash-container {
+        margin: 84px 14px 12px 14px;
+        max-width: none;
+    }
+    .login-shell {
+        padding: 12px 12px 28px 12px;
+    }
+    .login-card .card-header {
+        font-size: 1.8rem;
+    }
 }
     </style>
 </head>
@@ -37,24 +98,24 @@
 </div>
 <header class="site-header">
     <input type="hidden" name="ident_list" value="{{ ident_list }}">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top">
-        <button class="navbar-toggler" type="button" data-toggle="collapse"
-                data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown"
-                aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top" style="padding-top:10px; padding-bottom:10px;">
+        <a class="navbar-brand d-flex align-items-center mb-0" style="gap:10px;"
+           href="{{ url_for('bp_public.home') }}"
+           aria-label="Retour à l'accueil CondoFix">
 
-        <!-- CLICKABLE ICON + TEXT -->
-        <a class="navbar-brand d-flex align-items-center"
-           href="{{ url_for('bp_public.home') }}">
+            <svg class="login-brand-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+                <g transform="translate(12,12) scale(4.75)" fill="#ffffff">
+                    <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
+                </g>
+                <g transform="translate(37.6,37.4) scale(3.42)">
+                    <path d="M.102 2.223A3.004 3.004 0 0 0 3.78 5.897l6.341 6.252A3.003 3.003 0 0 0 13 16a3 3 0 1 0-.851-5.878L5.897 3.781A3.004 3.004 0 0 0 2.223.1l2.141 2.142L4 4l-1.757.364zm13.37 9.019.528.026.287.445.445.287.026.529L15 13l-.242.471-.026.529-.445.287-.287.445-.529.026L13 15l-.471-.242-.529-.026-.287-.445-.445-.287-.026-.529L11 13l.242-.471.026-.529.445-.287.287-.445.529-.026L13 11z" fill="#ffffff" stroke="#445564" stroke-width="0.8" stroke-linejoin="round" paint-order="stroke fill"/>
+                </g>
+            </svg>
 
-            <img src="../static/ToolsIcon.png"
-                 alt="Logo"
-                 width="50"
-                 height="50"
-                 style="padding: 8px;">
-
-            <span class="mb-0 h2">CondoFix</span>
+            <span class="login-brand-text">
+                <span class="mb-0 h2 d-block" style="font-weight:700; line-height:1;">CondoFix</span>
+                <span class="login-brand-subtitle">Connexion à la plateforme</span>
+            </span>
         </a>
     </nav>
 </header>
@@ -69,25 +130,26 @@ function affiche_mp() {
       }
 }
 </script>
-<div class="content-section">
+<div class="login-shell">
     <div class="container">
         <div class="row">
             <div class="col-md-6 mx-auto my-1">
-                <div class="card rounded-0">
+                <div class="card login-card">
                     <h3 class="card-header">Login</h3>
                     <div class="card-body">
                         <form class="form" role="form" autocomplete="off" id="formLogin" novalidate="" method="POST">
                             <div class="form-group">
                                 <label for="Usager">Usager</label>
                                 <input type="text" class="form-control" autofocus="autofocus" name="usager" required="">
-                                 </div>
+                            </div>
                             <div class="form-group">
                                 <label for="InputPassword">Mot de passe</label>
                                 <input type="password" class="form-control" name="password" id="mot_passe" required="">
-                                <!-- An element to toggle between password visibility -->
-                                <input type="checkbox" onclick="affiche_mp()">&nbsp; Afficher mot de passe
+                                <div class="mt-2">
+                                    <input type="checkbox" onclick="affiche_mp()">&nbsp; Afficher mot de passe
+                                </div>
                             </div>
-                        <button type="submit" class="btn bg-steel text-white" id="btnLogin">Soumettre</button>
+                            <button type="submit" class="btn bg-steel text-white" id="btnLogin">Soumettre</button>
                         </form>
                     </div>
                 </div>

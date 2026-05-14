@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="{{ theme_ui|default('normal-condofix-classic') }}">
+
+
 <head>
     <meta charset="UTF-8">
     <meta content="telephone=no" name="format-detection">
@@ -10,20 +12,288 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="../static/bootstrap.css">
     <link rel="stylesheet" href="../static/styles_1.css">
+    <link rel="stylesheet" href="../static/themes.css">
+<style>
+    .admin-header .navbar {
+        min-height: 60px;
+        align-items: center;
+    }
+
+    .admin-header .admin-brand-svg {
+        width: 42px;
+        height: 42px;
+        display: block;
+        flex: 0 0 auto;
+    }
+
+    .admin-header .navbar-brand {
+        padding: 0;
+        margin-right: 1rem;
+    }
+
+    .admin-header .admin-bd {
+        margin: 0 0 0 0.18rem;
+        line-height: 1.05;
+        font-size: 1.18rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .admin-header .navbar-nav .nav-link {
+        color: #d8e1e7;
+        font-weight: 500;
+        padding-left: 0.72rem;
+        padding-right: 0.72rem;
+    }
+
+    .admin-header .navbar-nav .nav-link:hover,
+    .admin-header .navbar-nav .nav-link:focus {
+        color: #ffffff;
+    }
+
+    .admin-header .dropdown-menu {
+        border: 1px solid #d7dde2;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(31, 45, 58, 0.12);
+        padding: 0.35rem 0;
+        min-width: 220px;
+    }
+
+    .admin-header .dropdown-item {
+        color: #2f3a43;
+        font-weight: 500;
+        padding: 0.7rem 1rem;
+    }
+
+    .admin-header .dropdown-item:hover,
+    .admin-header .dropdown-item:focus {
+        background-color: #eef3f7;
+        color: #1f2d3a;
+    }
+
+    .admin-header .admin-logout {
+        border-radius: 6px;
+        padding: 0.4rem 0.7rem;
+        font-size: 0.98rem;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .admin-header .admin-topline {
+        display: flex;
+        align-items: center;
+        margin-right: 1rem;
+    }
+
+    .admin-header .admin-brand-block {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        min-width: 0;
+        flex: 0 0 auto;
+    }
+
+    .admin-header .admin-brand-text {
+        min-width: 10.5rem;
+        max-width: 13rem;
+        flex: 0 0 10.5rem;
+    }
+
+    .admin-header .admin-mobile-actions {
+        display: none;
+    }
+
+    @media (max-width: 1399.98px) and (min-width: 1200px) {
+        .admin-header .admin-bd {
+            font-size: 1.08rem;
+            margin-right: 0.75rem;
+        }
+
+        .admin-header .admin-brand-text {
+            min-width: 9.75rem;
+            max-width: 11.5rem;
+            flex-basis: 9.75rem;
+        }
+
+        .admin-header .admin-topline {
+            margin-right: 0.65rem;
+        }
+
+        .admin-header .navbar-nav .nav-link {
+            font-size: 0.92rem;
+            padding-left: 0.55rem;
+            padding-right: 0.55rem;
+        }
+    }
+
+    @media (max-width: 1199.98px) and (min-width: 992px) {
+        .admin-header .admin-bd {
+            font-size: 1rem;
+            margin-left: 0.14rem;
+        }
+
+        .admin-header .admin-brand-svg {
+            width: 38px;
+            height: 38px;
+        }
+
+        .admin-header .navbar-nav .nav-link {
+            font-size: 0.88rem;
+            padding-left: 0.42rem;
+            padding-right: 0.42rem;
+        }
+
+        .admin-header .admin-logout {
+            font-size: 0.9rem;
+            padding: 0.35rem 0.6rem;
+        }
+    }
+
+    @media (max-width: 1199.98px) {
+        .admin-header .navbar-expand-xl {
+            padding-top: 0.35rem;
+            padding-bottom: 0.35rem;
+        }
+
+        .admin-header .navbar-collapse {
+            background: #6c8599;
+            border-radius: 0 0 12px 12px;
+            padding: 0.75rem 0;
+        }
+
+        .admin-header .navbar-nav {
+            gap: 0.15rem;
+        }
+
+        .admin-header .dropdown-menu {
+            background: #7a92a5;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: none;
+            padding: 0.35rem 0;
+            margin: 0.35rem 0.75rem 0.5rem 0.09rem;
+            min-width: auto;
+            width: auto;
+            border-radius: 0.6rem;
+        }
+
+        .admin-header .dropdown-item {
+            color: #ffffff;
+            padding: 0.65rem 1.15rem;
+            font-weight: 600;
+        }
+
+        .admin-header .dropdown-item:hover,
+        .admin-header .dropdown-item:focus {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffe49a;
+        }
+
+        .admin-header .admin-topline {
+            width: 100%;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-right: 0;
+            margin-bottom: 0.45rem;
+        }
+
+        .admin-header .admin-brand-block {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .admin-header .admin-brand-text {
+            min-width: 0;
+            max-width: none;
+            flex: 0 1 25ch;
+        }
+
+        .admin-header .admin-bd {
+            margin-left: 0.08rem;
+            margin-right: 0;
+            font-size: 1rem;
+            line-height: 1.05;
+        }
+
+        .admin-header .navbar-brand {
+            margin-right: 0;
+        }
+
+        .admin-header .admin-brand-svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        .admin-header .admin-mobile-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            margin-left: auto;
+        }
+
+        .admin-header .navbar-toggler {
+            order: 2;
+            margin-left: 0;
+        }
+
+        .admin-header .admin-logout {
+            display: inline-block;
+            margin: 0;
+        }
+
+        .admin-header .nav-link.dropdown-toggle {
+            display: inline-flex;
+            align-items: center;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .admin-header .admin-bd {
+            font-size: 0.95rem;
+        }
+
+        .admin-header .admin-brand-svg {
+            width: 36px;
+            height: 36px;
+        }
+    }
+</style>
 </head>
 <body>
-<header class="site-header">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top py-0">
-        <button class="pull-left navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <h4 class="text-warning font-weight-bold ">{{ bd }}&nbsp;&nbsp;</h4>
-        <a class="navbar-brand" href="#">
-            <img src="../static/ToolsIconSmall.png" alt="Logo" style="padding: 8px;" width="50" height="50">
-        </a>
-        <a class="btn-sm btn-warning mr-3 mb-1" href="{{ url_for('bp_admin.logout') }}" role="button">Logout</a>
+<header class="site-header admin-header">
+    <nav class="navbar navbar-expand-xl navbar-dark bg-steel fixed-top py-0">
+        <div class="admin-topline">
+            <div class="admin-brand-block">
+                <a class="navbar-brand" href="{{ url_for('bp_tickets.en_cours') }}" aria-label="CondoFix accueil admin">
+                    <svg class="admin-brand-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+    <g transform="translate(12,12) scale(4.75)" fill="#ffffff">
+        <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
+    </g>
+    <g transform="translate(37.6,37.4) scale(3.42)">
+        <path d="M.102 2.223A3.004 3.004 0 0 0 3.78 5.897l6.341 6.252A3.003 3.003 0 0 0 13 16a3 3 0 1 0-.851-5.878L5.897 3.781A3.004 3.004 0 0 0 2.223.1l2.141 2.142L4 4l-1.757.364zm13.37 9.019.528.026.287.445.445.287.026.529L15 13l-.242.471-.026.529-.445.287-.287.445-.529.026L13 15l-.471-.242-.529-.026-.287-.445-.445-.287-.026-.529L11 13l.242-.471.026-.529.445-.287.287-.445.529-.026L13 11z" fill="#ffffff" stroke="#445564" stroke-width="0.8" stroke-linejoin="round" paint-order="stroke fill"/>
+    </g>
+</svg>
+                </a>
+                <div class="admin-brand-text">
+                    <h4 class="text-warning font-weight-bold admin-bd">{{ bd }}</h4>
+                </div>
+            </div>
+            <div class="admin-mobile-actions">
+                <a class="btn-sm btn-warning admin-logout" href="{{ url_for('bp_admin.logout') }}" role="button">Logout</a>
+                <button class="pull-left navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
-            <ul class="navbar-nav">
+            <ul class="navbar-nav align-items-xl-center">
+                <li class="nav-item d-none d-xl-block mr-2">
+                    <a class="btn-sm btn-warning admin-logout" href="{{ url_for('bp_admin.logout') }}" role="button">Logout</a>
+                </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink_1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Tickets
@@ -57,7 +327,7 @@
                     <a class="nav-link" href="{{ url_for('bp_tableaux_bord.plotView_js') }}">Tableau de bord</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('bp_documentation.docs_table') }}">Documentation</a>
+                    <a class="nav-link" href="{{ url_for('bp_documentation.docs_table') }}">Documents</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink_3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -65,7 +335,7 @@
                     </a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                         <a class="dropdown-item" href="{{ url_for('bp_equipements.equipements') }}">Équipements</a>
-                        <a class="dropdown-item" href="">Inventaire (à venir)</a>
+<!--                        <a class="dropdown-item" href="">Inventaire (à venir)</a>-->
                     </div>
                 </li>
                 <li class="nav-item dropdown">
@@ -89,7 +359,8 @@
                         Aide
                     </a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                        <a class="dropdown-item" href="{{ url_for('bp_admin.aide') }}" target="_blank">Documentation</a>
+                        <a class="dropdown-item" href="{{ url_for('bp_parametres.themes') }}">Thèmes</a>
+                        <a class="dropdown-item" href="{{ url_for('bp_admin.aide') }}" target="_blank">Guide d’utilisation</a>
                         <a class="dropdown-item" href="{{ url_for('bp_admin.videos') }}" target="_blank">Capsule vidéo OCR</a>
                     </div>
                 </li>
@@ -97,7 +368,6 @@
         </div>
     </nav>
 </header>
-</body>
 <main role="main" class="container-fluid">
     <div class="row">
         <div class="container-fluid">
@@ -107,5 +377,6 @@
         </div>
     </div>
 </main>
+</body>
 </html>
 

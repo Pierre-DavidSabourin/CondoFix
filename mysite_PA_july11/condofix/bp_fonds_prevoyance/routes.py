@@ -108,8 +108,9 @@ def calcul_dep(args):
             "ValeurActuelleInterv, FrequenceAns, AnProchain, Inflation5ans, Inflation6a15ans, InflationPlus15ans, "
             "IDIntervenant, PartSyndicat "
             "FROM fondsprevoyance "
-            "WHERE PartSyndicat>%s AND Actif=%s AND IDClient=%s",
-            (0, 1, client_ident),
+            "WHERE PartSyndicat>%s AND Actif=%s AND IDClient=%s "
+            "AND (historique IS NULL OR historique=%s)",
+            (0, 1, client_ident, 0),
         )
     else:
         cur.execute(
@@ -117,8 +118,9 @@ def calcul_dep(args):
             "ValeurActuelleInterv, FrequenceAns, AnProchain, Inflation5ans, Inflation6a15ans, InflationPlus15ans, "
             "IDIntervenant, PartSyndicat "
             "FROM fondsprevoyance "
-            "WHERE PartSyndicat<%s AND Actif=%s AND IDClient=%s",
-            (1, 1, client_ident),
+            "WHERE PartSyndicat<%s AND Actif=%s AND IDClient=%s "
+            "AND (historique IS NULL OR historique=%s)",
+            (1, 1, client_ident, 0),
         )
 
     type_interv = ""

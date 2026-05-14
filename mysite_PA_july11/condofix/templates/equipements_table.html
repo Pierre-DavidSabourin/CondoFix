@@ -1,112 +1,671 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Équipements'
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
 
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .equipements-page {
+        --eq-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --eq-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --eq-radius-xl: 20px;
+        --eq-radius-lg: 16px;
+        --eq-radius-md: 14px;
+        --eq-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .equipements-page .eq-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--eq-radius-xl);
+        box-shadow: var(--eq-shadow);
+        padding: 1.25rem;
+    }
+
+    .equipements-page .eq-header {
+        margin-bottom: 1rem;
+    }
+
+    .equipements-page .eq-header h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .equipements-page .eq-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .equipements-page .eq-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .equipements-page .eq-toolbar-left,
+    .equipements-page .eq-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .equipements-page .eq-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--eq-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .equipements-page .eq-btn:hover,
+    .equipements-page .eq-btn:focus {
+        text-decoration: none;
+        color: var(--theme-text);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .equipements-page .eq-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+        border-color: transparent;
+    }
+
+    .equipements-page .eq-btn-primary:hover,
+    .equipements-page .eq-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+        opacity: 0.96;
+    }
+
+    .equipements-page .eq-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--eq-radius-lg);
+        box-shadow: var(--eq-shadow);
+        overflow: hidden;
+    }
+
+    .equipements-page .eq-table-inner {
+        padding: 0;
+    }
+
+    .equipements-page .eq-table-scroll-top,
+    .equipements-page .eq-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .equipements-page .eq-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .equipements-page .eq-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1250px;
+    }
+
+    .equipements-page .eq-table-scroll table {
+        min-width: 1250px !important;
+    }
+
+    .equipements-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--eq-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .equipements-page .dt-buttons .dt-button:hover,
+    .equipements-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .equipements-page #eq-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .equipements-page #eq-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .equipements-page #eq-dt-search .dataTables_filter input,
+    .equipements-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .equipements-page #eq-dt-search .dataTables_filter input::placeholder,
+    .equipements-page .dataTables_wrapper .dataTables_filter input::placeholder {
+        color: var(--theme-text-muted);
+    }
+
+    .equipements-page #eq-dt-search .dataTables_filter input:focus,
+    .equipements-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .equipements-page .dataTables_wrapper .dataTables_length,
+    .equipements-page .dataTables_wrapper .dataTables_filter,
+    .equipements-page .dataTables_wrapper .dt-buttons,
+    .equipements-page .dataTables_wrapper .dataTables_info,
+    .equipements-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .equipements-page table.dataTable,
+    .equipements-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+    }
+
+    .equipements-page table.dataTable thead th,
+    .equipements-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+    }
+
+    .equipements-page table.dataTable thead th.sorting_disabled,
+    .equipements-page table#table_data thead th.sorting_disabled {
+        padding-right: 12px !important;
+    }
+
+    .equipements-page table.dataTable tbody th,
+    .equipements-page table.dataTable tbody td,
+    .equipements-page table#table_data tbody th,
+    .equipements-page table#table_data tbody td {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: top;
+    }
+
+    .equipements-page table.dataTable tbody tr:nth-child(even) td,
+    .equipements-page table.dataTable tbody tr:nth-child(even) th,
+    .equipements-page table#table_data tbody tr:nth-child(even) td,
+    .equipements-page table#table_data tbody tr:nth-child(even) th {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .equipements-page .eq-tag-cell {
+        font-weight: 800;
+        color: var(--theme-text);
+        white-space: nowrap;
+    }
+
+    .equipements-page .eq-name-cell {
+        font-weight: 800;
+    }
+
+    .equipements-page .eq-status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 54px;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.1;
+        background: rgba(25, 135, 84, 0.13);
+        color: var(--theme-priority-low);
+        white-space: nowrap;
+    }
+
+    .equipements-page .eq-status-pill.is-inactive {
+        background: rgba(220, 53, 69, 0.12);
+        color: var(--theme-priority-critical);
+    }
+
+    .equipements-page .eq-actions {
+        min-width: 120px;
+    }
+
+.equipements-page .eq-center-cell {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+.equipements-page .eq-actions {
+    min-width: 120px;
+    text-align: center;
+    vertical-align: middle !important;
+}
+
+.equipements-page .eq-action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--theme-border);
+    background: var(--theme-surface-alt);
+    color: var(--theme-link-edit);
+    font-weight: 800;
+    text-decoration: none;
+    line-height: 1.1;
+}
+
+.equipements-page .eq-action-link:hover,
+.equipements-page .eq-action-link:focus {
+    color: var(--theme-link-edit);
+    opacity: 0.9;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+    .equipements-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .equipements-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .equipements-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .equipements-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .equipements-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .equipements-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .equipements-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 768px) {
+        .equipements-page {
+            padding-top: 1rem;
+        }
+
+        .equipements-page .eq-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .equipements-page .eq-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .equipements-page #eq-dt-search .dataTables_filter input,
+        .equipements-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .equipements-page .eq-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .equipements-page .eq-toolbar-left,
+        .equipements-page .eq-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .equipements-page #eq-dt-search .dataTables_filter label,
+        .equipements-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .equipements-page #eq-dt-search .dataTables_filter input,
+        .equipements-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+    }
+
+    html[data-theme^="dark-"] .equipements-page .eq-shell {
+        background: linear-gradient(180deg, rgba(13, 26, 48, 0.96), rgba(10, 21, 40, 0.96));
+        border-color: rgba(126, 149, 176, 0.22);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
+    }
+
+    html[data-theme^="dark-"] .equipements-page .eq-table-card {
+        background: rgba(26, 41, 66, 0.88);
+        border-color: rgba(126, 149, 176, 0.18);
+    }
+
+    html[data-theme^="dark-"] .equipements-page table.dataTable thead th,
+    html[data-theme^="dark-"] .equipements-page table#table_data thead th {
+        background: rgba(33, 49, 78, 0.94);
+    }
+
+    html[data-theme^="dark-"] .equipements-page table.dataTable tbody td,
+    html[data-theme^="dark-"] .equipements-page table#table_data tbody td,
+    html[data-theme^="dark-"] .equipements-page table.dataTable tbody th,
+    html[data-theme^="dark-"] .equipements-page table#table_data tbody th {
+        background: rgba(10, 27, 51, 0.9);
+    }
+
+    html[data-theme^="dark-"] .equipements-page table.dataTable tbody tr:nth-child(even) td,
+    html[data-theme^="dark-"] .equipements-page table.dataTable tbody tr:nth-child(even) th,
+    html[data-theme^="dark-"] .equipements-page table#table_data tbody tr:nth-child(even) td,
+    html[data-theme^="dark-"] .equipements-page table#table_data tbody tr:nth-child(even) th {
+        background: rgba(16, 35, 62, 0.92);
+    }
+
+    html[data-theme^="dark-"] .equipements-page .dataTables_wrapper .dataTables_filter input {
+        background: rgba(26, 41, 66, 0.95) !important;
+        border-color: rgba(126, 149, 176, 0.22) !important;
+    }
+
+    html[data-theme^="dark-"] .equipements-page .eq-btn,
+    html[data-theme^="dark-"] .equipements-page .dt-buttons .dt-button {
+        background: rgba(26, 41, 66, 0.95) !important;
+        border-color: rgba(126, 149, 176, 0.20) !important;
+    }
+
+    html[data-theme^="dark-"] .equipements-page .eq-status-pill {
+        background: rgba(77, 181, 124, 0.18);
+    }
+
+    html[data-theme^="dark-"] .equipements-page .eq-status-pill.is-inactive {
+        background: rgba(217, 91, 106, 0.18);
+    }
+
+<!--    touch ups-->
+<!--Align the actif pill-->
+.equipements-page .eq-center-cell {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+.equipements-page .eq-center-cell .eq-status-pill {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.equipements-page .eq-actions {
+    text-align: center;
+}
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.eq-table-scroll');
+        const $topScroll = $('.eq-table-scroll-top');
+        const $topInner = $('.eq-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncEquipementsScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Équipements',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: 9
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
             },
-        ],
-        columnDefs: [
-            { "visible": false, "targets": [  ], }
-        ],
-        "pageLength":100,
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#eq-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#eq-dt-search');
+
+                setTimeout(syncEquipementsScrollWidth, 0);
             }
         });
-    } );
-    </script>
 
-</head>
-<body>
-<div class="container">
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncEquipementsScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncEquipementsScrollWidth, 0);
+        });
+
+        setTimeout(syncEquipementsScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid equipements-page">
     <div class="row">
-        <div class="col-md-12 col-xs-12 col-sm-12">
-            <form action="{{ url_for('bp_equipements.export_csv') }}" method=post class="form-horizontal" role="form">
-            <h2>Équipements</h2>
-            <div class="form-group form-inline justify-content-between">
-                <a class="btn bg-steel text-white btn-rounded" role="button" href="{{ url_for('bp_equipements.equipement_enreg', parametre=0) }}">Nouveau</a>
-            </div>
-            <div class="datagrid">
-                <style>
-                    table {
-                        font-family: arial, sans-serif;
-                        font-size: 10px;
-                        border-collapse: collapse;
-                        width: 100%;
-                        z-index: -1;
-                    }
-                    td, th {
-                        border: 1px solid #dddddd;
-                        text-align: left;
-                        padding: 8px;
-                    }
-                    tr:nth-child(even) {
-                        background-color: #dddddd;
-                    }
-                </style>
-                <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                <tr>
-                    <th width="10px"><strong>Tag</strong></th>
-                    <th width="60px"><strong>Nom</strong></th>
-                    <th width="80px"><strong>Descriptif</strong></th>
-                    <th width="50px"><strong>Catégorie</strong></th>
-                    <th width="80px"><strong>Valeur ($)</strong></th>
-                    <th width="60px"><strong>Installé</strong></th>
-                    <th width="60px"><strong>Emplacement</strong></th>
-                    <th width="80px"><strong>Remplacer</strong></th>
-                    <th width="40px"><strong>Actif</strong></th>
-                    <th width="60px"><strong>Action</strong></th>
-                </tr>
-                </thead>
-                {% for item in fill_equipements %}
-                <tr>
-                    <th width="10px">{{ item[9] }}</th>
-                    <td width="60px">{{ item[1] }}</td>
-                    <td width="80px">{{ item[2] }}</td>
-                    <td width="50px">{{ item[11] }}</td>
-                    <td width="80px">{{  item[6]  }}</td>
-                    <td width="60px">{{ item[5] }}</td>
-                    <td width="60px">{{ item[4] }}</td>
-                    <td width="80px">{{  item[7]  }}</td>
-                    <td width="40px">{{  item[10]  }}</td>
-                    <td class="text-center align-middle">
-                            <div class="btn-group">
-                                <a class="btn bg-steel text-white btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_equipements.equipement_enreg',parametre=item[0]) }}">Modifier</a>
-                            </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-            </div>
+        <div class="col-12">
+            <section class="eq-shell">
+                <div class="eq-header">
+                    <h1>Équipements</h1>
+                    <p>Consultez et maintenez le registre des équipements et actifs techniques du syndicat.</p>
+                </div>
+
+                <div class="eq-toolbar">
+                    <div class="eq-toolbar-left">
+                        <a class="eq-btn eq-btn-primary"
+                           role="button"
+                           href="{{ url_for('bp_equipements.equipement_enreg', parametre=0) }}">
+                            Nouveau
+                        </a>
+
+                        <div id="eq-dt-buttons"></div>
+                    </div>
+
+                    <div class="eq-toolbar-right">
+                        <div id="eq-dt-search"></div>
+                    </div>
+                </div>
+
+                <div class="eq-table-card">
+                    <div class="eq-table-inner">
+                        <div class="eq-table-scroll-top">
+                            <div class="eq-table-scroll-top-inner"></div>
+                        </div>
+
+                        <div class="eq-table-scroll">
+                            <table id="table_data" class="table" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Tag</th>
+                                        <th>Nom</th>
+                                        <th>Descriptif</th>
+                                        <th>Catégorie</th>
+                                        <th>Valeur ($)</th>
+                                        <th>Installé</th>
+                                        <th>Emplacement</th>
+                                        <th>Remplacer</th>
+                                        <th class="eq-center-cell">Actif</th>
+                                        <th class="eq-center-cell" style="min-width: 130px;">Action</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {% for item in fill_equipements %}
+                                    {% set actif = item[10]|lower %}
+                                    <tr>
+                                        <th class="eq-tag-cell">{{ item[9] }}</th>
+                                        <td class="eq-name-cell">{{ item[1] }}</td>
+                                        <td>{{ item[2] }}</td>
+                                        <td>{{ item[11] }}</td>
+                                        <td>{{ item[6] }}</td>
+                                        <td>{{ item[5] }}</td>
+                                        <td>{{ item[4] }}</td>
+                                        <td>{{ item[7] }}</td>
+                                        <td class="eq-center-cell">
+                                            {% if actif == 'oui' or actif == 'yes' or actif == '1' %}
+                                                <span class="eq-status-pill">{{ item[10] }}</span>
+                                            {% else %}
+                                                <span class="eq-status-pill is-inactive">{{ item[10] }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="align-middle eq-actions">
+                                            <a class="eq-action-link"
+                                               role="button"
+                                               href="{{ url_for('bp_equipements.equipement_enreg', parametre=item[0]) }}">
+                                                Modifier
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </div>
-</div>
-</body>
-{% endblock %}
 
+{% endblock content %}

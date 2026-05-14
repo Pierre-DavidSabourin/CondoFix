@@ -1,0 +1,491 @@
+{% extends "-public_layout_new.html" %}
+
+{% block meta_title %}CondoFix — Carnet d’entretien et conformité Loi 16{% endblock %}
+{% block meta_description %}
+CondoFix aide les syndicats de copropriété du Québec à structurer leur carnet d’entretien, suivre le fonds de prévoyance et mieux documenter les informations requises par la Loi 16.
+{% endblock %}
+{% block meta_keywords %}
+loi 16, carnet d'entretien, copropriété, syndicat, fonds de prévoyance, condo, Québec, entretien, attestation
+{% endblock %}
+{% block canonical %}
+<link rel="canonical" href="{{ url_for('bp_public.carnet_entretien', _external=True) }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .loi16-hero {
+    background: #6d8496;
+    color: #fff;
+    border-radius: 1rem;
+    padding: 1.45rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  }
+
+  .loi16-panel {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: .9rem;
+    padding: 1.15rem;
+    height: 100%;
+  }
+
+  .loi16-panel p,
+  .loi16-panel li,
+  .loi16-hero a:not(.btn) {
+    color: rgba(255,255,255,.97);
+  }
+
+  .loi16-kicker {
+    display: inline-block;
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+    color: #ffd97a;
+    margin-bottom: .7rem;
+  }
+
+  .hero-mini-card {
+    background: rgba(255,255,255,.065);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: .8rem;
+    padding: .75rem .85rem;
+    margin-bottom: .6rem;
+  }
+
+  .hero-mini-card:last-of-type { margin-bottom: 0; }
+
+  .hero-mini-title {
+    color: #ffecc0;
+    font-size: .84rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+    line-height: 1.25;
+    text-transform: uppercase;
+    margin-bottom: .18rem;
+  }
+
+  .hero-mini-card p {
+    margin-bottom: 0;
+    color: rgba(255,255,255,.96);
+    line-height: 1.35;
+  }
+
+  .loi16-image-wrap {
+    text-align: center;
+    margin-bottom: .85rem;
+  }
+
+  .loi16-image-crop {
+    display: inline-block;
+    overflow: hidden;
+    border-radius: .5rem;
+    line-height: 0;
+    background: #d7e7f1;
+    position: relative;
+  }
+
+  .loi16-image-crop::before,
+  .loi16-image-crop::after {
+    content: none;
+  }
+
+  .loi16-image-crop {
+    height: 468px;
+  }
+
+  .loi16-image-wrap img {
+    width: min(100%, 448px);
+    max-width: 100%;
+    height: auto;
+    display: block;
+    transform: translateY(-4px);
+  }
+
+  .loi16-image-note {
+    color: rgba(255,255,255,.93);
+    line-height: 1.5;
+    font-size: 1rem;
+    max-width: 470px;
+    margin: 0 auto;
+  }
+
+  .info-strip {
+    border: 1px solid #d9e2ea;
+    background: #f6f9fc;
+    border-radius: .9rem;
+    padding: 1rem 1.1rem;
+  }
+
+  .gazette-badge {
+    display: inline-block;
+    padding: .24rem .55rem;
+    border-radius: 999px;
+    background: #fff2cb;
+    border: 1px solid #e0be5a;
+    color: #946c00;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    margin-bottom: .55rem;
+  }
+
+  .info-strip p { margin-bottom: 0; }
+
+  .gazette-highlight {
+    font-style: italic;
+    font-weight: 700;
+    color: #23313d;
+  }
+
+  .gazette-btn {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #31404d;
+    border-color: #97a7b5;
+    background: #ffffff;
+    padding: .72rem 1rem;
+    white-space: normal;
+  }
+
+  .gazette-btn:hover,
+  .gazette-btn:focus {
+    color: #1f2b35;
+    background: #f8fbfd;
+    border-color: #7f91a0;
+  }
+
+  .obligation-card,
+  .support-card,
+  .feature-card {
+    border: 1px solid #dde5ec;
+    border-radius: .9rem;
+    background: #fff;
+    height: 100%;
+    box-shadow: 0 6px 18px rgba(0,0,0,.04);
+  }
+
+  .obligation-card .card-body,
+  .support-card .card-body,
+  .feature-card .card-body {
+    padding: 1.25rem;
+  }
+
+  .icon-badge {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #edf4fa;
+    color: #6b879a;
+    font-size: 1.15rem;
+    margin-bottom: .9rem;
+  }
+
+  .obligation-card p {
+    line-height: 1.5;
+    max-width: 24ch;
+  }
+
+  .section-intro {
+    color: #627180;
+    line-height: 1.5;
+  }
+
+  .mini-links a {
+    display: block;
+    padding: .95rem 1rem;
+    border-radius: .75rem;
+    text-decoration: none;
+    border: 1px solid #dbe4ec;
+    background: #fff;
+    color: #2f3a43;
+    margin-bottom: .75rem;
+    transition: background-color .15s ease-in-out, border-color .15s ease-in-out, transform .15s ease-in-out, box-shadow .15s ease-in-out;
+    position: relative;
+    padding-right: 2.75rem;
+  }
+
+  .mini-links a:hover,
+  .mini-links a:focus {
+    background: #d8e6f2;
+    border-color: #6f8aa0;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(53,82,107,.18);
+  }
+
+  .mini-links .link-chevron {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    color: #6b7f90;
+    font-size: 1.15rem;
+    opacity: 1;
+    transition: transform .18s ease, color .18s ease;
+  }
+
+  .mini-links a:hover .link-chevron,
+  .mini-links a:focus .link-chevron {
+    color: #28465f;
+    transform: translateY(-50%) translateX(4px) scale(1.06);
+  }
+
+  .text-soft {
+    color: #627180;
+  }
+
+  .premium-block {
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+    border: 1px solid #dbe4ec;
+    border-radius: 1rem;
+    padding: 1.3rem;
+  }
+
+  .body-copy {
+    font-size: 1.03rem;
+    line-height: 1.7;
+    color: #31404d;
+  }
+
+  .feature-card-blue {
+    background: #f7fbff;
+    border-color: #d9e7f2;
+  }
+
+  .feature-card-sand {
+    background: #fffaf1;
+    border-color: #ead9b6;
+  }
+
+  .dashboard-shot {
+    width: 100%;
+    border-radius: .8rem;
+    border: 1px solid #dde5ec;
+    box-shadow: 0 8px 22px rgba(0,0,0,.06);
+    display: block;
+  }
+
+  .cta-band {
+    background: #f3f7fa;
+    border: 1px solid #dbe4ec;
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+
+  .external-link-icon {
+    font-size: .9rem;
+    margin-left: .35rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .loi16-hero { padding: 1.2rem; }
+    .obligation-card p { max-width: none; }
+  }
+
+  @media (max-width: 767.98px) {
+    .loi16-image-note { font-size: .96rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <section class="loi16-hero mb-4">
+    <div class="row align-items-stretch">
+      <div class="col-lg-6 mb-3 mb-lg-0 d-flex">
+        <div class="loi16-panel w-100 d-flex flex-column">
+          <div>
+            <span class="loi16-kicker">Loi 16 — carnet d’entretien</span>
+            <h1 class="h2 text-white mb-3">Gérez le carnet d’entretien de votre copropriété avec une vision claire et durable</h1>
+            <p class="mb-3">
+              Le carnet d’entretien n’est plus un simple bon réflexe de gestion. Il s’inscrit maintenant dans le cadre réglementaire applicable aux syndicats de copropriété au Québec. CondoFix aide votre syndicat à centraliser les équipements, les interventions, les documents et l’historique d’entretien dans un environnement structuré et accessible.
+            </p>
+
+            <div class="hero-mini-card">
+              <div class="hero-mini-title">Équipements et composantes</div>
+              <p>Un inventaire structuré pour mieux comprendre ce qui doit être entretenu et suivi dans le temps.</p>
+            </div>
+
+            <div class="hero-mini-card">
+              <div class="hero-mini-title">Interventions et documentation</div>
+              <p>Un historique clair des travaux, inspections, rapports, factures et pièces utiles à la continuité du syndicat.</p>
+            </div>
+
+            <div class="hero-mini-card">
+              <div class="hero-mini-title">Base pour les autres obligations</div>
+              <p>Une information mieux organisée pour soutenir le fonds de prévoyance et faciliter l’attestation du syndicat.</p>
+            </div>
+          </div>
+
+          <div class="mt-3 d-flex flex-wrap" style="gap:.75rem;">
+            <a class="btn btn-warning text-dark font-weight-bold" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+            <a class="btn btn-light" href="/video_infos">Vidéo 3 min.</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6 d-flex">
+        <div class="loi16-panel w-100 d-flex flex-column justify-content-center">
+          <div class="loi16-image-wrap">
+            <span class="loi16-image-crop">
+              <img src="{{ url_for('static', filename='images_publiques/Animate_GIF_Coupe.gif') }}" alt="Vue animée d’un bâtiment illustrant les composantes à entretenir">
+            </span>
+          </div>
+          <p class="mb-0 loi16-image-note">
+            Une copropriété comporte plusieurs systèmes interreliés. Le rôle du carnet d’entretien est d’en conserver la mémoire technique et opérationnelle afin d’aider le syndicat à planifier les interventions plutôt que de simplement réagir aux urgences.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="info-strip mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8 mb-3 mb-lg-0">
+        <div class="gazette-badge">Gazette officielle du Québec</div>
+        <h2 class="h4 mb-2">Le décret 991-2025 a officialisé le nouveau cadre réglementaire</h2>
+        <p class="text-soft">
+          Publié à la Gazette officielle du Québec le 30 juillet 2025, le décret 991-2025 est entré en vigueur le <span class="gazette-highlight">14 août 2025</span>. Il confirme les nouvelles obligations liées au carnet d’entretien, à l’étude du fonds de prévoyance et à l’attestation du syndicat lors de la vente d’une unité.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-right">
+        <a class="btn gazette-btn" href="https://www.publicationsduquebec.gouv.qc.ca/fileadmin/gazette/pdf_encrypte/lois_reglements/2025F/86184.pdf" target="_blank" rel="noopener">Lire la Gazette officielle<br><span class="small">Décret 991-2025</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <h2 class="h3 mb-2">Les 3 obligations qui structurent maintenant la gestion du syndicat</h2>
+        <p class="section-intro mb-0">CondoFix répond déjà à ces exigences réglementaires et continuera d’évoluer selon les besoins des syndicats de copropriété.</p>
+      </div>
+
+      <div class="col-md-4 mb-3 d-flex">
+        <div class="obligation-card card w-100">
+          <div class="card-body d-flex flex-column">
+            <div class="icon-badge"><i class="fa fa-wrench"></i></div>
+            <h3 class="h5">Carnet d’entretien</h3>
+            <p class="mb-0">Document vivant qui regroupe les composantes, les interventions, les fréquences d’entretien, les rapports et les références utiles à la continuité du syndicat.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4 mb-3 d-flex">
+        <div class="obligation-card card w-100">
+          <div class="card-body d-flex flex-column">
+            <div class="icon-badge"><i class="fa fa-line-chart"></i></div>
+            <h3 class="h5">Fonds de prévoyance</h3>
+            <p class="mb-0">L’étude du fonds de prévoyance s’appuie sur l’état de l’immeuble et les travaux à prévoir. Un carnet d’entretien structuré facilite cette planification à long terme.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4 mb-3 d-flex">
+        <div class="obligation-card card w-100">
+          <div class="card-body d-flex flex-column">
+            <div class="icon-badge"><i class="fa fa-file-text-o"></i></div>
+            <h3 class="h5">Attestation du syndicat</h3>
+            <p class="mb-3">Lors d’une vente, le syndicat doit être en mesure de retrouver rapidement l’information pertinente. Une gestion centralisée réduit les recherches improvisées et les zones grises.</p>
+            <div class="mt-auto">
+              <a class="btn btn-primary btn-sm font-weight-bold" href="https://attestationcondo-condofix.pythonanywhere.com/" target="_blank" rel="noopener">
+                Découvrir Attestation CondoFix <i class="fa fa-external-link external-link-icon" aria-hidden="true"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="row align-items-stretch">
+      <div class="col-lg-7 mb-3 mb-lg-0">
+        <div class="premium-block h-100">
+          <h2 class="h3 mb-3">CondoFix vous aide à bâtir une mémoire collective fiable</h2>
+          <p class="body-copy mb-3">
+            Le défi, en copropriété, n’est pas seulement d’exécuter des travaux. C’est aussi de préserver la logique des décisions, la documentation, les coûts, les garanties et l’historique des interventions d’un conseil d’administration à l’autre.
+          </p>
+          <p class="body-copy mb-0">
+            CondoFix centralise ces informations dans une structure conçue pour la réalité des syndicats. Vous obtenez ainsi un carnet d’entretien numérique plus utile qu’un assemblage de fichiers, de courriels et de rapports épars.
+          </p>
+
+          <div class="row mt-4">
+            <div class="col-md-6 mb-3 mb-md-0 d-flex">
+              <div class="feature-card feature-card-blue card w-100">
+                <div class="card-body">
+                  <h3 class="h6 text-uppercase text-secondary">Ce que le système regroupe</h3>
+                  <ul class="mb-0 pl-3 body-copy" style="font-size:1rem; line-height:1.55;">
+                    <li>équipements et composantes</li>
+                    <li>tickets et interventions</li>
+                    <li>factures et pièces justificatives</li>
+                    <li>rapports, expertises et documents</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 d-flex">
+              <div class="feature-card feature-card-sand card w-100">
+                <div class="card-body">
+                  <h3 class="h6 text-uppercase text-secondary">Bénéfices pour le syndicat</h3>
+                  <ul class="mb-0 pl-3 body-copy" style="font-size:1rem; line-height:1.55;">
+                    <li>meilleure continuité du CA</li>
+                    <li>vision claire des interventions passées</li>
+                    <li>meilleure préparation aux décisions futures</li>
+                    <li>information plus facile à retrouver</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="support-card card h-100">
+          <div class="card-body">
+            <h2 class="h4 mb-3">Compléments à consulter</h2>
+            <div class="mini-links mb-4">
+              <a href="{{ url_for('bp_public.comptable') }}">
+                <span class="link-chevron"><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
+                <strong>Pourquoi votre système comptable ne suffit plus</strong><br>
+                <small class="text-muted">Comparer logique comptable et logique de gestion d’entretien.</small>
+              </a>
+              <a href="{{ url_for('bp_public.agenda') }}">
+                <span class="link-chevron"><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
+                <strong>La gestion d’entretien selon la taille de la copropriété</strong><br>
+                <small class="text-muted">Identifier quand un outil structuré devient nécessaire.</small>
+              </a>
+            </div>
+
+            <h3 class="h6 text-uppercase text-secondary mb-2">Aperçu de l’information structurée</h3>
+            <a href="{{ url_for('bp_public.produits') }}" aria-label="Voir les offres CondoFix">
+              <img class="dashboard-shot" src="{{ url_for('static', filename='images_publiques/Bienvenue_4.png') }}" alt="Aperçu du tableau de bord CondoFix lié au suivi de l’entretien">
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8 mb-3 mb-lg-0">
+        <h2 class="h4 mb-2">Vous voulez voir comment cela s’applique à votre immeuble?</h2>
+        <p class="mb-0 text-soft">Nous pouvons vous montrer comment structurer votre carnet d’entretien, organiser vos données et mieux préparer la suite de vos obligations liées à la Loi 16.</p>
+      </div>
+      <div class="col-lg-4 text-lg-right">
+        <a class="btn btn-primary mr-2" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('bp_public.produits') }}">Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

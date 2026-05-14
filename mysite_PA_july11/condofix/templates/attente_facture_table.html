@@ -1,0 +1,667 @@
+{% extends "layout_admin_tables.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container-fluid attente-facture-page mb-3">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .attente-facture-page {
+        --af-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --af-radius-xl: 20px;
+        --af-radius-lg: 16px;
+        --af-radius-md: 14px;
+        --af-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .attente-facture-page .af-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--af-radius-xl);
+        box-shadow: var(--af-shadow);
+        padding: 1.25rem;
+    }
+
+    .attente-facture-page .af-header {
+        margin-bottom: 1rem;
+    }
+
+    .attente-facture-page .af-header h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .attente-facture-page .af-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .attente-facture-page .af-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .attente-facture-page .af-toolbar-left,
+    .attente-facture-page .af-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .attente-facture-page .af-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--af-radius-lg);
+        box-shadow: var(--af-shadow);
+        overflow: hidden;
+    }
+
+    .attente-facture-page .af-table-inner {
+        padding: 0;
+    }
+
+    .attente-facture-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--af-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .attente-facture-page .dt-buttons .dt-button:hover,
+    .attente-facture-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .attente-facture-page #af-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .attente-facture-page #af-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .attente-facture-page #af-dt-search .dataTables_filter input,
+    .attente-facture-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .attente-facture-page #af-dt-search .dataTables_filter input::placeholder,
+    .attente-facture-page .dataTables_wrapper .dataTables_filter input::placeholder {
+        color: var(--theme-text-muted);
+    }
+
+    .attente-facture-page #af-dt-search .dataTables_filter input:focus,
+    .attente-facture-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .attente-facture-page .dataTables_wrapper .dataTables_length,
+    .attente-facture-page .dataTables_wrapper .dataTables_filter,
+    .attente-facture-page .dataTables_wrapper .dt-buttons,
+    .attente-facture-page .dataTables_wrapper .dataTables_info,
+    .attente-facture-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .attente-facture-page table.dataTable,
+    .attente-facture-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+    }
+
+    .attente-facture-page table.dataTable thead th,
+    .attente-facture-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+    }
+
+    .attente-facture-page table.dataTable thead th.sorting_disabled,
+    .attente-facture-page table#table_data thead th.sorting_disabled {
+        padding-right: 12px !important;
+    }
+
+    .attente-facture-page table.dataTable tbody td,
+    .attente-facture-page table#table_data tbody td {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: top;
+    }
+
+    .attente-facture-page table.dataTable tbody tr:nth-child(even) td,
+    .attente-facture-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .attente-facture-page .af-actions {
+        min-width: 170px;
+    }
+
+    .attente-facture-page .af-actions-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.7rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .attente-facture-page .af-actions-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .attente-facture-page .ticket-action-link {
+        font-weight: 800;
+    }
+
+    .attente-facture-page .ticket-action-edit {
+        color: var(--theme-link-edit);
+        text-decoration: none;
+    }
+
+    .attente-facture-page .ticket-action-edit:hover,
+    .attente-facture-page .ticket-action-edit:focus {
+        color: var(--theme-link-edit);
+        opacity: 0.88;
+        text-decoration: none;
+    }
+
+    .attente-facture-page .ticket-action-complete {
+        color: var(--theme-link-complete);
+        text-decoration: none;
+    }
+
+    .attente-facture-page .ticket-action-complete:hover,
+    .attente-facture-page .ticket-action-complete:focus {
+        color: var(--theme-link-complete);
+        opacity: 0.88;
+        text-decoration: none;
+    }
+
+    .attente-facture-page .ticket-action-delete {
+        color: var(--theme-link-delete);
+        text-decoration: none;
+    }
+
+    .attente-facture-page .ticket-action-delete:hover,
+    .attente-facture-page .ticket-action-delete:focus {
+        color: var(--theme-link-delete);
+        opacity: 0.88;
+        text-decoration: none;
+    }
+
+    .attente-facture-page .ticket-action-duplicate {
+        color: var(--theme-text-muted);
+        text-decoration: none;
+        font-weight: 800;
+    }
+
+    .attente-facture-page .ticket-action-duplicate:hover,
+    .attente-facture-page .ticket-action-duplicate:focus {
+        color: var(--theme-text);
+        opacity: 0.9;
+        text-decoration: none;
+    }
+
+    .attente-facture-page .af-table-scroll-top,
+    .attente-facture-page .af-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .attente-facture-page .af-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .attente-facture-page .af-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1200px;
+    }
+
+    .attente-facture-page .af-table-scroll table {
+        min-width: 1200px !important;
+    }
+
+    .attente-facture-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .attente-facture-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .attente-facture-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .attente-facture-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .attente-facture-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .attente-facture-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .attente-facture-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 768px) {
+        .attente-facture-page {
+            padding-top: 1rem;
+        }
+
+        .attente-facture-page .af-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .attente-facture-page .af-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .attente-facture-page #af-dt-search .dataTables_filter input,
+        .attente-facture-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .attente-facture-page .af-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .attente-facture-page .af-toolbar-left,
+        .attente-facture-page .af-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .attente-facture-page #af-dt-search .dataTables_filter label,
+        .attente-facture-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .attente-facture-page #af-dt-search .dataTables_filter input,
+        .attente-facture-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+    }
+
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.af-table-scroll');
+        const $topScroll = $('.af-table-scroll-top');
+        const $topInner = $('.af-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncTableScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Tickets en attente',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: 8
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
+            },
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#af-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#af-dt-search');
+
+                setTimeout(syncTableScrollWidth, 0);
+            }
+        });
+
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncTableScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncTableScrollWidth, 0);
+        });
+
+        setTimeout(syncTableScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid attente-facture-page">
+    <div class="row">
+        <div class="col-12">
+            <section class="af-shell">
+                <div class="af-header">
+                    <h1>Tickets en attente de facture</h1>
+                    <p>Tickets complétés en attente d’ajout ou de fermeture de facture.</p>
+                </div>
+
+                <div class="af-toolbar">
+                    <div class="af-toolbar-left">
+                        <div id="af-dt-buttons"></div>
+                    </div>
+
+                    <div class="af-toolbar-right">
+                        <div id="af-dt-search"></div>
+                    </div>
+                </div>
+
+                <div class="af-table-card">
+                    <div class="af-table-inner">
+                        <div class="af-table-scroll-top">
+                            <div class="af-table-scroll-top-inner"></div>
+                        </div>
+
+                        <div class="af-table-scroll">
+                            <table id="table_data" class="table" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Complété</th>
+                                    <th>Intervenant</th>
+                                    <th>Description</th>
+                                    <th>No.(s) facture</th>
+                                    <th>Total (TTC)$</th>
+                                    <th>MO (HT)$</th>
+                                    <th>Mat (HT)$</th>
+                                    <th style="min-width: 180px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in ticket_list %}
+                                <tr>
+                                    <td>{{ item[0] }}</td>
+                                    <td>{{ item[8] }}</td>
+                                    <td>{{ item[18] }}</td>
+                                    <td>{{ item[6] }}</td>
+                                    <td>{{ item[12] }}</td>
+                                    <td>{{ item[16] }}</td>
+                                    <td>{{ item[13] }}</td>
+                                    <td>{{ item[14] }}</td>
+                                    <td class="align-middle af-actions">
+                                        <div class="af-actions-row">
+                                            <a href="{{ url_for('bp_tickets.affiche_ticket_en_attente', id_ticket=item[0]) }}"
+                                               class="ticket-action-link ticket-action-edit">
+                                                Modifier
+                                            </a>
+
+                                            <a href=""
+                                               class="ticket-action-duplicate"
+                                               data-toggle="modal"
+                                               data-target="#Dupliquer_Modal{{ item[0] }}">
+                                                Dupliquer
+                                            </a>
+                                        </div>
+
+                                        <div class="af-actions-row">
+                                            <a href=""
+                                               class="ticket-action-link ticket-action-complete"
+                                               data-toggle="modal"
+                                               data-target="#Ajout_Modal{{ item[0] }}">
+                                                Ajout de facture
+                                            </a>
+                                        </div>
+
+                                        <div class="af-actions-row">
+                                            <a href=""
+                                               class="ticket-action-link ticket-action-delete"
+                                               data-toggle="modal"
+                                               data-target="#Fermer_Modal{{ item[0] }}">
+                                                Fermer ticket
+                                            </a>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <form action="{{ url_for('bp_tickets.dupliquer_en_attente', id_ticket=item[0]) }}"
+                                                  method="post"
+                                                  class="form-horizontal"
+                                                  role="form">
+                                                <div class="modal fade"
+                                                     id="Dupliquer_Modal{{ item[0] }}"
+                                                     tabindex="-1"
+                                                     role="dialog"
+                                                     aria-labelledby="DupliquerModalLabel"
+                                                     aria-hidden="true">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-body">
+                                                                <h5>Voulez-vous vraiment DUPLIQUER ce ticket?</h5><br>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="submit" class="btn btn-primary">Oui</button>
+                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <form action="{{ url_for('bp_factures.creation_facture_non_ocr', id_ticket=item[0]) }}"
+                                                  method="post"
+                                                  class="form-horizontal"
+                                                  role="form">
+                                                <div class="modal fade"
+                                                     id="Ajout_Modal{{ item[0] }}"
+                                                     tabindex="-1"
+                                                     role="dialog"
+                                                     aria-labelledby="AjoutModalLabel"
+                                                     aria-hidden="true">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-body">
+                                                                <h5>Voulez-vous numériser cette facture?</h5><br>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <a href="{{ url_for('bp_ocr.lancer_facture_attente_ocr', id_ticket=item[0]) }}"
+                                                                   class="btn btn-primary">Oui</a>
+                                                                <button type="submit" class="btn btn-secondary">Non</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <form action="{{ url_for('bp_tickets.ferme_ticket', id_ticket=item[0]) }}"
+                                                  method="post"
+                                                  class="form-horizontal"
+                                                  role="form">
+                                                <div class="modal fade"
+                                                     id="Fermer_Modal{{ item[0] }}"
+                                                     tabindex="-1"
+                                                     role="dialog"
+                                                     aria-labelledby="FermerModalLabel"
+                                                     aria-hidden="true">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-body">
+                                                                <h5>Voulez-vous vraiment FERMER ce ticket?</h5><br>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="submit" class="btn btn-primary">Oui</button>
+                                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

@@ -23,6 +23,16 @@ Example (PowerShell):
 
 Environment variables (recommended):
   CF_DB_HOST, CF_DB_USER, CF_DB_PASSWORD, CF_DB_NAME
+
+SELECT IDIntervenant, IDClient, NomIntervenant
+FROM CondoFix$condofix.intervenants
+WHERE IDClient = 1
+  AND NomIntervenant LIKE '%Concierge%';
+
+  SELECT IDIntervenant, IDClient, NomIntervenant
+FROM CondoFix$condofix.intervenants
+WHERE IDClient = 1
+  AND NomIntervenant LIKE '%Autre%';
 """
 
 from __future__ import annotations

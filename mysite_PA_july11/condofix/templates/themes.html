@@ -1,0 +1,1508 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} mt-2">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<style>
+    .themes-page {
+        --themes-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --themes-shadow-soft: 0 6px 18px rgba(15, 23, 42, 0.06);
+        --themes-radius-xl: 22px;
+        --themes-radius-lg: 18px;
+        --themes-radius-md: 14px;
+        --themes-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .themes-page .themes-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--themes-radius-xl);
+        box-shadow: var(--themes-shadow);
+        padding: 1.25rem;
+    }
+
+    .themes-page .themes-header {
+        margin-bottom: 1.25rem;
+    }
+
+    .themes-page .themes-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.08;
+        color: var(--theme-text);
+    }
+
+    .themes-page .themes-header p {
+        margin: 0.45rem 0 0;
+        max-width: 820px;
+        color: var(--theme-text-muted);
+        font-size: 1rem;
+    }
+
+    .themes-page .themes-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .themes-page .themes-main,
+    .themes-page .themes-side {
+        min-width: 0;
+    }
+
+    .themes-page .themes-preview,
+    .themes-page .themes-panel,
+    .themes-page .theme-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--themes-radius-xl);
+        box-shadow: var(--themes-shadow-soft);
+    }
+
+    .themes-page .themes-preview {
+        padding: 1.1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .themes-page .themes-preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .themes-page .themes-preview-header h2 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--theme-text);
+    }
+
+    .themes-page .themes-preview-header p {
+        margin: 0.25rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.95rem;
+    }
+
+    .themes-page .themes-chip-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .themes-page .themes-chip {
+        padding: 0.45rem 0.8rem;
+        border-radius: 999px;
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        color: var(--theme-text-muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .themes-page .themes-kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(110px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .themes-page .theme-kpi {
+        border-radius: var(--themes-radius-md);
+        min-height: 86px;
+        padding: 0.8rem 0.9rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .themes-page .theme-kpi-label {
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        line-height: 1.08;
+    }
+
+    .themes-page .theme-kpi-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        line-height: 1;
+        margin: 0.1rem 0;
+    }
+
+    .themes-page .theme-kpi-note {
+        font-size: 0.76rem;
+        font-weight: 700;
+        line-height: 1.08;
+    }
+
+    .themes-page .theme-kpi-critical {
+        background: var(--theme-priority-critical);
+        color: var(--theme-priority-critical-text);
+    }
+
+    .themes-page .theme-kpi-high {
+        background: var(--theme-priority-high);
+        color: var(--theme-priority-high-text);
+    }
+
+    .themes-page .theme-kpi-medium {
+        background: var(--theme-priority-medium);
+        color: var(--theme-priority-medium-text);
+    }
+
+    .themes-page .theme-kpi-low {
+        background: var(--theme-priority-low);
+        color: var(--theme-priority-low-text);
+    }
+
+    .themes-page .theme-kpi-age {
+        background: var(--theme-kpi-age);
+        color: var(--theme-kpi-age-text);
+    }
+
+    .themes-page .theme-kpi-hours {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+    }
+
+    .themes-page .themes-doc-line {
+        padding: 0.9rem 1rem;
+        border-radius: var(--themes-radius-md);
+        background: var(--theme-surface-alt);
+        border: 1px dashed var(--theme-border);
+        color: var(--theme-text);
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+
+    .themes-page .themes-mini-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+        border: 1px solid var(--theme-border);
+        border-radius: var(--themes-radius-md);
+    }
+
+    .themes-page .themes-mini-table thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-size: 0.88rem;
+        font-weight: 800;
+        padding: 0.8rem 0.75rem;
+        border-bottom: 1px solid var(--theme-border);
+        text-align: left;
+    }
+
+    .themes-page .themes-mini-table tbody td {
+        padding: 0.8rem 0.75rem;
+        border-bottom: 1px solid var(--theme-border);
+        color: var(--theme-text);
+        font-size: 0.92rem;
+        vertical-align: top;
+    }
+
+    .themes-page .themes-mini-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .themes-page .priority-pill {
+        display: inline-block;
+        padding: 0.42rem 0.72rem;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 0.82rem;
+        line-height: 1.15;
+    }
+
+    .themes-page .pill-critical {
+        background: rgba(220, 53, 69, 0.14);
+        color: var(--theme-priority-critical);
+    }
+
+    .themes-page .pill-high {
+        background: rgba(244, 180, 0, 0.22);
+        color: #7c5200;
+    }
+
+    .themes-page .pill-medium {
+        background: rgba(13, 110, 253, 0.14);
+        color: var(--theme-priority-medium);
+    }
+
+    .themes-page .pill-low {
+        background: rgba(25, 135, 84, 0.14);
+        color: var(--theme-priority-low);
+    }
+
+    .themes-page .theme-action-edit {
+        color: var(--theme-link-edit);
+        font-weight: 800;
+        text-decoration: none;
+        margin-right: 0.7rem;
+    }
+
+    .themes-page .theme-action-complete {
+        color: var(--theme-link-complete);
+        font-weight: 800;
+        text-decoration: none;
+        margin-right: 0.7rem;
+    }
+
+    .themes-page .theme-action-delete {
+        color: var(--theme-link-delete);
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .themes-page .themes-palette-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .themes-page .theme-card {
+        padding: 1rem;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .themes-page .theme-card.active {
+        border-color: var(--theme-link-edit);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.14), var(--themes-shadow-soft);
+    }
+
+    .themes-page .theme-card h3 {
+        margin: 0 0 0.35rem;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--theme-text);
+    }
+
+    .themes-page .theme-card p {
+        margin: 0 0 0.9rem;
+        color: var(--theme-text-muted);
+        font-size: 0.95rem;
+        min-height: 52px;
+    }
+
+    .themes-page .theme-swatch-row {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .themes-page .theme-swatch {
+        min-height: 72px;
+        border-radius: 14px;
+        padding: 0.45rem;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 800;
+        border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .themes-page .theme-swatch.light-text {
+        color: #fff;
+    }
+
+    .themes-page .theme-swatch.dark-text {
+        color: #142033;
+    }
+
+    .themes-page .theme-accents {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .themes-page .theme-accent-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        border: 2px solid rgba(0,0,0,0.08);
+    }
+
+    .themes-page .theme-card-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .themes-page .theme-radio {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-weight: 700;
+        color: var(--theme-text);
+    }
+
+    .themes-page .themes-panel {
+        position: sticky;
+        top: 16px;
+        padding: 1rem;
+    }
+
+    .themes-page .themes-panel h2 {
+        margin: 0 0 0.45rem;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--theme-text);
+    }
+
+    .themes-page .themes-panel p {
+        margin: 0 0 1rem;
+        color: var(--theme-text-muted);
+        font-size: 0.95rem;
+    }
+
+    .themes-page .themes-panel-group {
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--theme-border);
+    }
+
+    .themes-page .themes-panel-group:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+
+    .themes-page .themes-panel-group h3 {
+        margin: 0 0 0.7rem;
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--theme-text);
+    }
+
+    .themes-page .themes-family-option {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 0.55rem;
+        font-weight: 700;
+        color: var(--theme-text);
+    }
+
+    .themes-page .themes-token-list {
+        display: grid;
+        gap: 0.55rem;
+    }
+
+    .themes-page .themes-token-item {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 0.7rem;
+        align-items: center;
+    }
+
+    .themes-page .themes-token-color {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,0.12);
+    }
+
+    .themes-page .themes-token-item strong {
+        display: block;
+        color: var(--theme-text);
+        font-size: 0.93rem;
+    }
+
+    .themes-page .themes-token-code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.8rem;
+        color: var(--theme-text-muted);
+    }
+
+    .themes-page .themes-guideline {
+        display: grid;
+        gap: 0.45rem;
+        font-size: 0.93rem;
+        color: var(--theme-text);
+    }
+
+    .themes-page .themes-guideline strong {
+        display: inline-block;
+        min-width: 135px;
+    }
+
+    .themes-page .themes-submit-row {
+        margin-top: 1.1rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .themes-page .themes-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0.7rem 1.15rem;
+        border-radius: var(--themes-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .themes-page .themes-btn:hover,
+    .themes-page .themes-btn:focus {
+        text-decoration: none;
+        color: var(--theme-text);
+        transform: translateY(-1px);
+    }
+
+    .themes-page .themes-btn-primary {
+        background: var(--theme-link-edit);
+        color: #fff;
+        border-color: transparent;
+    }
+
+    .themes-page .themes-btn-primary:hover,
+    .themes-page .themes-btn-primary:focus {
+        color: #fff;
+        opacity: 0.96;
+    }
+
+    .themes-page .themes-hidden-input {
+        display: none;
+    }
+
+    @media (max-width: 1240px) {
+        .themes-page .themes-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .themes-page .themes-panel {
+            position: static;
+        }
+    }
+
+    @media (max-width: 980px) {
+        .themes-page .themes-kpi-strip {
+            grid-template-columns: repeat(3, minmax(110px, 1fr));
+        }
+
+        .themes-page .themes-palette-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .themes-page .themes-kpi-strip {
+            grid-template-columns: repeat(2, minmax(110px, 1fr));
+        }
+
+        .themes-page .theme-swatch-row {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 520px) {
+        .themes-page .themes-kpi-strip {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="container-fluid themes-page">
+    <section class="themes-shell">
+        <header class="themes-header">
+            <h1>Choix du thème</h1>
+            <p>
+                Personnalisez l’apparence de CondoFix. Cette page vous permet de choisir un style clair,
+                standard ou sombre, avec des palettes prêtes à l’emploi faciles à lire et agréables à utiliser.
+            </p>
+        </header>
+
+        <div class="themes-layout">
+            <div class="themes-main">
+                <section class="themes-preview">
+                    <div class="themes-preview-header">
+                        <div>
+                            <h2>Aperçu rapide</h2>
+                            <p>Prévisualisation inspirée des pages Tickets, Historique et Tableau de bord.</p>
+                        </div>
+                        <div class="themes-chip-row">
+                            <span class="themes-chip" id="active-family-chip">Mode : Normal</span>
+                            <span class="themes-chip" id="active-theme-chip">Palette : CondoFix Classique</span>
+                        </div>
+                    </div>
+
+                    <div class="themes-kpi-strip">
+                        <article class="theme-kpi theme-kpi-critical">
+                            <div class="theme-kpi-label">Critique</div>
+                            <div class="theme-kpi-value">4</div>
+                            <div class="theme-kpi-note">554.0</div>
+                        </article>
+                        <article class="theme-kpi theme-kpi-high">
+                            <div class="theme-kpi-label">Élevée</div>
+                            <div class="theme-kpi-value">1</div>
+                            <div class="theme-kpi-note">1001.0</div>
+                        </article>
+                        <article class="theme-kpi theme-kpi-medium">
+                            <div class="theme-kpi-label">Moyenne</div>
+                            <div class="theme-kpi-value">5</div>
+                            <div class="theme-kpi-note">804.6</div>
+                        </article>
+                        <article class="theme-kpi theme-kpi-low">
+                            <div class="theme-kpi-label">Non prioritaire</div>
+                            <div class="theme-kpi-value">165</div>
+                            <div class="theme-kpi-note">488.6</div>
+                        </article>
+                        <article class="theme-kpi theme-kpi-age">
+                            <div class="theme-kpi-label">Âge moyen</div>
+                            <div class="theme-kpi-value">502j</div>
+                            <div class="theme-kpi-note">Cible: 25j</div>
+                        </article>
+                        <article class="theme-kpi theme-kpi-hours">
+                            <div class="theme-kpi-label">Heures estimées</div>
+                            <div class="theme-kpi-value">281</div>
+                            <div class="theme-kpi-note">Employés</div>
+                        </article>
+                    </div>
+
+                    <div class="themes-doc-line">
+                        2022-03-01 : Rapport d’inspection du système d’alarme incendie
+                    </div>
+
+                    <table class="themes-mini-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Prévu</th>
+                                <th>Priorité</th>
+                                <th>Intervenant</th>
+                                <th>Description</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>706</td>
+                                <td>2023-05-01</td>
+                                <td><span class="priority-pill pill-critical">Critique · 4 h.</span></td>
+                                <td>Profil Jardins</td>
+                                <td>Ouvrir les plate bandes</td>
+                                <td>
+                                    <a href="#" class="theme-action-edit">Modifier</a>
+                                    <a href="#" class="theme-action-complete">Compléter</a>
+                                    <a href="#" class="theme-action-delete">Supprimer</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>708</td>
+                                <td>2023-07-01</td>
+                                <td><span class="priority-pill pill-high">Élevée · 48 h.</span></td>
+                                <td>LavPro</td>
+                                <td>Laver les fenêtres</td>
+                                <td>
+                                    <a href="#" class="theme-action-edit">Modifier</a>
+                                    <a href="#" class="theme-action-complete">Compléter</a>
+                                    <a href="#" class="theme-action-delete">Supprimer</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>710</td>
+                                <td>2023-10-15</td>
+                                <td><span class="priority-pill pill-low">Non prioritaire · 15 j.</span></td>
+                                <td>Concierge</td>
+                                <td>Inspection visuelle mensuelle</td>
+                                <td>
+                                    <a href="#" class="theme-action-edit">Modifier</a>
+                                    <a href="#" class="theme-action-complete">Compléter</a>
+                                    <a href="#" class="theme-action-delete">Supprimer</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <form method="post" action="{{ url_for('bp_parametres.themes') }}" id="themes-form">
+                    <input type="hidden" name="theme_ui" id="theme_ui" class="themes-hidden-input" value="{{ theme_ui|default('normal-condofix-classic') }}">
+                    <div class="themes-palette-grid" id="themes-palette-grid"></div>
+
+                    <div class="themes-submit-row">
+                        <a href="{{ url_for('bp_parametres.parametres') }}" class="themes-btn">Retour aux paramètres</a>
+                        <button type="submit" class="themes-btn themes-btn-primary">Enregistrer le thème</button>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="themes-side">
+                <section class="themes-panel">
+                    <h2>Contrôle du thème</h2>
+                    <p>
+                        Choisissez d’abord un mode, puis une palette. L’aperçu se met à jour immédiatement.
+                    </p>
+
+                    <div class="themes-panel-group">
+                        <h3>Modes</h3>
+                        <div id="themes-family-options"></div>
+                    </div>
+
+                    <div class="themes-panel-group">
+                        <h3>Palette active</h3>
+                        <div class="themes-token-list" id="themes-token-list"></div>
+                    </div>
+
+                    <div class="themes-panel-group">
+                        <h3>Repères visuels</h3>
+                        <div class="themes-guideline">
+                            <div><strong>Critique</strong> rouge / urgent</div>
+                            <div><strong>Élevée</strong> ambre / attention</div>
+                            <div><strong>Moyenne</strong> bleu / normal</div>
+                            <div><strong>Non prioritaire</strong> vert / stable</div>
+                            <div><strong>Âge / délai</strong> ton neutre / analytique</div>
+                            <div><strong>Heures</strong> capacité / charge</div>
+                            <div><strong>Actions</strong> bleu / ambre / rouge</div>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </section>
+</div>
+
+<script>
+    const familyLabels = {
+        "Light": "Clair",
+        "Normal": "Standard",
+        "Dark": "Sombre"
+    };
+
+    const condoThemes = [
+        {
+            id: "light-soft-saas",
+            family: "Light",
+            name: "SaaS doux",
+            description: "Palette claire, douce et moderne. Idéale pour une navigation calme et rassurante.",
+            tokens: {
+                critical: "#e11d48",
+                high: "#f59e0b",
+                medium: "#2563eb",
+                low: "#16a34a",
+                age: "#dbeafe",
+                hours: "#0f766e",
+                linkEdit: "#2563eb",
+                linkComplete: "#d97706",
+                linkDelete: "#dc2626",
+                accent1: "#8b5cf6",
+                accent2: "#06b6d4",
+                accent3: "#14b8a6",
+                accent4: "#ec4899",
+                accent5: "#f97316",
+                accent6: "#84cc16"
+            }
+        },
+        {
+            id: "light-airy-powerbi",
+            family: "Light",
+            name: "BI aérien",
+            description: "Palette légère inspirée des tableaux analytiques, avec des bleus nets et des accents dynamiques.",
+            tokens: {
+                critical: "#d92d20",
+                high: "#f79009",
+                medium: "#1570ef",
+                low: "#12b76a",
+                age: "#eaecf5",
+                hours: "#475467",
+                linkEdit: "#1570ef",
+                linkComplete: "#f79009",
+                linkDelete: "#d92d20",
+                accent1: "#7a5af8",
+                accent2: "#22c55e",
+                accent3: "#06b6d4",
+                accent4: "#ef4444",
+                accent5: "#eab308",
+                accent6: "#14b8a6"
+            }
+        },
+        {
+            id: "light-warm-admin",
+            family: "Light",
+            name: "Admin chaleureux",
+            description: "Fond clair avec accents plus chaleureux. Convient à une expérience plus humaine.",
+            tokens: {
+                critical: "#c2410c",
+                high: "#f59e0b",
+                medium: "#2563eb",
+                low: "#3f8f3f",
+                age: "#efe7da",
+                hours: "#7c5c3b",
+                linkEdit: "#1d4ed8",
+                linkComplete: "#b45309",
+                linkDelete: "#b91c1c",
+                accent1: "#8b5cf6",
+                accent2: "#14b8a6",
+                accent3: "#ec4899",
+                accent4: "#f97316",
+                accent5: "#65a30d",
+                accent6: "#0ea5e9"
+            }
+        },
+        {
+            id: "light-accessible-saas",
+            family: "Light",
+            name: "Clair accessible",
+            description: "Version claire optimisée pour une meilleure lisibilité et un contraste plus fort.",
+            tokens: {
+                critical: "#b91c1c",
+                high: "#b45309",
+                medium: "#1d4ed8",
+                low: "#166534",
+                age: "#cbd5e1",
+                hours: "#334155",
+                linkEdit: "#1d4ed8",
+                linkComplete: "#b45309",
+                linkDelete: "#b91c1c",
+                accent1: "#6d28d9",
+                accent2: "#0e7490",
+                accent3: "#0f766e",
+                accent4: "#be185d",
+                accent5: "#c2410c",
+                accent6: "#65a30d"
+            }
+        },
+        {
+            id: "normal-condofix-classic",
+            family: "Normal",
+            name: "CondoFix classique",
+            description: "Version équilibrée proche du langage visuel actuel, avec une finition plus propre.",
+            tokens: {
+                critical: "#dc3545",
+                high: "#f4b400",
+                medium: "#0d6efd",
+                low: "#198754",
+                age: "#e9ecef",
+                hours: "#5f788a",
+                linkEdit: "#0d6efd",
+                linkComplete: "#f59e0b",
+                linkDelete: "#dc3545",
+                accent1: "#7c3aed",
+                accent2: "#06b6d4",
+                accent3: "#14b8a6",
+                accent4: "#ec4899",
+                accent5: "#f97316",
+                accent6: "#84cc16"
+            }
+        },
+        {
+            id: "normal-powerboard",
+            family: "Normal",
+            name: "PowerBoard",
+            description: "Palette analytique plus affirmée, pensée pour les tableaux de bord et les graphiques.",
+            tokens: {
+                critical: "#d64550",
+                high: "#f0a202",
+                medium: "#2f6fed",
+                low: "#2a9d6f",
+                age: "#d7dee8",
+                hours: "#4f6d8a",
+                linkEdit: "#2f6fed",
+                linkComplete: "#d98b00",
+                linkDelete: "#cf3344",
+                accent1: "#7c4dff",
+                accent2: "#00b8d9",
+                accent3: "#43a047",
+                accent4: "#e91e63",
+                accent5: "#ff7043",
+                accent6: "#c0ca33"
+            }
+        },
+        {
+            id: "normal-executive",
+            family: "Normal",
+            name: "Ardoise exécutive",
+            description: "Plus corporatif et légèrement plus sérieux. Excellent compromis entre SaaS et outil de gestion.",
+            tokens: {
+                critical: "#c0394b",
+                high: "#d4a017",
+                medium: "#2c6acb",
+                low: "#2f855a",
+                age: "#d9e1ea",
+                hours: "#56687a",
+                linkEdit: "#2c6acb",
+                linkComplete: "#c08400",
+                linkDelete: "#c0394b",
+                accent1: "#6d5bd0",
+                accent2: "#1da1c1",
+                accent3: "#3aa56b",
+                accent4: "#d9468d",
+                accent5: "#e76f51",
+                accent6: "#8abf26"
+            }
+        },
+        {
+            id: "normal-accessible-balanced",
+            family: "Normal",
+            name: "Standard accessible",
+            description: "Palette standard avec contraste renforcé, conçue pour un usage prolongé et confortable.",
+            tokens: {
+                critical: "#b91c1c",
+                high: "#a16207",
+                medium: "#1e40af",
+                low: "#166534",
+                age: "#cbd5e1",
+                hours: "#475569",
+                linkEdit: "#1e40af",
+                linkComplete: "#a16207",
+                linkDelete: "#b91c1c",
+                accent1: "#5b21b6",
+                accent2: "#0e7490",
+                accent3: "#15803d",
+                accent4: "#be185d",
+                accent5: "#c2410c",
+                accent6: "#65a30d"
+            }
+        },
+        {
+            id: "dark-midnight-saas",
+            family: "Dark",
+            name: "Minuit SaaS",
+            description: "Mode sombre premium avec forts contrastes et accents lumineux.",
+            tokens: {
+                critical: "#f43f5e",
+                high: "#fbbf24",
+                medium: "#3b82f6",
+                low: "#22c55e",
+                age: "#475569",
+                hours: "#0f766e",
+                linkEdit: "#60a5fa",
+                linkComplete: "#fbbf24",
+                linkDelete: "#fb7185",
+                accent1: "#a78bfa",
+                accent2: "#22d3ee",
+                accent3: "#34d399",
+                accent4: "#f472b6",
+                accent5: "#fb923c",
+                accent6: "#a3e635"
+            }
+        },
+        {
+            id: "dark-power-ops",
+            family: "Dark",
+            name: "Power Ops",
+            description: "Pensée pour les tableaux de bord techniques et les écrans chargés en information.",
+            tokens: {
+                critical: "#ef4444",
+                high: "#f59e0b",
+                medium: "#38bdf8",
+                low: "#22c55e",
+                age: "#64748b",
+                hours: "#2563eb",
+                linkEdit: "#38bdf8",
+                linkComplete: "#f59e0b",
+                linkDelete: "#f87171",
+                accent1: "#8b5cf6",
+                accent2: "#14b8a6",
+                accent3: "#84cc16",
+                accent4: "#ec4899",
+                accent5: "#fb923c",
+                accent6: "#facc15"
+            }
+        },
+        {
+            id: "dark-graphite-luxe",
+            family: "Dark",
+            name: "Graphite luxe",
+            description: "Plus sobre, élégant et professionnel. Très bon choix pour une version sombre discrète.",
+            tokens: {
+                critical: "#d95b6a",
+                high: "#d9a441",
+                medium: "#5b8def",
+                low: "#4db57c",
+                age: "#6b7280",
+                hours: "#52718d",
+                linkEdit: "#76a9fa",
+                linkComplete: "#e7b84d",
+                linkDelete: "#f07b87",
+                accent1: "#9b8afb",
+                accent2: "#34d399",
+                accent3: "#22d3ee",
+                accent4: "#f472b6",
+                accent5: "#fb923c",
+                accent6: "#a3e635"
+            }
+        },
+        {
+            id: "dark-accessible-contrast",
+            family: "Dark",
+            name: "Sombre accessible",
+            description: "Mode sombre à contraste élevé, pensé pour la lecture et l’accessibilité.",
+            tokens: {
+                critical: "#f87171",
+                high: "#facc15",
+                medium: "#60a5fa",
+                low: "#4ade80",
+                age: "#64748b",
+                hours: "#38bdf8",
+                linkEdit: "#60a5fa",
+                linkComplete: "#facc15",
+                linkDelete: "#f87171",
+                accent1: "#a78bfa",
+                accent2: "#22d3ee",
+                accent3: "#34d399",
+                accent4: "#f472b6",
+                accent5: "#fb923c",
+                accent6: "#a3e635"
+            }
+        },
+        {
+            id: "light-mineral-luxe",
+            family: "Light",
+            name: "Luxe minéral jade",
+            description: "Palette claire haut de gamme inspirée des textures minérales, des bleus grisés raffinés et d’un accent doré discret.",
+            tokens: {
+                critical: "#b64552",
+                high: "#d4af37",
+                medium: "#4f7fa6",
+                low: "#4f9b8f",
+                age: "#d7e3ec",
+                hours: "#5f788a",
+                linkEdit: "#3f6f98",
+                linkComplete: "#b9922f",
+                linkDelete: "#b64552",
+                accent1: "#4fb0a8",
+                accent2: "#e0ba68",
+                accent3: "#b8d4df",
+                accent4: "#5a88ad",
+                accent5: "#0b1f5b",
+                accent6: "#7e97ac"
+            }
+        },
+        {
+            id: "light-coastal-gold-premium",
+            family: "Light",
+            name: "Or côtier jade",
+            description: "Palette claire haut de gamme inspirée des bleus marins, du vert minéral et d’un or élégant, dans l’esprit du nouveau visuel CondoFix.",
+            tokens: {
+                critical: "#c45552",
+                high: "#dbb13b",
+                medium: "#304b7a",
+                low: "#56bca4",
+                age: "#e5d5b1",
+                hours: "#5f798a",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#c45552",
+                accent1: "#56bca4",
+                accent2: "#2595a3",
+                accent3: "#304b7a",
+                accent4: "#2f325d",
+                accent5: "#0a0e2b",
+                accent6: "#394456"
+            }
+        },
+        {
+            id: "normal-ocean-gold-premium",
+            family: "Normal",
+            name: "Or océan premium",
+            description: "Palette premium inspirée des bleus profonds, du bleu ardoise et d’un or poli. Excellente candidate pour des copropriétés haut de gamme et des présentations au CA.",
+            tokens: {
+                critical: "#c44e5f",
+                high: "#c9a227",
+                medium: "#38598b",
+                low: "#2f8f83",
+                age: "#c9d4df",
+                hours: "#516b84",
+                linkEdit: "#38598b",
+                linkComplete: "#b38b1d",
+                linkDelete: "#c44e5f",
+                accent1: "#6b86a8",
+                accent2: "#2f4b75",
+                accent3: "#001f54",
+                accent4: "#000f2f",
+                accent5: "#c49b3d",
+                accent6: "#7b8ea8"
+            }
+        },
+        {
+            id: "normal-condofix-luxe-coastal",
+            family: "Normal",
+            name: "CondoFix luxe côtier",
+            description: "Palette premium équilibrée reprenant les bleus acier et marins de CondoFix avec un or plus luxueux pour les présentations et tableaux de bord.",
+            tokens: {
+                critical: "#c45552",
+                high: "#dbb13b",
+                medium: "#304b7a",
+                low: "#2595a3",
+                age: "#dfe5eb",
+                hours: "#394456",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#c45552",
+                accent1: "#56bca4",
+                accent2: "#2595a3",
+                accent3: "#304b7a",
+                accent4: "#2f325d",
+                accent5: "#dbb13b",
+                accent6: "#5f798a"
+            }
+        },
+        {
+            id: "dark-abyss-premium",
+            family: "Dark",
+            name: "Profondeurs premium",
+            description: "Palette sombre luxueuse inspirée de l’océan profond, du métal poli et des accents dorés. Idéale pour une ambiance prestigieuse sans perdre en lisibilité.",
+            tokens: {
+                critical: "#d86a78",
+                high: "#d4af37",
+                medium: "#4f79c6",
+                low: "#3fa796",
+                age: "#5f738a",
+                hours: "#6f88a6",
+                linkEdit: "#79a6ff",
+                linkComplete: "#e0bc52",
+                linkDelete: "#f08a96",
+                accent1: "#5bc0be",
+                accent2: "#3a506b",
+                accent3: "#1c2541",
+                accent4: "#0b132b",
+                accent5: "#c7a24a",
+                accent6: "#7c93ad"
+            }
+        },
+        {
+            id: "dark-condofix-ocean-luxe",
+            family: "Dark",
+            name: "CondoFix océan luxe",
+            description: "Palette sombre luxueuse inspirée de l’océan profond, des métaux polis et des accents dorés du nouveau style public CondoFix.",
+            tokens: {
+                critical: "#d86c72",
+                high: "#dbb13b",
+                medium: "#4f76b8",
+                low: "#56bca4",
+                age: "#7f8ea3",
+                hours: "#5f798a",
+                linkEdit: "#7ea2e6",
+                linkComplete: "#e9d189",
+                linkDelete: "#f08a92",
+                accent1: "#56bca4",
+                accent2: "#2595a3",
+                accent3: "#304b7a",
+                accent4: "#2f325d",
+                accent5: "#dbb13b",
+                accent6: "#394456"
+            }
+        },
+        {
+            id: "light-luxe-mineral-premium-1",
+            family: "Light",
+            name: "Luxe minéral premium 1",
+            description: "Version équilibrée la plus proche du visuel mer minérale : bleu marin dominant, or poli, turquoise en accent contrôlé.",
+            tokens: {
+                critical: "#b84d5b",
+                high: "#dbb13b",
+                medium: "#2595a3",
+                low: "#304b7a",
+                age: "#d9e3ea",
+                hours: "#5f798a",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#b84d5b",
+                chartEquipment: "#5f798a",
+                chartBudget: "#5f798a",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#2595a3",
+                chartPreventiveSupplier: "#2f325d"
+            }
+        },
+        {
+            id: "light-luxe-mineral-premium-2",
+            family: "Light",
+            name: "Luxe minéral premium 2",
+            description: "Version plus profonde et plus luxueuse, avec une présence renforcée des bleus marins et un accent or plus net.",
+            tokens: {
+                critical: "#b74a58",
+                high: "#dbb13b",
+                medium: "#56bca4",
+                low: "#2f325d",
+                age: "#d7e0e7",
+                hours: "#6a8091",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#b74a58",
+                chartEquipment: "#64798c",
+                chartBudget: "#6a8091",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#2595a3",
+                chartPreventiveSupplier: "#2f325d"
+            }
+        },
+        {
+            id: "light-luxe-mineral-premium-3",
+            family: "Light",
+            name: "Luxe minéral premium 3",
+            description: "Version plus douce et plus minérale, avec un bleu ardoise dominant, un turquoise assagi et une lecture très élégante.",
+            tokens: {
+                critical: "#bb5360",
+                high: "#d6ae43",
+                medium: "#2f8f98",
+                low: "#3d5d86",
+                age: "#dbe4ea",
+                hours: "#6c8394",
+                linkEdit: "#3d5d86",
+                linkComplete: "#976d01",
+                linkDelete: "#bb5360",
+                chartEquipment: "#708899",
+                chartBudget: "#6c8394",
+                chartActual: "#d6ae43",
+                chartPreventiveEmployee: "#2f8f98",
+                chartPreventiveSupplier: "#304b7a"
+            }
+        },
+        {
+            id: "light-or-ocean-premium-1",
+            family: "Light",
+            name: "Or océan premium 1",
+            description: "Palette premium bleu-or la plus équilibrée, inspirée du contraste entre l’or des rivages et les bleus marins du visuel.",
+            tokens: {
+                critical: "#bf5562",
+                high: "#dbb13b",
+                medium: "#56bca4",
+                low: "#304b7a",
+                age: "#e5d5b1",
+                hours: "#5f798a",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#bf5562",
+                chartEquipment: "#6c8394",
+                chartBudget: "#5f798a",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#2595a3",
+                chartPreventiveSupplier: "#2f325d"
+            }
+        },
+        {
+            id: "light-or-ocean-premium-2",
+            family: "Light",
+            name: "Or océan premium 2",
+            description: "Version plus marine et plus sobre, avec un bleu profond dominant et une touche jade mieux contenue.",
+            tokens: {
+                critical: "#bc5160",
+                high: "#dbb13b",
+                medium: "#2595a3",
+                low: "#2f325d",
+                age: "#e7dcc0",
+                hours: "#647d90",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#bc5160",
+                chartEquipment: "#5f798a",
+                chartBudget: "#647d90",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#2595a3",
+                chartPreventiveSupplier: "#2f325d"
+            }
+        },
+        {
+            id: "light-or-ocean-premium-3",
+            family: "Light",
+            name: "Or océan premium 3",
+            description: "Version la plus raffinée et ardoisée, avec un rendu plus condo haut de gamme et une présence dorée légèrement plus feutrée.",
+            tokens: {
+                critical: "#b7505f",
+                high: "#d4aa38",
+                medium: "#3b9aa6",
+                low: "#394456",
+                age: "#e5d5b1",
+                hours: "#708899",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#b7505f",
+                chartEquipment: "#6f8696",
+                chartBudget: "#708899",
+                chartActual: "#d4aa38",
+                chartPreventiveEmployee: "#3b9aa6",
+                chartPreventiveSupplier: "#304b7a"
+            }
+        },
+        {
+            id: "normal-luxe-mineral-premium-1",
+            family: "Normal",
+            name: "Luxe minéral standard 1",
+            description: "Version standard inspirée du visuel mer minérale, avec une dominante ardoise-marine, un or poli et un turquoise plus discret.",
+            tokens: {
+                critical: "#b84d5b",
+                high: "#dbb13b",
+                medium: "#2595a3",
+                low: "#304b7a",
+                age: "#d8e1e8",
+                hours: "#5f798a",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#b84d5b",
+                chartEquipment: "#5f798a",
+                chartBudget: "#5f798a",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#2595a3",
+                chartPreventiveSupplier: "#2f325d"
+            }
+        },
+        {
+            id: "normal-or-ocean-premium-1",
+            family: "Normal",
+            name: "Or océan standard 1",
+            description: "Version standard bleu-or, plus équilibrée pour les tableaux de bord et les vues de gestion à forte densité.",
+            tokens: {
+                critical: "#bf5562",
+                high: "#dbb13b",
+                medium: "#3b9aa6",
+                low: "#394456",
+                age: "#e5d5b1",
+                hours: "#6b8293",
+                linkEdit: "#304b7a",
+                linkComplete: "#976d01",
+                linkDelete: "#bf5562",
+                chartEquipment: "#6b8293",
+                chartBudget: "#6b8293",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#3b9aa6",
+                chartPreventiveSupplier: "#304b7a"
+            }
+        },
+        {
+            id: "dark-luxe-mineral-premium-1",
+            family: "Dark",
+            name: "Luxe minéral sombre 1",
+            description: "Version sombre minérale inspirée des profondeurs marines, avec un fond très bleu nuit, un or poli et des accents océaniques contrôlés.",
+            tokens: {
+                critical: "#d06b76",
+                high: "#dbb13b",
+                medium: "#2595a3",
+                low: "#304b7a",
+                age: "#71859a",
+                hours: "#5f798a",
+                linkEdit: "#7ea2e6",
+                linkComplete: "#e0bc52",
+                linkDelete: "#ef9aa2",
+                chartEquipment: "#5f798a",
+                chartBudget: "#394456",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#2595a3",
+                chartPreventiveSupplier: "#2f325d"
+            }
+        },
+        {
+            id: "dark-or-ocean-premium-1",
+            family: "Dark",
+            name: "Or océan sombre 1",
+            description: "Version sombre bleu-or, la plus proche d’un rendu nuit océanique et premium pour CondoFix.",
+            tokens: {
+                critical: "#d46f79",
+                high: "#dbb13b",
+                medium: "#3b9aa6",
+                low: "#394456",
+                age: "#8a9aae",
+                hours: "#6a7f90",
+                linkEdit: "#8aadf0",
+                linkComplete: "#e9d189",
+                linkDelete: "#f2a2aa",
+                chartEquipment: "#6a7f90",
+                chartBudget: "#394456",
+                chartActual: "#dbb13b",
+                chartPreventiveEmployee: "#3b9aa6",
+                chartPreventiveSupplier: "#304b7a"
+            }
+        }
+    ];
+
+    const condoFamilies = ["Light", "Normal", "Dark"];
+    let activeThemeId = document.getElementById("theme_ui").value || "normal-condofix-classic";
+    let activeFamily = "Normal";
+
+    const paletteGrid = document.getElementById("themes-palette-grid");
+    const familyOptions = document.getElementById("themes-family-options");
+    const tokenList = document.getElementById("themes-token-list");
+    const familyChip = document.getElementById("active-family-chip");
+    const themeChip = document.getElementById("active-theme-chip");
+    const hiddenThemeInput = document.getElementById("theme_ui");
+
+    function textMode(hex) {
+        const value = hex.replace("#", "");
+        const bigint = parseInt(value, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 150 ? "light-text" : "dark-text";
+    }
+
+    function findTheme(themeId) {
+        return condoThemes.find(theme => theme.id === themeId);
+    }
+
+    function applyPreviewTheme(theme) {
+        const root = document.documentElement;
+        root.setAttribute("data-theme", theme.id);
+
+        familyChip.textContent = `Mode : ${familyLabels[theme.family]}`;
+        themeChip.textContent = `Palette : ${theme.name}`;
+        hiddenThemeInput.value = theme.id;
+
+        renderActiveTokens(theme);
+        highlightActiveCard();
+    }
+
+    function renderActiveTokens(theme) {
+        const t = theme.tokens;
+        const items = [
+            ["Critique", t.critical],
+            ["Élevée", t.high],
+            ["Moyenne", t.medium],
+            ["Non prioritaire", t.low],
+            ["Âge / délai", t.age],
+            ["Heures", t.hours],
+            ["Modifier", t.linkEdit],
+            ["Compléter", t.linkComplete],
+            ["Supprimer", t.linkDelete],
+            ...(t.chartEquipment ? [
+                ["Treemap équipements", t.chartEquipment],
+                ["Graphique budget", t.chartBudget],
+                ["Graphique réel", t.chartActual],
+                ["Préventif employés", t.chartPreventiveEmployee],
+                ["Préventif fournisseurs", t.chartPreventiveSupplier]
+            ] : [])
+        ];
+
+        tokenList.innerHTML = items.map(([label, color]) => `
+            <div class="themes-token-item">
+                <span class="themes-token-color" style="background:${color}"></span>
+                <div>
+                    <strong>${label}</strong>
+                    <div class="themes-token-code">${color}</div>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function renderFamilyOptions() {
+        familyOptions.innerHTML = condoFamilies.map(family => `
+            <label class="themes-family-option">
+                <input type="radio" name="themes-family" value="${family}" ${family === activeFamily ? "checked" : ""}>
+                <span>${familyLabels[family]}</span>
+            </label>
+        `).join("");
+
+        familyOptions.querySelectorAll('input[name="themes-family"]').forEach(input => {
+            input.addEventListener("change", event => {
+                activeFamily = event.target.value;
+                const firstTheme = condoThemes.find(theme => theme.family === activeFamily);
+                if (firstTheme) {
+                    activeThemeId = firstTheme.id;
+                    renderPaletteCards();
+                    applyPreviewTheme(firstTheme);
+                }
+            });
+        });
+    }
+
+    function renderPaletteCards() {
+        const filteredThemes = condoThemes.filter(theme => theme.family === activeFamily);
+
+        paletteGrid.innerHTML = filteredThemes.map(theme => {
+            const t = theme.tokens;
+            const accentColors = t.chartEquipment
+                ? [
+                    t.chartActual,
+                    t.chartEquipment,
+                    t.chartBudget,
+                    t.chartPreventiveEmployee,
+                    t.chartPreventiveSupplier
+                  ]
+                : [t.accent1, t.accent2, t.accent3, t.accent4, t.accent5, t.accent6];
+
+            const accents = accentColors
+                .filter(Boolean)
+                .map(color => `<span class="theme-accent-dot" style="background:${color}"></span>`)
+                .join("");
+
+            return `
+                <article class="theme-card" data-theme-id="${theme.id}">
+                    <h3>${theme.name}</h3>
+                    <p>${theme.description}</p>
+
+                    <div class="theme-swatch-row">
+                        <div class="theme-swatch ${textMode(t.critical)}" style="background:${t.critical}">Critique</div>
+                        <div class="theme-swatch ${textMode(t.high)}" style="background:${t.high}">Élevée</div>
+                        <div class="theme-swatch ${textMode(t.medium)}" style="background:${t.medium}">Moyenne</div>
+                        <div class="theme-swatch ${textMode(t.low)}" style="background:${t.low}">Non prioritaire</div>
+                        <div class="theme-swatch ${textMode(t.age)}" style="background:${t.age}">Âge</div>
+                        <div class="theme-swatch ${textMode(t.hours)}" style="background:${t.hours}">Heures</div>
+                    </div>
+
+                    <div class="theme-accents">${accents}</div>
+
+                    <div class="theme-card-footer">
+                        <label class="theme-radio">
+                            <input type="radio" name="selected_theme" value="${theme.id}" ${theme.id === activeThemeId ? "checked" : ""}>
+                            <span>Activer cette palette</span>
+                        </label>
+                    </div>
+                </article>
+            `;
+        }).join("");
+
+        paletteGrid.querySelectorAll('input[name="selected_theme"]').forEach(input => {
+            input.addEventListener("change", event => {
+                activeThemeId = event.target.value;
+                const theme = findTheme(activeThemeId);
+                if (theme) {
+                    applyPreviewTheme(theme);
+                }
+            });
+        });
+
+        highlightActiveCard();
+    }
+
+    function highlightActiveCard() {
+        document.querySelectorAll(".theme-card").forEach(card => {
+            const isActive = card.dataset.themeId === activeThemeId;
+            card.classList.toggle("active", isActive);
+        });
+    }
+
+    function initThemesPage() {
+        const initialTheme = findTheme(activeThemeId) || findTheme("normal-condofix-classic");
+        activeFamily = initialTheme.family;
+        renderFamilyOptions();
+        renderPaletteCards();
+        applyPreviewTheme(initialTheme);
+    }
+
+    initThemesPage();
+</script>
+
+{% endblock content %}

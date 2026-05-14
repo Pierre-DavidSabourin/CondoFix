@@ -1,0 +1,343 @@
+{% extends "-public_layout_new.html" %}
+
+{% block meta_title %}CondoFix — Pourquoi un système comptable ne suffit plus{% endblock %}
+{% block meta_description %}
+Découvrez pourquoi un système comptable seul ne suffit plus pour répondre aux exigences de gestion du carnet d’entretien en copropriété et comment CondoFix structure l’information utile au syndicat.
+{% endblock %}
+{% block meta_keywords %}
+comptabilité copropriété, carnet d'entretien, loi 16, gmao copropriété, gestion entretien, syndicat, CondoFix
+{% endblock %}
+{% block canonical %}
+<link rel="canonical" href="{{ url_for('bp_public.comptable', _external=True) }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .comp-hero {
+    background: #6d8496;
+    color: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  }
+
+  .comp-panel {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: .9rem;
+    padding: 1.2rem;
+    height: 100%;
+  }
+
+  .comp-kicker {
+    display: inline-block;
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+    color: #ffd97a;
+    margin-bottom: .7rem;
+  }
+
+  .comp-hero p,
+  .comp-hero li {
+    color: rgba(255,255,255,.96);
+  }
+
+  .comp-image-wrap img {
+    width: 100%;
+    display: block;
+    border-radius: .8rem;
+  }
+
+  .comp-image-wrap {
+    border-radius: .9rem;
+    overflow: hidden;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.10);
+  }
+
+  .comp-bullets {
+    padding-left: 1.15rem;
+    margin-bottom: 0;
+  }
+
+  .comp-bullets li {
+    margin-bottom: .5rem;
+    line-height: 1.45;
+  }
+
+  .section-card,
+  .comparison-card {
+    border: 1px solid #dde5ec;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0,0,0,.04);
+  }
+
+  .section-card .card-body,
+  .comparison-card .card-body {
+    padding: 1.35rem;
+  }
+
+  .section-intro {
+    color: #627180;
+    line-height: 1.6;
+  }
+
+  .support-note {
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: .9rem;
+    padding: .85rem .95rem;
+  }
+
+  .support-note p:last-child {
+    margin-bottom: 0;
+  }
+
+  .support-note p,
+  .support-note strong {
+    color: rgba(255,255,255,.96);
+  }
+
+  .cta-band {
+    background: #f3f7fa;
+    border: 1px solid #dbe4ec;
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+
+  .attest-link {
+    display: block;
+    padding: .95rem 1rem;
+    border-radius: .75rem;
+    text-decoration: none;
+    border: 1px solid #dbe4ec;
+    background: #fff;
+    color: #2f3a43;
+    transition: background-color .15s ease-in-out, border-color .15s ease-in-out, transform .15s ease-in-out, box-shadow .15s ease-in-out;
+    position: relative;
+    padding-right: 2.75rem;
+  }
+
+  .attest-link:hover,
+  .attest-link:focus {
+    background: #d8e6f2;
+    border-color: #6f8aa0;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(53,82,107,.18);
+    color: #2f3a43;
+    text-decoration: none;
+  }
+
+  .attest-link strong {
+    color: #1f2f3d;
+  }
+
+  .attest-link small {
+    color: #627180 !important;
+  }
+
+  .attest-link .link-chevron {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    color: #6b7f90;
+    font-size: 1.15rem;
+    opacity: 1;
+    transition: transform .18s ease, color .18s ease;
+  }
+
+  .attest-link:hover .link-chevron,
+  .attest-link:focus .link-chevron {
+    color: #28465f;
+    transform: translateY(-50%) translateX(4px) scale(1.06);
+  }
+
+  .comparison-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+    min-width: 760px;
+    border: 1px solid #cfdbe6;
+    border-radius: .9rem;
+    overflow: hidden;
+  }
+
+  .comparison-head {
+    padding: .85rem .95rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .comparison-head.left {
+    background: #5a88d6;
+    color: #fff;
+    border-right: 1px solid rgba(255,255,255,.25);
+  }
+
+  .comparison-head.right {
+    background: #4b76c2;
+    color: #fff;
+  }
+
+  .comparison-cell {
+    padding: .82rem .9rem;
+    font-size: .97rem;
+    line-height: 1.35;
+    border-top: 1px solid #cfdbe6;
+  }
+
+  .comparison-cell.left {
+    background: #edf3fa;
+    border-right: 1px solid #cfdbe6;
+  }
+
+  .comparison-cell.right {
+    background: #f7faff;
+  }
+
+  .comparison-caption {
+    font-size: .98rem;
+    color: #31404d;
+  }
+
+  @media (max-width: 991.98px) {
+    .comp-hero {
+      padding: 1.2rem;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .comparison-card .card-body {
+      padding: 1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <section class="comp-hero mb-4">
+    <div class="row align-items-stretch">
+      <div class="col-lg-6 mb-3 mb-lg-0 d-flex">
+        <div class="comp-panel w-100 d-flex flex-column">
+          <div>
+            <span class="comp-kicker">Carnet d’entretien et comptabilité</span>
+            <h1 class="h2 text-white mb-3">Pourquoi un système comptable ne suffit plus pour piloter l’entretien d’une copropriété</h1>
+            <p class="mb-3">
+              La comptabilité demeure essentielle pour le syndicat, mais elle ne suffit pas à elle seule à structurer un
+              <strong>carnet d’entretien</strong>. Elle documente surtout les résultats financiers, alors que la gestion
+              d’entretien exige aussi un suivi des composantes, des interventions, des fréquences, des rapports et des décisions.
+            </p>
+            <ul class="comp-bullets">
+              <li>Les rapports comptables regardent surtout le passé.</li>
+              <li>Le carnet d’entretien doit aussi soutenir la planification future.</li>
+              <li>La Loi 16 augmente l’importance d’une information structurée et facile à retrouver.</li>
+            </ul>
+          </div>
+
+          <div class="mt-4 d-flex flex-wrap" style="gap:.75rem;">
+            <a class="btn btn-warning text-dark font-weight-bold" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+            <a class="btn btn-light" href="/video_infos">Vidéo 3 min.</a>
+            <a class="btn btn-danger text-white" href="/demo">Essai gratuit</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6 d-flex">
+        <div class="comp-panel w-100 d-flex flex-column justify-content-center">
+          <div class="comp-image-wrap mb-3">
+            <img src="{{ url_for('static', filename='images_publiques/Rapport_financier.png') }}" alt="Image illustrant les rapports financiers et la comptabilité">
+          </div>
+
+          <div class="support-note">
+            <p class="mb-2"><strong>Information connexe</strong></p>
+            <p class="mb-3">
+              Lors d’une vente, le syndicat doit aussi être en mesure de fournir rapidement une information structurée.
+            </p>
+            <a class="attest-link" href="https://attestationcondo-condofix.pythonanywhere.com/" target="_blank" rel="noopener">
+              <strong>Découvrir Attestation CondoFix</strong><br>
+              <small>Voir l’outil complémentaire pour l’attestation du syndicat.</small>
+              <span class="link-chevron"><i class="fa fa-chevron-right" aria-hidden="true"></i></span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-4">
+    <div class="row">
+      <div class="col-12 mb-3">
+        <div class="section-card">
+          <div class="card-body">
+            <h2 class="h3 mb-2">Ce que montre la comparaison</h2>
+            <p class="section-intro mb-0">
+              Un système comptable aide à enregistrer et présenter les dépenses, mais il ne remplace pas un outil conçu pour
+              suivre les équipements, documenter les interventions et relier les coûts à la réalité opérationnelle de l’immeuble.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="comparison-card">
+          <div class="card-body">
+            <div class="comparison-scroll">
+              <div class="comparison-grid">
+                <div class="comparison-head left">Limitation du système comptable</div>
+                <div class="comparison-head right">Avantages d’un GMAO comme CondoFix</div>
+
+                <div class="comparison-cell left">Nombre restreint de postes de dépenses d’entretien</div>
+                <div class="comparison-cell right">Plus de 22 catégories d’entretien</div>
+
+                <div class="comparison-cell left">Délai de 2 à 6 semaines avant publication des rapports comptables</div>
+                <div class="comparison-cell right">Données disponibles en temps réel</div>
+
+                <div class="comparison-cell left">Aucun détail des interventions disponible dans les rapports, ce qui oblige souvent à rechercher les factures</div>
+                <div class="comparison-cell right">Toutes les interventions sont détaillées, incluant le matériel et la main d’œuvre</div>
+
+                <div class="comparison-cell left">Aucun forage des données</div>
+                <div class="comparison-cell right">Affichage instantané des interventions et des dépenses par catégorie ou par équipement</div>
+
+                <div class="comparison-cell left">Historique des dépenses sur une base annuelle</div>
+                <div class="comparison-cell right">Possibilité d’afficher les interventions et dépenses selon la date et la catégorie</div>
+              </div>
+            </div>
+
+            <div class="pt-3 text-center">
+              <span class="comparison-caption"><strong>Figure 1</strong> — Comparaison de système comptable vs. GMAO</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8 mb-3 mb-lg-0">
+        <h2 class="h4 mb-2">Vous voulez voir une gestion d’entretien mieux structurée?</h2>
+        <p class="mb-0 section-intro">
+          CondoFix permet de relier les dépenses, les interventions, les composantes et les documents utiles à la continuité du syndicat.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-right">
+        <a class="btn btn-primary mr-2" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('bp_public.produits') }}">Voir les offres</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

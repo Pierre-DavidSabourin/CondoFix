@@ -1,0 +1,885 @@
+{% extends "layout_admin_tables.html" %}
+{% block content %}
+
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- Chart.js -->
+<script src="../static/Chart.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .historique-page {
+        --histo-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --histo-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --histo-radius-xl: 20px;
+        --histo-radius-lg: 16px;
+        --histo-radius-md: 14px;
+        --histo-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .historique-page .historique-charts {
+        margin-bottom: 1.5rem;
+    }
+
+    .historique-page .histo-chart-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--histo-radius-lg);
+        box-shadow: var(--histo-shadow-soft);
+        padding: 1rem;
+        height: 100%;
+        min-height: 320px;
+    }
+
+    .historique-page .histo-chart-card h4 {
+        margin: 0 0 0.35rem;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: var(--theme-text);
+        text-align: center;
+    }
+
+    .historique-page .histo-chart-card p {
+        margin: 0 0 0.75rem;
+        color: var(--theme-text-muted);
+        text-align: center;
+    }
+
+    .historique-page .histo-chart-canvas-wrap {
+        position: relative;
+        width: 100%;
+        height: 230px;
+    }
+
+    .historique-page .histo-chart-canvas-wrap canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .historique-page .histo-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--histo-radius-xl);
+        box-shadow: var(--histo-shadow);
+        padding: 1.25rem;
+    }
+
+    .historique-page .histo-header {
+        margin-bottom: 1rem;
+    }
+
+    .historique-page .histo-header h1 {
+        margin: 0;
+        font-size: 1.95rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .historique-page .histo-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .historique-page .histo-filter-form {
+        margin-bottom: 1rem;
+    }
+
+    .historique-page .histo-filter-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .historique-page .histo-filter-left,
+    .historique-page .histo-filter-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .historique-page .histo-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--histo-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .historique-page .histo-btn:hover,
+    .historique-page .histo-btn:focus {
+        text-decoration: none;
+        color: var(--theme-text);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .historique-page .histo-btn-primary {
+        background: var(--theme-link-edit);
+        color: #ffffff;
+        border-color: transparent;
+    }
+
+    .historique-page .histo-btn-primary:hover,
+    .historique-page .histo-btn-primary:focus {
+        color: #ffffff;
+        opacity: 0.96;
+    }
+
+    .historique-page .histo-filter-label {
+        font-weight: 700;
+        color: var(--theme-text);
+        margin: 0;
+    }
+
+    .historique-page .histo-filter-input {
+        min-height: 42px;
+        width: 120px;
+        padding: 0.55rem 0.85rem;
+        border-radius: var(--histo-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        outline: none;
+        box-shadow: none;
+    }
+
+    .historique-page .histo-filter-input:focus {
+        border-color: var(--theme-link-edit);
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10);
+    }
+
+    .historique-page .histo-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .historique-page .histo-toolbar-left,
+    .historique-page .histo-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .historique-page .histo-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--histo-radius-lg);
+        box-shadow: var(--histo-shadow);
+        overflow: hidden;
+    }
+
+    .historique-page .histo-table-inner {
+        padding: 0;
+    }
+
+    .historique-page .histo-table-scroll-top,
+    .historique-page .histo-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .historique-page .histo-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .historique-page .histo-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1100px;
+    }
+
+    .historique-page .histo-table-scroll table {
+        min-width: 1100px !important;
+    }
+
+    .historique-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--histo-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .historique-page .dt-buttons .dt-button:hover,
+    .historique-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .historique-page #histo-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .historique-page #histo-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .historique-page #histo-dt-search .dataTables_filter input,
+    .historique-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .historique-page #histo-dt-search .dataTables_filter input::placeholder,
+    .historique-page .dataTables_wrapper .dataTables_filter input::placeholder {
+        color: var(--theme-text-muted);
+    }
+
+    .historique-page #histo-dt-search .dataTables_filter input:focus,
+    .historique-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .historique-page .dataTables_wrapper .dataTables_length,
+    .historique-page .dataTables_wrapper .dataTables_filter,
+    .historique-page .dataTables_wrapper .dt-buttons,
+    .historique-page .dataTables_wrapper .dataTables_info,
+    .historique-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .historique-page table.dataTable,
+    .historique-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.95rem;
+        border: 0 !important;
+    }
+
+    .historique-page table.dataTable thead th,
+    .historique-page table#table_data thead th {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .historique-page table.dataTable tbody td,
+    .historique-page table#table_data tbody td {
+        background: var(--theme-surface) !important;
+        color: var(--theme-text) !important;
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: top;
+    }
+
+    .historique-page table.dataTable tbody tr:nth-child(even) td,
+    .historique-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(127, 145, 168, 0.05) !important;
+    }
+
+    .historique-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .historique-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .historique-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .historique-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .historique-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .historique-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .historique-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 991px) {
+        .historique-page .histo-chart-card {
+            min-height: 300px;
+        }
+
+        .historique-page .histo-chart-canvas-wrap {
+            height: 220px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .historique-page {
+            padding-top: 1rem;
+        }
+
+        .historique-page .histo-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .historique-page .histo-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .historique-page #histo-dt-search .dataTables_filter input,
+        .historique-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+
+        .historique-page .histo-chart-card {
+            min-height: 280px;
+        }
+
+        .historique-page .histo-chart-canvas-wrap {
+            height: 210px;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .historique-page .histo-filter-row,
+        .historique-page .histo-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .historique-page .histo-filter-left,
+        .historique-page .histo-filter-right,
+        .historique-page .histo-toolbar-left,
+        .historique-page .histo-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .historique-page #histo-dt-search .dataTables_filter label,
+        .historique-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .historique-page #histo-dt-search .dataTables_filter input,
+        .historique-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        .historique-page .histo-chart-card {
+            min-height: 260px;
+        }
+
+        .historique-page .histo-chart-canvas-wrap {
+            height: 200px;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.histo-table-scroll');
+        const $topScroll = $('.histo-table-scroll-top');
+        const $topInner = $('.histo-table-scroll-top-inner');
+        let table = null;
+
+        function syncHistoScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+            $topScroll.scrollLeft($bottomScroll.scrollLeft());
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Historique',
+                    text: 'Excel'
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
+            },
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#histo-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#histo-dt-search');
+            }
+        });
+
+        $topScroll.on('scroll', function () {
+            $bottomScroll.scrollLeft($topScroll.scrollLeft());
+        });
+
+        $bottomScroll.on('scroll', function () {
+            $topScroll.scrollLeft($bottomScroll.scrollLeft());
+        });
+
+        $(window).on('resize', function () {
+            syncHistoScrollWidth();
+        });
+
+        table.on('draw', function () {
+            syncHistoScrollWidth();
+        });
+
+        setTimeout(function () {
+            syncHistoScrollWidth();
+        }, 150);
+    });
+</script>
+
+<div class="container-fluid historique-page">
+    <div class="container-fluid historique-charts">
+        <div class="row">
+            <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                <div class="histo-chart-card">
+                    <h4>Dépenses annuelles des tickets fermés ($)</h4>
+                    <p><small>Total historique : <b>{{ cum_dep_globales }} $</b> &nbsp;&nbsp;(salaires exclus)</small></p>
+                    <div class="histo-chart-canvas-wrap">
+                        <canvas id="year-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                <div class="histo-chart-card">
+                    <h4>Top 10 catégories par dépenses ($)</h4>
+                    <div class="histo-chart-canvas-wrap">
+                        <canvas id="categories-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-12 col-sm-12 mb-4">
+                <div class="histo-chart-card">
+                    <h4>Dépenses par type de travail ($)</h4>
+                    <p><small>Tickets fermés : <b>{{ tot_tickets }}</b></small></p>
+                    <div class="histo-chart-canvas-wrap">
+                        <canvas id="types-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    function getThemeVar(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
+
+    function formatCurrencyCompact(value) {
+        const num = Number(value || 0);
+        if (Math.abs(num) >= 1000) {
+            return (num / 1000).toLocaleString('fr-CA', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }) + 'k $';
+        }
+        return num.toLocaleString('fr-CA', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }) + ' $';
+    }
+
+    function formatCurrencyTooltip(value) {
+        return Number(value || 0).toLocaleString('fr-CA', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + ' $';
+    }
+
+    const chartText = getThemeVar('--theme-text', '#243447');
+    const chartMuted = getThemeVar('--theme-text-muted', '#66778a');
+    const chartBorder = getThemeVar('--theme-border', '#d6dde6');
+
+    const colorCritical = getThemeVar('--theme-priority-critical', '#dc3545');
+    const colorHigh = getThemeVar('--theme-priority-high', '#f4b400');
+    const colorMedium = getThemeVar('--theme-priority-medium', '#0d6efd');
+    const colorLow = getThemeVar('--theme-priority-low', '#198754');
+    const colorHours = getThemeVar('--theme-kpi-hours', '#5f788a');
+    const colorEdit = getThemeVar('--theme-link-edit', '#0d6efd');
+    const colorComplete = getThemeVar('--theme-link-complete', '#f59e0b');
+    const colorDelete = getThemeVar('--theme-link-delete', '#dc3545');
+
+    const paletteBars = [
+        colorCritical,
+        colorHigh,
+        colorMedium,
+        colorLow,
+        colorEdit,
+        colorComplete,
+        colorDelete,
+        colorHours,
+        '#7c3aed',
+        '#14b8a6'
+    ];
+
+    Chart.defaults.global.defaultFontColor = chartText;
+
+    // Graphique 1 - ligne annuelle
+    new Chart(document.getElementById("year-chart"), {
+        type: 'line',
+        data: {
+            labels: {{ labels_annees|tojson }},
+            datasets: [{
+                label: 'Dépenses annuelles',
+                data: {{ dep_annuelles|tojson }},
+                borderColor: colorEdit,
+                backgroundColor: 'rgba(13, 110, 253, 0.08)',
+                pointBackgroundColor: colorEdit,
+                pointBorderColor: colorEdit,
+                pointRadius: 4,
+                pointHoverRadius: 5,
+                borderWidth: 3,
+                fill: true,
+                lineTension: 0.25
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: false
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem) {
+                        return formatCurrencyTooltip(tooltipItem.yLabel);
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted,
+                        callback: function(value) {
+                            return formatCurrencyCompact(value);
+                        }
+                    }
+                }]
+            }
+        }
+    });
+
+    // Graphique 2 - catégories
+    new Chart(document.getElementById("categories-chart"), {
+        type: 'horizontalBar',
+        data: {
+            labels: {{ labels_categories|tojson }},
+            datasets: [{
+                label: 'Dépenses',
+                data: {{ depenses_categories|tojson }},
+                backgroundColor: paletteBars,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: false
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem) {
+                        return formatCurrencyTooltip(tooltipItem.xLabel);
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted,
+                        callback: function(value) {
+                            return formatCurrencyCompact(value);
+                        }
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }]
+            }
+        }
+    });
+
+    // Graphique 3 - type de travail
+    new Chart(document.getElementById("types-chart"), {
+        type: 'horizontalBar',
+        data: {
+            labels: {{ labels_types|tojson }},
+            datasets: [{
+                label: 'Dépenses',
+                data: {{ depenses_types|tojson }},
+                backgroundColor: [
+                    colorEdit,
+                    colorLow,
+                    colorHigh,
+                    colorCritical,
+                    colorHours
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: false
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem) {
+                        return formatCurrencyTooltip(tooltipItem.xLabel);
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted,
+                        callback: function(value) {
+                            return formatCurrencyCompact(value);
+                        }
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }]
+            }
+        }
+    });
+</script>
+
+    <section class="histo-shell">
+        <div class="histo-header">
+            <h1>Registre des travaux d'entretien</h1>
+            <p>Consultez l'historique des travaux selon le montant minimal affiché.</p>
+        </div>
+
+        <form action="{{ url_for('bp_tickets.histo', mode='Modifier') }}"
+              method="post"
+              class="histo-filter-form"
+              role="form">
+            <div class="histo-filter-row">
+                <div class="histo-filter-left">
+                    <button type="submit"
+                            class="histo-btn histo-btn-primary"
+                            name="btn_enreg">
+                        Afficher
+                    </button>
+
+                    <label class="histo-filter-label" for="montant_min">
+                        Montant à partir de: $
+                    </label>
+
+                    <input id="montant_min"
+                           class="histo-filter-input"
+                           type="number"
+                           value="{{ montant_min }}"
+                           name="montant_min"
+                           autofocus="autofocus">
+                </div>
+
+                <div class="histo-filter-right"></div>
+            </div>
+        </form>
+
+        <div class="histo-toolbar">
+            <div class="histo-toolbar-left">
+                <div id="histo-dt-buttons"></div>
+            </div>
+
+            <div class="histo-toolbar-right">
+                <div id="histo-dt-search"></div>
+            </div>
+        </div>
+
+        <div class="histo-table-card">
+            <div class="histo-table-inner">
+                <div class="histo-table-scroll-top">
+                    <div class="histo-table-scroll-top-inner"></div>
+                </div>
+
+                <div class="histo-table-scroll">
+                    <table id="table_data" class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Ticket</th>
+                                <th>Catégorie</th>
+                                <th>Description</th>
+                                <th>Type de travail</th>
+                                <th>Emplacement</th>
+                                <th>Équipement</th>
+                                <th>Intervenant</th>
+                                <th>Factures</th>
+                                <th>Montant ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in fill_histo %}
+                            <tr>
+                                <td>{{ item[0] }}</td>
+                                <td>{{ item[7] }}</td>
+                                <td>{{ item[10] }}</td>
+                                <td>{{ item[2] }}</td>
+                                <td>{{ item[13] }}</td>
+                                <td>{{ item[6] }}</td>
+                                <td>{{ item[12] }}</td>
+                                <td>{{ item[11] }}</td>
+                                <td>{{ item[8] }}</td>
+                                <td>{{ item[5] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+{% endblock content %}

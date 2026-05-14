@@ -3,6 +3,7 @@ import sys
 from flask import Blueprint, render_template,g,session,request,redirect,url_for,flash,send_file
 import mysql.connector
 import os
+import inspect
 from pathlib import Path
 from werkzeug.utils import secure_filename
 import traceback
@@ -13,51 +14,115 @@ from utils import connect_db,chemin_rep
 bp_documentation = Blueprint('bp_documentation', __name__)
 
 #affichage de la table de documentation pour admin
-@bp_documentation.route('/docs_table', methods=['POST','GET'])
+# affichage de la table de documentation pour admin
+@bp_documentation.route('/docs_table', methods=['POST', 'GET'])
 def docs_table():
-    """afficher la page de la table d'enregistrements avec fonction ajout et modif réservée aux admin
-"""
+    """Afficher la page de la table d'enregistrements avec fonction ajout et modif réservée aux admin."""
     if session.get('ProfilUsager') is None:
         # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
+
+    profile_list = session.get('ProfilUsager')
+
     # vérifier type d'usager (Admin syst.-1, admin syndicat - 4 et gestionnaire - 2 seulement)
-    if profile_list[2]==3:
-        #print('profil après if:',profile_list[2])
+    if profile_list[2] == 3:
         return redirect(url_for('bp_admin.permission'))
-    fill_documents=[]
-    client_ident=profile_list[0]
 
+    fill_documents = []
+    client_ident = profile_list[0]
 
-    # obtenir taille du répertoire de documentation  pour ce client
     mode = profile_list[8]
     cnx = connect_db(mode)
     nom_client = profile_list[7]
-    path_folder = chemin_rep(mode)+'documentation/'+nom_client+'_docs'
+    path_folder = chemin_rep(mode) + 'documentation/' + nom_client + '_docs'
 
-    total_size = os.path.getsize(path_folder)
-    for item in os.listdir(path_folder):
-        itempath = os.path.join(path_folder, item)
-        if os.path.isfile(itempath):
-            total_size += os.path.getsize(itempath)
-    jauge_val=total_size/2000000000
+    # Capacité maximale du répertoire de documentation
+    storage_limit_bytes = 2_000_000_000  # 2 Go, cohérent avec l'ancienne jauge "2GB max."
+    total_size = 0
+    storage_file_count = 0
+    storage_folder_exists = os.path.isdir(path_folder)
+
+    if storage_folder_exists:
+        for root, dirs, files in os.walk(path_folder):
+            for file_name in files:
+                itempath = os.path.join(root, file_name)
+                if os.path.isfile(itempath):
+                    try:
+                        total_size += os.path.getsize(itempath)
+                        storage_file_count += 1
+                    except OSError:
+                        # Si un fichier est temporairement inaccessible, on l'ignore pour ne pas bloquer la page.
+                        pass
+
+    def format_storage_size(size_bytes):
+        if size_bytes <= 0:
+            return "0 Mo"
+        if size_bytes >= 1_000_000_000:
+            return f"{size_bytes / 1_000_000_000:.2f} Go"
+        if size_bytes >= 1_000_000:
+            return f"{size_bytes / 1_000_000:.1f} Mo"
+        if size_bytes >= 1_000:
+            return f"{size_bytes / 1_000:.1f} Ko"
+        return f"{size_bytes} o"
+
+    storage_used_pct = round((total_size / storage_limit_bytes) * 100, 1) if storage_limit_bytes else 0
+    storage_used_pct_capped = min(storage_used_pct, 100)
+    storage_available_bytes = max(storage_limit_bytes - total_size, 0)
+
+    if storage_used_pct >= 90:
+        storage_status_level = "danger"
+        storage_status_label = "Limite bientôt atteinte"
+    elif storage_used_pct >= 70:
+        storage_status_level = "warning"
+        storage_status_label = "Surveillance recommandée"
+    else:
+        storage_status_level = "healthy"
+        storage_status_label = "Capacité saine"
+
+    # Ancienne variable conservée au cas où une autre partie du template y ferait encore référence.
+    jauge_val = total_size / storage_limit_bytes if storage_limit_bytes else 0
 
     cur = cnx.cursor()
-    #mettre profil d'immeuble sous forme de liste pour vérifier rapports obligatoires
-    liste_profil=[]
-    cur.execute("SELECT LieuSauvegardeNumeric, NbreEtages, NbreAscenseurs, StationnementUnEtage, StationnementMultiEtages, "
-                "Gicleurs, SystLavageVitres, Generatrice FROM parametres WHERE IDClient=%s",(client_ident,))
+
+    # mettre profil d'immeuble sous forme de liste pour vérifier rapports obligatoires
+    liste_profil = []
+    cur.execute(
+        "SELECT LieuSauvegardeNumeric, NbreEtages, NbreAscenseurs, StationnementUnEtage, StationnementMultiEtages, "
+        "Gicleurs, SystLavageVitres, Generatrice FROM parametres WHERE IDClient=%s",
+        (client_ident,)
+    )
     for item in cur.fetchall():
         liste_profil.append(item)
-    cur.execute("SELECT IDDoc,IDTypeDoc,Description,FrequenceAns,Fournisseur,Montant$HT,DateProchain FROM documentation WHERE IDClient=%s",(client_ident,))
+
+    cur.execute(
+        "SELECT IDDoc, IDTypeDoc, Description, FrequenceAns, Fournisseur, Montant$HT, DateProchain "
+        "FROM documentation WHERE IDClient=%s",
+        (client_ident,)
+    )
     for row in cur.fetchall():
         cur.execute("SELECT Description FROM typesdocs WHERE IDTypeDoc=%s", (row[1],))
         for item_1 in cur.fetchall():
-            typedoc=item_1[0]
-            row+=(typedoc,)
+            typedoc = item_1[0]
+            row += (typedoc,)
         fill_documents.append(row)
+
     cnx.close()
-    return render_template('documentation_table.html',fill_documents=fill_documents,jauge_val=jauge_val,bd=profile_list[3])
+
+    return render_template(
+        'documentation_table.html',
+        fill_documents=fill_documents,
+        jauge_val=jauge_val,
+        storage_used_label=format_storage_size(total_size),
+        storage_limit_label=format_storage_size(storage_limit_bytes),
+        storage_available_label=format_storage_size(storage_available_bytes),
+        storage_used_pct=storage_used_pct,
+        storage_used_pct_capped=storage_used_pct_capped,
+        storage_status_level=storage_status_level,
+        storage_status_label=storage_status_label,
+        storage_file_count=storage_file_count,
+        storage_folder_exists=storage_folder_exists,
+        bd=profile_list[3]
+    )
 
 
 #affichage de la table de documentation pour proprios
@@ -345,38 +410,94 @@ def doc_modif(id_doc):
         return redirect(url_for('bp_documentation.docs_table'))
 
 
-
-@bp_documentation.route('/doc_affiche_admin/<id_doc>")', methods=['POST','GET'])
+@bp_documentation.route('/doc_affiche_admin/<int:id_doc>', methods=['GET'])
 def doc_affiche_admin(id_doc):
-    """afficher le document pdf"""
+    """Afficher le document PDF dans le navigateur."""
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    client_ident=profile_list[0]
-    mode = profile_list[8]
-    cnx = connect_db(mode)
-    nom_client = profile_list[7]
-    folder = chemin_rep(mode)
 
-    cur = cnx.cursor()
-    chemin_doc=str()
-    cur.execute("SELECT CheminPath FROM documentation WHERE IDDoc=%s AND IDClient=%s",(id_doc,client_ident))
-    titre=str()
-    for item in cur.fetchall():
-        # #trouver répertoire de base
-        # base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        # #enlever le mot 'condofix' pour se retrouver au niveau de 'mysite'
-        # modified_dir=base_dir.replace('condofix', '')
-        #ajout du chemin du fichier recherché
-        if item[0]==None or item[0]=='':
-            return redirect(url_for('bp_documentation.docs_table'))
-        chemin_doc=folder+item[0]
-        #pour obtenir le titre du doc seulement
-        titre=item[0].split("docs/",1)[1]
-        print('titre affiche:',titre)
+    profile_list = session.get('ProfilUsager')
+    client_ident = profile_list[0]
+    mode = profile_list[8]
+
+    cnx = connect_db(mode)
+
+    try:
+        cur = cnx.cursor()
+        cur.execute(
+            "SELECT CheminPath FROM documentation WHERE IDDoc=%s AND IDClient=%s",
+            (id_doc, client_ident)
+        )
+        row = cur.fetchone()
+    finally:
         cnx.close()
-    return send_file(chemin_doc,attachment_filename=titre,cache_timeout=0)
+
+    if not row or not row[0]:
+        return redirect(url_for('bp_documentation.docs_table'))
+
+    stored_path = row[0]
+    base_folder = chemin_rep(mode)
+
+    if os.path.isabs(stored_path):
+        chemin_doc = stored_path
+    else:
+        chemin_doc = os.path.normpath(os.path.join(base_folder, stored_path))
+
+    if not os.path.isfile(chemin_doc):
+        print("Document introuvable:", chemin_doc)
+        return redirect(url_for('bp_documentation.docs_table'))
+
+    titre = os.path.basename(chemin_doc)
+
+    send_file_params = inspect.signature(send_file).parameters
+
+    if 'download_name' in send_file_params:
+        return send_file(
+            chemin_doc,
+            mimetype='application/pdf',
+            as_attachment=False,
+            download_name=titre,
+            max_age=0
+        )
+
+    return send_file(
+        chemin_doc,
+        mimetype='application/pdf',
+        as_attachment=False,
+        attachment_filename=titre,
+        cache_timeout=0
+    )
+# @bp_documentation.route('/doc_affiche_admin/<id_doc>")', methods=['POST','GET'])
+# def doc_affiche_admin(id_doc):
+#     """afficher le document pdf"""
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#     nom_client = profile_list[7]
+#     folder = chemin_rep(mode)
+#
+#     cur = cnx.cursor()
+#     chemin_doc=str()
+#     cur.execute("SELECT CheminPath FROM documentation WHERE IDDoc=%s AND IDClient=%s",(id_doc,client_ident))
+#     titre=str()
+#     for item in cur.fetchall():
+#         # #trouver répertoire de base
+#         # base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+#         # #enlever le mot 'condofix' pour se retrouver au niveau de 'mysite'
+#         # modified_dir=base_dir.replace('condofix', '')
+#         #ajout du chemin du fichier recherché
+#         if item[0]==None or item[0]=='':
+#             return redirect(url_for('bp_documentation.docs_table'))
+#         chemin_doc=folder+item[0]
+#         #pour obtenir le titre du doc seulement
+#         titre=item[0].split("docs/",1)[1]
+#         print('titre affiche:',titre)
+#         cnx.close()
+#     return send_file(chemin_doc,attachment_filename=titre,cache_timeout=0)
 
 
 @bp_documentation.route('/doc_affiche_proprios/<id_doc>")', methods=['POST','GET'])

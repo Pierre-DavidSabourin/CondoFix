@@ -1,0 +1,1203 @@
+{% extends "layout_admin.html" %}
+{% block content %}
+
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+<script src="../static/Chart.min.js"></script>
+
+<style>
+    .dashboard-page {
+        --dash-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --dash-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --dash-radius-xl: 20px;
+        --dash-radius-lg: 16px;
+        --dash-radius-md: 14px;
+        --dash-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .dashboard-page .dashboard-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--dash-radius-xl);
+        box-shadow: var(--dash-shadow);
+        padding: 1.25rem;
+    }
+
+    .dashboard-page .dashboard-header {
+        margin-bottom: 1rem;
+    }
+
+    .dashboard-page .dashboard-header h1 {
+        margin: 0;
+        font-size: 1.95rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .dashboard-page .dashboard-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .dashboard-page .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .dashboard-page .dash-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--dash-radius-lg);
+        box-shadow: var(--dash-shadow-soft);
+        padding: 1rem;
+        min-width: 0;
+    }
+
+    .dashboard-page .dash-card--kpi {
+        grid-column: span 12;
+        padding: 1rem;
+    }
+
+    .dashboard-page .dash-card--tickets {
+        grid-column: span 6;
+    }
+
+    .dashboard-page .dash-card--budget {
+        grid-column: span 3;
+    }
+
+    .dashboard-page .dash-card--worktype {
+        grid-column: span 3;
+    }
+
+    .dashboard-page .dash-card--equipment {
+        grid-column: span 6;
+    }
+
+    .dashboard-page .dash-card--forecast {
+        grid-column: span 6;
+    }
+
+    .dashboard-page .dash-card--placeholder {
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .dashboard-page .dash-section-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--theme-text);
+        margin-bottom: 0.25rem;
+    }
+
+    .dashboard-page .dash-section-subtitle {
+        font-size: 0.95rem;
+        color: var(--theme-text-muted);
+        margin-bottom: 0.85rem;
+    }
+
+    .dashboard-page .kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(110px, 1fr));
+        gap: 10px;
+    }
+
+    .dashboard-page .kpi-card {
+        border-radius: var(--dash-radius-md);
+        padding: 0.85rem 0.9rem;
+        min-height: 84px;
+        box-shadow: var(--dash-shadow-soft);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .dashboard-page .kpi-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0));
+        pointer-events: none;
+    }
+
+    .dashboard-page .kpi-card .kpi-label {
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        line-height: 1.05;
+        margin-bottom: 0.35rem;
+    }
+
+    .dashboard-page .kpi-card .kpi-value {
+        font-size: 1.5rem;
+        line-height: 1;
+        font-weight: 800;
+        margin-bottom: 0.2rem;
+    }
+
+    .dashboard-page .kpi-card .kpi-note {
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.05;
+    }
+
+    .dashboard-page .kpi-card.is-toggle {
+        cursor: pointer;
+    }
+
+    .dashboard-page .kpi-card.is-toggle:hover,
+    .dashboard-page .kpi-card.is-toggle:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    }
+
+    .dashboard-page .kpi-card.is-toggle.is-inactive {
+        opacity: 0.38;
+        filter: saturate(0.72);
+    }
+
+    .dashboard-page .kpi-card.is-toggle.is-active {
+        opacity: 1;
+    }
+
+    .dashboard-page .kpi-card.kpi-info {
+        cursor: default;
+    }
+
+    .dashboard-page .kpi-critical {
+        background: var(--theme-priority-critical);
+        color: var(--theme-priority-critical-text, #ffffff);
+    }
+
+    .dashboard-page .kpi-high {
+        background: var(--theme-priority-high);
+        color: var(--theme-priority-high-text, #1f2937);
+    }
+
+    .dashboard-page .kpi-medium {
+        background: var(--theme-priority-medium);
+        color: var(--theme-priority-medium-text, #ffffff);
+    }
+
+    .dashboard-page .kpi-low {
+        background: var(--theme-priority-low);
+        color: var(--theme-priority-low-text, #ffffff);
+    }
+
+    .dashboard-page .kpi-age {
+        background: var(--theme-kpi-age);
+        color: var(--theme-kpi-age-text, #243447);
+    }
+
+    .dashboard-page .kpi-hours {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text, #ffffff);
+    }
+
+    .dashboard-page .dash-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 360px;
+    }
+
+    .dashboard-page .dash-chart-wrap > canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .dashboard-page .dash-chart-wrap--budget {
+        height: 380px;
+    }
+
+    .dashboard-page .dash-chart-wrap--equipment {
+        height: 380px;
+    }
+
+    .dashboard-page .dash-chart-wrap--forecast {
+        height: 380px;
+    }
+
+    .dashboard-page .dash-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+    }
+
+    .dashboard-page .dash-placeholder-box {
+        margin-top: 0.85rem;
+        border: 1px dashed var(--theme-border);
+        border-radius: var(--dash-radius-md);
+        background: var(--theme-surface-alt);
+        min-height: 130px;
+    }
+
+    .dashboard-page .worktype-summary-card {
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--dash-radius-md);
+        padding: 0.75rem;
+        min-height: 380px;
+    }
+
+    .dashboard-page .worktype-summary-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dashboard-page .worktype-summary-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.92rem;
+        color: var(--theme-text);
+    }
+
+    .dashboard-page .worktype-summary-table thead th {
+        background: rgba(127, 145, 168, 0.12);
+        color: var(--theme-text);
+        font-weight: 800;
+        padding: 0.7rem 0.75rem;
+        border-bottom: 1px solid var(--theme-border);
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .dashboard-page .worktype-summary-table tbody td {
+        padding: 0.7rem 0.75rem;
+        border-bottom: 1px solid var(--theme-border);
+        vertical-align: top;
+    }
+
+    .dashboard-page .worktype-summary-table tbody tr:last-child td {
+        border-bottom: 0;
+        font-weight: 800;
+    }
+
+    .dashboard-page .worktype-summary-table thead th:nth-child(2),
+    .dashboard-page .worktype-summary-table thead th:nth-child(3),
+    .dashboard-page .worktype-summary-table tbody td:nth-child(2),
+    .dashboard-page .worktype-summary-table tbody td:nth-child(3) {
+        text-align: right;
+    }
+
+    .dashboard-page .dash-treemap-wrap {
+        width: 100%;
+        height: 380px;
+        position: relative;
+    }
+
+    .dashboard-page .equipment-treemap {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: var(--dash-radius-md);
+        overflow: hidden;
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+    }
+
+    .dashboard-page .equipment-treemap-node {
+        position: absolute;
+        overflow: hidden;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+        transition: transform 0.15s ease-in-out, filter 0.15s ease-in-out;
+    }
+
+    .dashboard-page .equipment-treemap-node:hover {
+        transform: scale(0.985);
+        filter: brightness(1.03);
+        z-index: 2;
+    }
+
+    .dashboard-page .equipment-treemap-content {
+        position: absolute;
+        inset: 0;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .dashboard-page .equipment-treemap-label {
+        font-size: 0.92rem;
+        font-weight: 800;
+        line-height: 1.14;
+        letter-spacing: 0.01em;
+        word-break: break-word;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+    }
+
+    .dashboard-page .equipment-treemap-value {
+        font-size: 1.02rem;
+        font-weight: 900;
+        line-height: 1;
+        opacity: 0.99;
+        white-space: nowrap;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+    }
+
+    .dashboard-page .equipment-treemap-value span {
+        font-size: 0.76em;
+        font-weight: 800;
+        opacity: 0.95;
+        margin-left: 0.12rem;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-medium .equipment-treemap-content {
+        padding: 8px;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-medium .equipment-treemap-label {
+        font-size: 0.8rem;
+        line-height: 1.08;
+        -webkit-line-clamp: 2;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-medium .equipment-treemap-value {
+        font-size: 0.92rem;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-small .equipment-treemap-content {
+        padding: 7px;
+        justify-content: space-between;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-small .equipment-treemap-label {
+        font-size: 0.72rem;
+        line-height: 1.06;
+        -webkit-line-clamp: 2;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-small .equipment-treemap-value {
+        font-size: 0.86rem;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-tiny .equipment-treemap-content {
+        display: flex;
+        justify-content: flex-end;
+        padding: 6px;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-tiny .equipment-treemap-label {
+        display: none;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-tiny .equipment-treemap-value {
+        font-size: 0.8rem;
+    }
+
+    .dashboard-page .equipment-treemap-node.is-micro .equipment-treemap-content {
+        display: none;
+    }
+
+    .equipment-treemap-tooltip {
+        position: fixed;
+        pointer-events: none;
+        z-index: 99999;
+        background: rgba(17, 24, 39, 0.96);
+        color: #ffffff;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 0.84rem;
+        line-height: 1.3;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.22);
+        border: 1px solid rgba(255,255,255,0.08);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(4px);
+        transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+        max-width: 280px;
+        white-space: normal;
+    }
+
+    .equipment-treemap-tooltip.is-visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    @media (max-width: 767px) {
+        .dashboard-page .dash-treemap-wrap {
+            height: 420px;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .dashboard-page .dash-treemap-wrap {
+            height: 460px;
+        }
+    }
+
+@media (max-width: 1199px) {
+    .dashboard-page .dash-card--tickets {
+        grid-column: span 12;
+    }
+
+    .dashboard-page .dash-card--budget,
+    .dashboard-page .dash-card--worktype,
+    .dashboard-page .dash-card--equipment,
+    .dashboard-page .dash-card--forecast {
+        grid-column: span 6;
+    }
+
+    .dashboard-page .kpi-strip {
+        grid-template-columns: repeat(3, minmax(110px, 1fr));
+    }
+}
+
+@media (max-width: 991px) {
+    .dashboard-page .dash-card--budget,
+    .dashboard-page .dash-card--worktype,
+    .dashboard-page .dash-card--equipment,
+    .dashboard-page .dash-card--forecast {
+        grid-column: span 12;
+    }
+
+    .dashboard-page .worktype-summary-card {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .dashboard-page .dashboard-shell {
+        padding: 1rem;
+    }
+
+    .dashboard-page .dashboard-header h1 {
+        font-size: 1.65rem;
+    }
+
+    .dashboard-page .dash-card--equipment,
+    .dashboard-page .dash-card--forecast {
+        grid-column: span 12;
+    }
+
+    .dashboard-page .kpi-strip {
+        grid-template-columns: repeat(2, minmax(110px, 1fr));
+    }
+
+    .dashboard-page .dash-chart-wrap {
+        height: 320px;
+    }
+
+    .dashboard-page .dash-chart-wrap--budget {
+        height: 360px;
+    }
+
+    .dashboard-page .dash-chart-wrap--equipment {
+        height: 420px;
+    }
+
+    .dashboard-page .dash-chart-wrap--forecast {
+        height: 360px;
+    }
+}
+
+@media (max-width: 575px) {
+    .dashboard-page .kpi-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-page .dash-chart-wrap {
+        height: 300px;
+    }
+
+    .dashboard-page .dash-chart-wrap--budget {
+        height: 340px;
+    }
+
+    .dashboard-page .dash-chart-wrap--equipment {
+        height: 440px;
+    }
+
+    .dashboard-page .dash-chart-wrap--forecast {
+        height: 340px;
+    }
+}
+</style>
+
+<div class="container-fluid dashboard-page">
+    <section class="dashboard-shell">
+        <header class="dashboard-header">
+            <h1>Tableau de bord</h1>
+            <p>Vue synthèse des opérations, dépenses et activités de maintenance.</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- A -->
+            <section class="dash-card dash-card--kpi">
+                <div class="dash-section-title">A. Vue des priorités</div>
+                <div class="dash-section-subtitle">
+                    Cliquez sur une priorité pour filtrer le graphique des tickets en cours par intervenant.
+                </div>
+
+                <div class="kpi-strip" id="priority-kpi-strip">
+                    <article class="kpi-card kpi-critical is-toggle is-active" data-priority-key="critical" tabindex="0" role="button" aria-pressed="true">
+                        <div class="kpi-label">Critique</div>
+                        <div class="kpi-value">{{ indicateurs[0] }}</div>
+                        <div class="kpi-note">{{ indicateurs[1] }}</div>
+                    </article>
+
+                    <article class="kpi-card kpi-high is-toggle is-active" data-priority-key="high" tabindex="0" role="button" aria-pressed="true">
+                        <div class="kpi-label">Élevée</div>
+                        <div class="kpi-value">{{ indicateurs[2] }}</div>
+                        <div class="kpi-note">{{ indicateurs[3] }}</div>
+                    </article>
+
+                    <article class="kpi-card kpi-medium is-toggle is-active" data-priority-key="medium" tabindex="0" role="button" aria-pressed="true">
+                        <div class="kpi-label">Moyenne</div>
+                        <div class="kpi-value">{{ indicateurs[4] }}</div>
+                        <div class="kpi-note">{{ indicateurs[5] }}</div>
+                    </article>
+
+                    <article class="kpi-card kpi-low is-toggle is-active" data-priority-key="low" tabindex="0" role="button" aria-pressed="true">
+                        <div class="kpi-label">Non prioritaire</div>
+                        <div class="kpi-value">{{ indicateurs[6] }}</div>
+                        <div class="kpi-note">{{ indicateurs[7] }}</div>
+                    </article>
+
+                    <article class="kpi-card kpi-age kpi-info">
+                        <div class="kpi-label">Âge moyen</div>
+                        <div class="kpi-value">{{ indicateurs[8] }}j</div>
+                        <div class="kpi-note">Cible: {{ indicateurs[13] }}j</div>
+                    </article>
+
+                    <article class="kpi-card kpi-hours kpi-info">
+                        <div class="kpi-label">Heures estimées</div>
+                        <div class="kpi-value">{{ indicateurs[12] }}</div>
+                        <div class="kpi-note">En cours - employés</div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- B -->
+            <section class="dash-card dash-card--tickets">
+                <div class="dash-meta">
+                    <div>
+                        <div class="dash-section-title">B. Tickets en cours par intervenant</div>
+                        <div class="dash-section-subtitle">Répartition des tickets en cours selon la priorité et l’intervenant.</div>
+                    </div>
+                </div>
+
+                <div class="dash-chart-wrap">
+                    <canvas id="open-tickets-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- C -->
+            <section class="dash-card dash-card--budget">
+                <div class="dash-meta">
+                    <div>
+                        <div class="dash-section-title">C. Budget vs réel par catégorie — année à date</div>
+                        <div class="dash-section-subtitle">
+                            Comparatif entre le budget annuel prévu et les dépenses réelles observées cette année.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-chart-wrap dash-chart-wrap--budget">
+                    <canvas id="budget-category-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- D -->
+            <section class="dash-card dash-card--worktype">
+                <div class="dash-meta">
+                    <div>
+                        <div class="dash-section-title">D. Sommaire des dépenses par type de travail</div>
+                        <div class="dash-section-subtitle">
+                            Répartition des dépenses de l’année en cours par type de travail.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="worktype-summary-card">
+                    <div class="worktype-summary-table-wrap">
+                        <table class="worktype-summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Type de travail</th>
+                                    <th>Total $</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in tableau_list %}
+                                <tr>
+                                    <td>{{ row[0] }}</td>
+                                    <td>{{ row[1] }}</td>
+                                    <td>{{ row[2] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- E -->
+            <section class="dash-card dash-card--equipment">
+                <div class="dash-meta">
+                    <div>
+                        <div class="dash-section-title">E. Top équipements (tag) par nombre de tickets</div>
+                        <div class="dash-section-subtitle">
+                            Équipements actifs générant le plus grand nombre de tickets.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-treemap-wrap">
+                    <div id="equipment-treemap" class="equipment-treemap" aria-label="Treemap des équipements"></div>
+                </div>
+            </section>
+
+            <!-- F -->
+            <section class="dash-card dash-card--forecast">
+                <div class="dash-meta">
+                    <div>
+                        <div class="dash-section-title">F. Charge préventive mensuelle estimée (heures)</div>
+                        <div class="dash-section-subtitle">
+                            Vue roulante sur 12 mois des heures préventives planifiées, réparties entre employés et fournisseurs.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-chart-wrap dash-chart-wrap--forecast">
+                    <canvas id="preventive-hours-chart"></canvas>
+                </div>
+            </section>
+        </div>
+    </section>
+</div>
+
+<script>
+    function getThemeVar(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
+
+    function formatMoneyCompact(value) {
+        const num = Number(value || 0);
+        if (Math.abs(num) >= 1000) {
+            return (num / 1000).toLocaleString('fr-CA', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }) + 'k $';
+        }
+        return num.toLocaleString('fr-CA', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }) + ' $';
+    }
+
+    function formatMoneyFull(value) {
+        return Number(value || 0).toLocaleString('fr-CA', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }) + ' $';
+    }
+
+    const chartText = getThemeVar('--theme-text', '#243447');
+    const chartMuted = getThemeVar('--theme-text-muted', '#66778a');
+    const chartBorder = getThemeVar('--theme-border', '#d6dde6');
+
+    const colorCritical = getThemeVar('--theme-priority-critical', '#dc3545');
+    const colorHigh = getThemeVar('--theme-priority-high', '#f4b400');
+    const colorMedium = getThemeVar('--theme-priority-medium', '#0d6efd');
+    const colorLow = getThemeVar('--theme-priority-low', '#198754');
+
+    const colorBudget = getThemeVar('--theme-kpi-hours', '#6b7f92');
+    const colorActual = getThemeVar('--theme-link-complete', '#f59e0b');
+
+    Chart.defaults.global.defaultFontColor = chartText;
+
+    const openTicketsChart = new Chart(document.getElementById("open-tickets-chart"), {
+        type: 'horizontalBar',
+        data: {
+            labels: {{ intervenant_list|tojson }},
+            datasets: [
+                {
+                    label: 'Critique (4 heures)',
+                    backgroundColor: colorCritical,
+                    data: {{ priorite_1|tojson }}
+                },
+                {
+                    label: 'Élevée (48 heures)',
+                    backgroundColor: colorHigh,
+                    data: {{ priorite_2|tojson }}
+                },
+                {
+                    label: 'Moyenne (5 jours)',
+                    backgroundColor: colorMedium,
+                    data: {{ priorite_3|tojson }}
+                },
+                {
+                    label: 'Non prioritaire (15 jours)',
+                    backgroundColor: colorLow,
+                    data: {{ priorite_4|tojson }}
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    fontColor: chartMuted,
+                    boxWidth: 14
+                }
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        const label = data.datasets[tooltipItem.datasetIndex].label || '';
+                        const value = tooltipItem.xLabel || 0;
+                        return label + ' : ' + value;
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted,
+                        precision: 0
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }]
+            }
+        }
+    });
+
+    const priorityDatasetIndexMap = {
+        critical: 0,
+        high: 1,
+        medium: 2,
+        low: 3
+    };
+
+    const activePriorityState = {
+        critical: true,
+        high: true,
+        medium: true,
+        low: true
+    };
+
+    function syncPriorityCards() {
+        document.querySelectorAll('#priority-kpi-strip [data-priority-key]').forEach(card => {
+            const key = card.dataset.priorityKey;
+            const isActive = !!activePriorityState[key];
+
+            card.classList.toggle('is-active', isActive);
+            card.classList.toggle('is-inactive', !isActive);
+            card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+
+    function syncPriorityChart() {
+        Object.keys(priorityDatasetIndexMap).forEach(key => {
+            const datasetIndex = priorityDatasetIndexMap[key];
+            const meta = openTicketsChart.getDatasetMeta(datasetIndex);
+            meta.hidden = activePriorityState[key] ? null : true;
+        });
+
+        openTicketsChart.update();
+    }
+
+    function togglePriority(key) {
+        const values = Object.values(activePriorityState);
+        const activeCount = values.filter(Boolean).length;
+
+        if (activePriorityState[key] && activeCount === 1) {
+            return;
+        }
+
+        activePriorityState[key] = !activePriorityState[key];
+        syncPriorityCards();
+        syncPriorityChart();
+    }
+
+    document.querySelectorAll('#priority-kpi-strip [data-priority-key]').forEach(card => {
+        card.addEventListener('click', function() {
+            togglePriority(this.dataset.priorityKey);
+        });
+
+        card.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                togglePriority(this.dataset.priorityKey);
+            }
+        });
+    });
+
+    syncPriorityCards();
+
+    new Chart(document.getElementById("budget-category-chart"), {
+        type: 'horizontalBar',
+        data: {
+            labels: {{ labels_12|tojson }},
+            datasets: [
+                {
+                    label: 'Budget annuel',
+                    backgroundColor: colorBudget,
+                    data: {{ budget_12|tojson }},
+                    borderWidth: 0
+                },
+                {
+                    label: 'Réel année à date',
+                    backgroundColor: colorActual,
+                    data: {{ records_12|tojson }},
+                    borderWidth: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    fontColor: chartMuted,
+                    boxWidth: 14
+                }
+            },
+            tooltips: {
+                callbacks: {
+                    title: function(tooltipItems, data) {
+                        const index = tooltipItems[0].index;
+                        return data.labels[index];
+                    },
+                    label: function(tooltipItem, data) {
+                        const datasetLabel = data.datasets[tooltipItem.datasetIndex].label || '';
+                        return datasetLabel + ' : ' + formatMoneyFull(tooltipItem.xLabel);
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted,
+                        callback: function(value) {
+                            return formatMoneyCompact(value);
+                        }
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }]
+            }
+        }
+    });
+
+    const colorEquipment = getThemeVar('--theme-chart-equipment', '#2f7c8c');
+    const colorPreventiveEmployee = getThemeVar('--theme-chart-preventive-employee', '#06b6d4');
+    const colorPreventiveSupplier = getThemeVar('--theme-chart-preventive-supplier', '#ec4899');
+
+    function hexToRgb(hex) {
+        const clean = (hex || '').replace('#', '').trim();
+        if (clean.length !== 6) {
+            return { r: 47, g: 124, b: 140 };
+        }
+        return {
+            r: parseInt(clean.substring(0, 2), 16),
+            g: parseInt(clean.substring(2, 4), 16),
+            b: parseInt(clean.substring(4, 6), 16)
+        };
+    }
+
+    function rgbaFromHex(hex, alpha) {
+        const rgb = hexToRgb(hex);
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+    }
+
+    function textColorForAlpha(alpha, fallbackDark, fallbackLight) {
+        return alpha >= 0.62 ? fallbackLight : fallbackDark;
+    }
+
+    function splitItemsBalanced(items) {
+        const total = items.reduce((sum, item) => sum + item.value, 0);
+        const target = total / 2;
+        const left = [];
+        const right = [];
+        let running = 0;
+
+        items.forEach(item => {
+            if (running < target || left.length === 0) {
+                left.push(item);
+                running += item.value;
+            } else {
+                right.push(item);
+            }
+        });
+
+        if (!right.length && left.length > 1) {
+            right.push(left.pop());
+        }
+
+        return { left, right };
+    }
+
+    function buildTreemapRects(items, x, y, width, height, output) {
+        if (!items.length) return;
+
+        if (items.length === 1) {
+            output.push({
+                ...items[0],
+                x,
+                y,
+                width,
+                height
+            });
+            return;
+        }
+
+        const total = items.reduce((sum, item) => sum + item.value, 0);
+        const { left, right } = splitItemsBalanced(items);
+        const leftTotal = left.reduce((sum, item) => sum + item.value, 0);
+        const ratio = total > 0 ? leftTotal / total : 0.5;
+
+        if (width >= height) {
+            const leftWidth = Math.round(width * ratio);
+            buildTreemapRects(left, x, y, leftWidth, height, output);
+            buildTreemapRects(right, x + leftWidth, y, width - leftWidth, height, output);
+        } else {
+            const topHeight = Math.round(height * ratio);
+            buildTreemapRects(left, x, y, width, topHeight, output);
+            buildTreemapRects(right, x, y + topHeight, width, height - topHeight, output);
+        }
+    }
+
+    function shortenEquipmentLabel(label, maxLength) {
+        if (!label) return '';
+        if (label.length <= maxLength) return label;
+        return label.substring(0, Math.max(0, maxLength - 1)).trim() + '…';
+    }
+
+    function getTreemapDisplayMode(width, height) {
+        if (width < 68 || height < 42) {
+            return 'micro';
+        }
+        if (width < 105 || height < 60) {
+            return 'tiny';
+        }
+        if (width < 150 || height < 90) {
+            return 'small';
+        }
+        if (width < 195 || height < 120) {
+            return 'medium';
+        }
+        return 'large';
+    }
+
+    function renderEquipmentTreemap() {
+        const container = document.getElementById('equipment-treemap');
+        if (!container) return;
+
+        const labels = {{ labels_pie|tojson }};
+        const values = {{ tickets_pie|tojson }};
+
+        const items = labels.map((label, index) => ({
+            label,
+            value: Number(values[index] || 0),
+            index
+        }))
+        .filter(item => item.value > 0)
+        .sort((a, b) => b.value - a.value);
+
+        container.innerHTML = '';
+
+        document.querySelectorAll('.equipment-treemap-tooltip').forEach(el => el.remove());
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'equipment-treemap-tooltip';
+        document.body.appendChild(tooltip);
+
+        const rects = [];
+        buildTreemapRects(items, 0, 0, container.clientWidth, container.clientHeight, rects);
+
+        const baseColor = getThemeVar('--theme-chart-equipment', '#2f7c8c');
+        const darkText = getThemeVar('--theme-text', '#243447');
+        const lightText = '#ffffff';
+
+        rects.forEach((item, index) => {
+        const node = document.createElement('div');
+        node.className = 'equipment-treemap-node';
+
+        const displayMode = getTreemapDisplayMode(item.width, item.height);
+        node.classList.add(`is-${displayMode}`);
+
+        const alpha = Math.max(0.32, 0.92 - (index * 0.06));
+        const textColor = textColorForAlpha(alpha, darkText, lightText);
+
+        node.style.left = item.x + 'px';
+        node.style.top = item.y + 'px';
+        node.style.width = Math.max(0, item.width - 4) + 'px';
+        node.style.height = Math.max(0, item.height - 4) + 'px';
+        node.style.background = `linear-gradient(135deg, ${rgbaFromHex(baseColor, alpha)}, ${rgbaFromHex(baseColor, Math.max(alpha - 0.10, 0.22))})`;
+        node.style.color = textColor;
+
+        let labelHtml = '';
+        let valueHtml = '';
+
+        if (displayMode === 'large') {
+            labelHtml = `<div class="equipment-treemap-label">${item.label}</div>`;
+            valueHtml = `<div class="equipment-treemap-value">${item.value}<span>ticket${item.value > 1 ? 's' : ''}</span></div>`;
+        } else if (displayMode === 'medium') {
+            labelHtml = `<div class="equipment-treemap-label">${shortenEquipmentLabel(item.label, 30)}</div>`;
+            valueHtml = `<div class="equipment-treemap-value">${item.value}<span>tickets</span></div>`;
+        } else if (displayMode === 'small') {
+            labelHtml = `<div class="equipment-treemap-label">${shortenEquipmentLabel(item.label, 22)}</div>`;
+            valueHtml = `<div class="equipment-treemap-value">${item.value}<span>tickets</span></div>`;
+        } else if (displayMode === 'tiny') {
+            valueHtml = `<div class="equipment-treemap-value">${item.value}<span>t</span></div>`;
+        }
+
+        node.innerHTML = `
+            <div class="equipment-treemap-content">
+                ${labelHtml}
+                ${valueHtml}
+            </div>
+        `;
+
+        node.addEventListener('mouseenter', function(event) {
+            tooltip.innerHTML = `
+                <strong>${item.label}</strong><br>
+                Nombre de tickets : ${item.value}
+            `;
+            tooltip.classList.add('is-visible');
+            tooltip.style.left = (event.clientX + 14) + 'px';
+            tooltip.style.top = (event.clientY + 14) + 'px';
+        });
+
+        node.addEventListener('mousemove', function(event) {
+            tooltip.style.left = (event.clientX + 14) + 'px';
+            tooltip.style.top = (event.clientY + 14) + 'px';
+        });
+
+        node.addEventListener('mouseleave', function() {
+            tooltip.classList.remove('is-visible');
+        });
+
+            container.appendChild(node);
+        });
+
+        window.addEventListener('resize', function handleTreemapResize() {
+            tooltip.remove();
+            window.removeEventListener('resize', handleTreemapResize);
+            renderEquipmentTreemap();
+        });
+    }
+
+    renderEquipmentTreemap();
+
+    new Chart(document.getElementById("preventive-hours-chart"), {
+        type: 'bar',
+        data: {
+            labels: {{ labels_preventif|tojson }},
+            datasets: [
+                {
+                    label: 'Fournisseurs',
+                    backgroundColor: colorPreventiveSupplier,
+                    data: {{ heures_fournisseurs|tojson }},
+                    borderWidth: 0
+                },
+                {
+                    label: 'Employés',
+                    backgroundColor: colorPreventiveEmployee,
+                    data: {{ heures_employes|tojson }},
+                    borderWidth: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            // ✅ REMOVE custom hover logic
+            hover: {
+                mode: null
+            },
+
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    fontColor: chartMuted
+                }
+            },
+
+            // ✅ IMPORTANT: let Chart.js handle tooltips natively
+            tooltips: {
+                enabled: true
+            },
+
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted
+                    }
+                }]
+            }
+        }
+    });
+</script>
+
+{% endblock content %}

@@ -384,685 +384,800 @@ def budget_proprios():
 #graphique par année de remplacement, par priorité en cours, par intervenant
 #durant année budgétaire en cours, bp_tickets par équipement, dépenses vs. budget
 
-@bp_tableaux_bord.route("/plotView_js", methods=["GET"])
-def plotView_js():
-    """Afficher le tableau de bord des administrateurs avec graphiques de CHartJS.
 
-    * histogramme de tickets en cours par intervenant et par priorité
-    * histogramme d'activité par catégorie d'équipement
-    * durant année budgétaire en cours, tickets par équipement, dépenses vs. budget
-    * historique des projets d'entretien (plus de 1000$)
-    * pie chart des tickets par tag d'équipement depuis le démarrage du système
-    * histogramme d'entretien préventif déjà cédulé dans l'année à partir de la table 'préventif'
 
-    |  3 tableaux et une table dynamique:
+from flask import render_template, session, redirect, url_for
+import collections
+from collections import Counter
+from datetime import date
+from dateutil.relativedelta import relativedelta
+import traceback
 
-    * Tableau des dépenses année à date par type de travail avec tickets selon année courante et statut>2
-    * remplissage des indicateurs de couleur:
-    *     nombre de tickets en cours et délais par priorité
-    *     total de tickets complétés, fermés"""
-    intervenant_list=[]
-    priorite_1_count=[]
+
+def _get_dashboard_context():
+    """Return common dashboard context from session."""
+    if session.get('ProfilUsager') is None:
+        return None
+
+    profile_list = session.get('ProfilUsager')
+    return {
+        'profile_list': profile_list,
+        'client_ident': profile_list[0],
+        'version_client': profile_list[6],
+        'mode_connexion': profile_list[8],
+        'bd': profile_list[3],
+        'user_type': profile_list[2],
+    }
+
+
+# ============================================================
+# === A. KPI DATA ============================================
+# ============================================================
+# Remplit les indicateurs de synthèse affichés dans la bande KPI du tableau de bord.
+def get_kpi_data(cnx, client_ident):
+    """
+    Build top KPI strip data for dashboard.
+
+    Returns the same 14-item `indicateurs` list currently used by dashboard_plus.html:
+    [
+        cum_tot_tickets_1,
+        moy_jrs_prior1,
+        cum_tot_tickets_2,
+        moy_jrs_prior2,
+        cum_tot_tickets_3,
+        moy_jrs_prior3,
+        cum_tot_tickets_4,
+        moy_jrs_prior4,
+        moy_jrs_encours,
+        count_tot_encours,
+        count_completes,
+        count_fermes,
+        int(cum_hres_estimees),
+        cible_age
+    ]
+    """
+    cur = cnx.cursor()
+
+    date_annee_cour = date.today()
+    cible_age = 0
+
+    cur.execute(
+        "SELECT DateDebutBudget, CibleAgeMoyenTicket "
+        "FROM parametres WHERE IDClient=%s",
+        (client_ident,)
+    )
+    for item in cur.fetchall():
+        date_annee_cour = item[0]
+        cible_age = item[1]
+
+    # Tickets currently in progress
+    ticket_priorite_list = []
+    cur.execute(
+        "SELECT Priorite, DatePrevue, Statut, HeuresEstimees, IDIntervenant "
+        "FROM tickets WHERE Statut=%s AND IDClient=%s",
+        (2, client_ident)
+    )
+    ticket_priorite_list = cur.fetchall()
+
+    count_prior1 = count_prior2 = count_prior3 = count_prior4 = 0
+    count_tot_encours = 0
+    cum_jrs_prior1 = cum_jrs_prior2 = cum_jrs_prior3 = cum_jrs_prior4 = 0
+    cum_jrs_encours = 0
+    cum_hres_estimees = 0
+
+    cum_tot_tickets_1 = cum_tot_tickets_2 = cum_tot_tickets_3 = cum_tot_tickets_4 = 0
+
+    for item in ticket_priorite_list:
+        priorite = item[0]
+        date_prevue = item[1]
+        statut = item[2]
+        heures_estimees = item[3]
+        id_intervenant = item[4]
+
+        # Sum estimated hours only for employee tickets
+        cur.execute(
+            "SELECT IDTypeIntervenant FROM intervenants WHERE IDIntervenant=%s",
+            (id_intervenant,)
+        )
+        for row in cur.fetchall():
+            if row[0] == 1:
+                cum_hres_estimees += heures_estimees
+
+        delta = date.today() - date_prevue
+
+        if statut == 2:
+            if priorite == 1:
+                cum_tot_tickets_1 += 1
+                if delta.days > 0:
+                    count_prior1 += 1
+                    cum_jrs_prior1 += delta.days
+
+            elif priorite == 2:
+                cum_tot_tickets_2 += 1
+                if delta.days > 0:
+                    count_prior2 += 1
+                    cum_jrs_prior2 += delta.days
+
+            elif priorite == 3:
+                cum_tot_tickets_3 += 1
+                if delta.days > 0:
+                    count_prior3 += 1
+                    cum_jrs_prior3 += delta.days
+
+            elif priorite == 4:
+                cum_tot_tickets_4 += 1
+                if delta.days > 0:
+                    count_prior4 += 1
+                    cum_jrs_prior4 += delta.days
+
+            count_tot_encours += 1
+            cum_jrs_encours += delta.days
+
+    moy_jrs_prior1 = round(cum_jrs_prior1 / count_prior1, 1) if count_prior1 else 0
+    moy_jrs_prior2 = round(cum_jrs_prior2 / count_prior2, 1) if count_prior2 else 0
+    moy_jrs_prior3 = round(cum_jrs_prior3 / count_prior3, 1) if count_prior3 else 0
+    moy_jrs_prior4 = round(cum_jrs_prior4 / count_prior4, 1) if count_prior4 else 0
+    moy_jrs_encours = int(cum_jrs_encours / count_tot_encours) if count_tot_encours else 0
+
+    # Tickets created during current budget year
+    ticket_statut_list = []
+    cur.execute(
+        "SELECT Priorite, DateCreation, Statut, HeuresEstimees, HeuresRequises, IDIntervenant "
+        "FROM tickets WHERE DateCreation >= %s AND IDClient=%s",
+        (date_annee_cour, client_ident)
+    )
+    ticket_statut_list = cur.fetchall()
+
+    count_completes = 0
+    count_fermes = 0
+    cum_jrs_completes = 0
+    cum_hres_est = 0
+    cum_hres_req = 0
+
+    count_tot_encours_budget = 0
+    cum_jrs_encours_budget = 0
+
+    for item in ticket_statut_list:
+        date_creation = item[1]
+        statut = item[2]
+        heures_estimees = item[3]
+        heures_requises = item[4]
+
+        delta = date.today() - date_creation
+
+        if statut == 2:
+            count_tot_encours_budget += 1
+            cum_jrs_encours_budget += delta.days
+
+        elif statut == 3:
+            count_completes += 1
+            cum_jrs_completes += delta.days
+            if heures_estimees is not None:
+                cum_hres_est += heures_estimees
+            if heures_requises is not None:
+                cum_hres_req += heures_requises
+
+        elif statut == 4:
+            count_fermes += 1
+            if heures_estimees is not None:
+                cum_hres_est += heures_estimees
+            if heures_requises is not None:
+                cum_hres_req += heures_requises
+
+    indicateurs = [
+        cum_tot_tickets_1,
+        moy_jrs_prior1,
+        cum_tot_tickets_2,
+        moy_jrs_prior2,
+        cum_tot_tickets_3,
+        moy_jrs_prior3,
+        cum_tot_tickets_4,
+        moy_jrs_prior4,
+        moy_jrs_encours,
+        count_tot_encours_budget,
+        count_completes,
+        count_fermes,
+        int(cum_hres_estimees),
+        cible_age
+    ]
+
+    return indicateurs
+
+
+# ============================================================
+# === B. TICKETS BY INTERVENANT ==============================
+# ============================================================
+# Prépare l'histogramme empilé des tickets en cours par intervenant et par priorité.
+def get_ticket_distribution(cnx, client_ident):
+    """
+    Build stacked horizontal chart data for tickets in progress by intervenant and priority.
+    """
+    cur = cnx.cursor()
+
+    select_interv_list = []
+    cur.execute(
+        "SELECT IDIntervenant FROM tickets WHERE Statut=2 AND IDClient=%s",
+        (client_ident,)
+    )
+
+    for row in cur.fetchall():
+        cur.execute(
+            "SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
+            (row[0], client_ident)
+        )
+        nom_intervenant = ''
+        for item in cur.fetchall():
+            nom_intervenant = item[0]
+        select_interv_list.append(nom_intervenant)
+
+    counter = collections.Counter(select_interv_list)
+    interv_dict = dict(counter)
+    sorted_list = sorted(interv_dict.items(), key=lambda x: x[1], reverse=True)
+    top_15_list = sorted_list[0:15]
+    intervenant_list = [item[0] for item in top_15_list]
+
+    ticket_list = []
+    cur.execute(
+        "SELECT IDIntervenant, Priorite FROM tickets WHERE Statut=2 AND IDClient=%s",
+        (client_ident,)
+    )
+    for row in cur.fetchall():
+        cur.execute(
+            "SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
+            (row[0], client_ident)
+        )
+        nom_intervenant = ''
+        for item in cur.fetchall():
+            nom_intervenant = item[0]
+        ticket_list.append((str(nom_intervenant), row[1]))
+
+    priorite_1_count = []
     priorite_2_count = []
     priorite_3_count = []
     priorite_4_count = []
-    ytd_pourcent=str()
-    labels_12=[]
-    budgets_12=[]
-    records_12=[]
-    labels_pie=[]
-    tickets_pie=[]
-    labels_categ_pie = []
-    tickets_categ_pie = []
-    labels_preventif=[]
-    heures_fournisseurs=[]
-    heures_employes=[]
-    version_client=0
-    # ******************remplissage des indicateurs: champs du nombre de tickets et délais *********************
+
+    for intervenant in intervenant_list:
+        count_1 = count_2 = count_3 = count_4 = 0
+
+        for ticket in ticket_list:
+            if ticket[0] == intervenant:
+                if ticket[1] == 1:
+                    count_1 += 1
+                elif ticket[1] == 2:
+                    count_2 += 1
+                elif ticket[1] == 3:
+                    count_3 += 1
+                elif ticket[1] == 4:
+                    count_4 += 1
+
+        priorite_1_count.append(count_1)
+        priorite_2_count.append(count_2)
+        priorite_3_count.append(count_3)
+        priorite_4_count.append(count_4)
+
+    return intervenant_list, priorite_1_count, priorite_2_count, priorite_3_count, priorite_4_count
+
+
+# ============================================================
+# === C. BUDGET VS ACTUAL ====================================
+# ============================================================
+# Prépare l'histogramme empilé des tickets en cours par intervenant et par priorité.
+def get_budget_data(cnx, client_ident):
+    """
+    Build budget vs actual category chart for the current budget year.
+
+    Returns:
+    - ytd_pourcent
+    - labels_12
+    - budgets_12
+    - records_12
+    """
+    cur = cnx.cursor()
+
+    date_annee_cour = date.today()
+    cible_age = 0
+
+    cur.execute(
+        "SELECT DateDebutBudget, CibleAgeMoyenTicket "
+        "FROM parametres WHERE IDClient=%s",
+        (client_ident,)
+    )
+    for item in cur.fetchall():
+        date_annee_cour = item[0]
+        cible_age = item[1]
+
+    delta = date.today() - date_annee_cour
+    days_ytd = delta.days
+    ytd_pourcent = str(round(int(days_ytd * 100 / 365))) + '%'
+
+    cur.execute(
+        "SELECT IDCategorie, Description, BudgetAnnuel "
+        "FROM categories WHERE IDClient=%s",
+        (client_ident,)
+    )
+    categ_list = cur.fetchall()
+
+    ticket_list = []
+    idcateg_list_tickets = []
+
+    cur.execute(
+        "SELECT IDCategorie, CoutTotalTTC, Statut "
+        "FROM tickets "
+        "WHERE Statut>2 AND DateComplet > %s AND TypeTravail IN ('1','3') AND IDClient=%s",
+        (date_annee_cour, client_ident)
+    )
+    for row in cur.fetchall():
+        idcateg_list_tickets.append(row[0])
+        ticket_list.append(row)
+
+    # Include salary-linked categories even if there are no tickets
+    for salary_cat in [8, 17, 20, 21]:
+        if salary_cat not in idcateg_list_tickets:
+            idcateg_list_tickets.append(salary_cat)
+
+    cur.execute(
+        "SELECT SalairesTotal, PartCateg_8, PartCateg_17, PartCateg_20, PartCateg_21 "
+        "FROM parametres WHERE IDClient=%s",
+        (client_ident,)
+    )
+    list_salaires_categ = cur.fetchall()
+
+    res_count_numeros = Counter(idcateg_list_tickets)
+    unique_cat_list_numeros = list(res_count_numeros)
+
+    budgets = []
+    labels = []
+    records = []
+
+    for item in unique_cat_list_numeros:
+        for item_1 in categ_list:
+            if item_1[0] == item:
+                label_contenu = item_1[1] + '(' + str(res_count_numeros[item]) + ')'
+                # applies to the label and hover
+                labels.append(label_contenu)
+
+                if item_1[2] is None or item_1[2] == 'None' or item_1[2] == '':
+                    budgets.append(0)
+                else:
+                    budgets.append(int(item_1[2]))
+
+        cum_dep = 0
+        for ticket in ticket_list:
+            if ticket[0] == item:
+                if ticket[1] is not None and ticket[1] != '':
+                    cum_dep += ticket[1]
+
+        # Add salary allocation for selected categories
+        salaires = 0
+        if list_salaires_categ:
+            if item == 8:
+                salaires = list_salaires_categ[0][0] * (list_salaires_categ[0][1] / 100) * days_ytd / 365
+            elif item == 17:
+                salaires = list_salaires_categ[0][0] * (list_salaires_categ[0][2] / 100) * days_ytd / 365
+            elif item == 20:
+                salaires = list_salaires_categ[0][0] * (list_salaires_categ[0][3] / 100) * days_ytd / 365
+            elif item == 21:
+                salaires = list_salaires_categ[0][0] * (list_salaires_categ[0][4] / 100) * days_ytd / 365
+
+        cum_dep = int(cum_dep + int(salaires))
+        records.append(cum_dep)
+
+    zipped_list = zip(records, budgets, labels)
+    liste_triee = sorted(zipped_list, key=None, reverse=True)
+
+    records_12 = [i[0] for i in liste_triee[0:12]]
+    budgets_12 = [i[1] for i in liste_triee[0:12]]
+    labels_12 = [i[2] for i in liste_triee[0:12]]
+
+    return ytd_pourcent, labels_12, budgets_12, records_12
+
+
+# ============================================================
+# === D. WORK TYPE SUMMARY ==================================
+# ============================================================
+# Produit le tableau sommaire des dépenses année à date par type de travail.
+def get_worktype_summary(cnx, client_ident):
+    """
+    Build work type summary table for current budget year.
+    """
+    cur = cnx.cursor()
+
+    date_annee_cour = date.today()
+    cur.execute(
+        "SELECT DateDebutBudget FROM parametres WHERE IDClient=%s",
+        (client_ident,)
+    )
+    for item in cur.fetchall():
+        date_annee_cour = item[0]
+
+    ticket_list = []
+    cur.execute(
+        "SELECT TypeTravail, HeuresRequises, CoutTotalTTC, Statut "
+        "FROM tickets WHERE Statut>2 AND DateComplet > %s AND IDClient=%s",
+        (date_annee_cour, client_ident)
+    )
+    ticket_list = cur.fetchall()
+
+    cum_totalTTC_1 = 0
+    cum_totalTTC_2 = 0
+    cum_totalTTC_3 = 0
+    cum_totalTTC_4 = 0
+    cum_totalTTC_5 = 0
+
+    for item in ticket_list:
+        type_travail = item[0]
+        cout_total = 0 if item[2] is None or item[2] == '' else item[2]
+
+        if type_travail == 1:
+            cum_totalTTC_1 += cout_total
+        elif type_travail == 2:
+            cum_totalTTC_2 += cout_total
+        elif type_travail == 3:
+            cum_totalTTC_3 += cout_total
+        elif type_travail == 4:
+            cum_totalTTC_4 += cout_total
+        elif type_travail == 5:
+            cum_totalTTC_5 += cout_total
+
+    delta = date.today() - date_annee_cour
+    days_ytd = delta.days
+
+    cur.execute(
+        "SELECT SalairesTotal FROM parametres WHERE IDClient=%s",
+        (client_ident,)
+    )
+    list_salaires_categ = cur.fetchall()
+
+    ajout_salaires = 0
+    if list_salaires_categ:
+        ajout_salaires = list_salaires_categ[0][0] * days_ytd / 365
+
+    cum_totalTTC_1 = int(cum_totalTTC_1) + int(ajout_salaires)
+
+    tot_totalTTC = (
+        int(cum_totalTTC_1) +
+        int(cum_totalTTC_2) +
+        int(cum_totalTTC_3) +
+        int(cum_totalTTC_4) +
+        int(cum_totalTTC_5)
+    )
+
+    if tot_totalTTC != 0:
+        part_1 = 100 * float(cum_totalTTC_1) / float(tot_totalTTC)
+        part_2 = 100 * float(cum_totalTTC_2) / float(tot_totalTTC)
+        part_3 = 100 * float(cum_totalTTC_3) / float(tot_totalTTC)
+        part_4 = 100 * float(cum_totalTTC_4) / float(tot_totalTTC)
+        part_5 = 100 * float(cum_totalTTC_5) / float(tot_totalTTC)
+        part_mdo_tot = 100 * (
+            cum_totalTTC_1 + cum_totalTTC_2 + cum_totalTTC_3 + cum_totalTTC_4
+        ) / tot_totalTTC
+    else:
+        part_1 = part_2 = part_3 = part_4 = part_5 = part_mdo_tot = 0
+
+    tableau_list = [
+        ("Entretien/réparations", int(cum_totalTTC_1), round(part_1, 1)),
+        ("Fonds de prévoyance", int(cum_totalTTC_2), round(part_2, 1)),
+        ("Préventif", int(cum_totalTTC_3), round(part_3, 1)),
+        ("Projets d'amélioration", int(cum_totalTTC_4), round(part_4, 1)),
+        ("Sinistres", int(cum_totalTTC_5), round(part_5, 1)),
+        ("Total ($)", tot_totalTTC, round(part_mdo_tot, 1))
+    ]
+
+    return tableau_list
+
+
+# ============================================================
+# === E. EQUIPMENT TREEMAP ==================================
+# ============================================================
+# Produit le tableau sommaire des dépenses année à date par type de travail.
+def get_equipment_data(cnx, client_ident):
+    """
+    Build top 10 equipment distribution data by ticket count.
+    """
+    cur = cnx.cursor()
+
+    ticket_list = []
+
+    cur.execute(
+        "SELECT IDEquipement FROM tickets WHERE IDClient=%s",
+        (client_ident,)
+    )
+    for row in cur.fetchall():
+        if row[0] != '':
+            cur.execute(
+                "SELECT Actif FROM equipements WHERE IDEquipement=%s AND IDClient=%s",
+                (row[0], client_ident)
+            )
+            for row_1 in cur.fetchall():
+                if row_1[0] == 1:
+                    ticket_list.append(row[0])
+
+    counter = collections.Counter(ticket_list)
+    equip_dict = dict(counter)
+    sorted_list = sorted(equip_dict.items(), key=lambda x: x[1], reverse=True)
+    top_10_list = sorted_list[0:10]
+
+    labels_pie = []
+    tickets_pie = []
+
+    for item in top_10_list:
+        cur.execute(
+            "SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s",
+            (item[0], client_ident)
+        )
+        for row in cur.fetchall():
+            desc = str(row[0]) + ' - ' + str(row[1])
+            labels_pie.append(desc)
+            tickets_pie.append(item[1])
+
+    return labels_pie, tickets_pie
+
+
+# ============================================================
+# === F. PREVENTIVE HOURS ===================================
+# ============================================================
+# Prépare les données du top équipements (tag) par nombre de tickets.
+def get_preventive_hours(cnx, client_ident):
+    """
+    Build rolling 12-month preventive scheduled hours split between
+    fournisseurs and employés.
+    """
+    cur = cnx.cursor()
+
+    prev_list = []
+    end_date = date.today() + relativedelta(years=1)
+
+    # Use `Dec` because Dec is reserved in MySQL
+    cur.execute(
+        "SELECT IDIntervenant, IDPreventif, HresEstimees, FreqAns, Janv, Fev, Mars, "
+        "Avril, Mai, Juin, Juil, Aout, Sept, Oct, Nov, `Dec`, DateProchain "
+        "FROM preventif "
+        "WHERE IDTypeTravail=3 AND DateProchain <= %s AND IDClient=%s",
+        (end_date, client_ident)
+    )
+    prev_list = cur.fetchall()
+
+    # Hours for suppliers
+    Hres_janv = float()
+    Hres_fev = float()
+    Hres_mars = float()
+    Hres_avril = float()
+    Hres_mai = float()
+    Hres_juin = float()
+    Hres_juil = float()
+    Hres_aout = float()
+    Hres_sept = float()
+    Hres_oct = float()
+    Hres_nov = float()
+    Hres_dec = float()
+
+    # Hours for employees
+    Hres_janv_1 = float()
+    Hres_fev_1 = float()
+    Hres_mars_1 = float()
+    Hres_avril_1 = float()
+    Hres_mai_1 = float()
+    Hres_juin_1 = float()
+    Hres_juil_1 = float()
+    Hres_aout_1 = float()
+    Hres_sept_1 = float()
+    Hres_oct_1 = float()
+    Hres_nov_1 = float()
+    Hres_dec_1 = float()
+
+    for item in prev_list:
+        interv_type = 0
+
+        cur.execute(
+            "SELECT IDTypeIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
+            (item[0], client_ident)
+        )
+        for res in cur.fetchall():
+            interv_type = res[0]
+
+        if item[4] == 1:
+            if interv_type == 1:
+                Hres_janv_1 += float(item[2])
+            else:
+                Hres_janv += float(item[2])
+
+        if item[5] == 1:
+            if interv_type == 1:
+                Hres_fev_1 += float(item[2])
+            else:
+                Hres_fev += float(item[2])
+
+        if item[6] == 1:
+            if interv_type == 1:
+                Hres_mars_1 += float(item[2])
+            else:
+                Hres_mars += float(item[2])
+
+        if item[7] == 1:
+            if interv_type == 1:
+                Hres_avril_1 += float(item[2])
+            else:
+                Hres_avril += float(item[2])
+
+        if item[8] == 1:
+            if interv_type == 1:
+                Hres_mai_1 += float(item[2])
+            else:
+                Hres_mai += float(item[2])
+
+        if item[9] == 1:
+            if interv_type == 1:
+                Hres_juin_1 += float(item[2])
+            else:
+                Hres_juin += float(item[2])
+
+        if item[10] == 1:
+            if interv_type == 1:
+                Hres_juil_1 += float(item[2])
+            else:
+                Hres_juil += float(item[2])
+
+        if item[11] == 1:
+            if interv_type == 1:
+                Hres_aout_1 += float(item[2])
+            else:
+                Hres_aout += float(item[2])
+
+        if item[12] == 1:
+            if interv_type == 1:
+                Hres_sept_1 += float(item[2])
+            else:
+                Hres_sept += float(item[2])
+
+        if item[13] == 1:
+            if interv_type == 1:
+                Hres_oct_1 += float(item[2])
+            else:
+                Hres_oct += float(item[2])
+
+        if item[14] == 1:
+            if interv_type == 1:
+                Hres_nov_1 += float(item[2])
+            else:
+                Hres_nov += float(item[2])
+
+        if item[15] == 1:
+            if interv_type == 1:
+                Hres_dec_1 += float(item[2])
+            else:
+                Hres_dec += float(item[2])
+
+    liste_mois = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sept', 'Oct', 'Nov', 'Dec']
+    liste_hres_fournisseurs = [
+        Hres_janv, Hres_fev, Hres_mars, Hres_avril, int(Hres_mai),
+        Hres_juin, Hres_juil, Hres_aout, Hres_sept, Hres_oct, Hres_nov, Hres_dec
+    ]
+    liste_hres_employes = [
+        Hres_janv_1, Hres_fev_1, Hres_mars_1, Hres_avril_1, Hres_mai_1,
+        Hres_juin_1, Hres_juil_1, Hres_aout_1, Hres_sept_1, Hres_oct_1, Hres_nov_1, Hres_dec_1
+    ]
+
+    mois_courant = date.today().month
+
+    deq = collections.deque(liste_mois)
+    deq.rotate(12 - int(mois_courant) + 1)
+    labels_preventif = list(deq)
+
+    deq = collections.deque(liste_hres_fournisseurs)
+    deq.rotate(12 - int(mois_courant) + 1)
+    heures_fournisseurs = list(deq)
+
+    deq = collections.deque(liste_hres_employes)
+    deq.rotate(12 - int(mois_courant) + 1)
+    heures_employes = list(deq)
+
+    return labels_preventif, heures_fournisseurs, heures_employes
+
+
+# ============================================================
+# === REFACTORED DASHBOARD ROUTE =============================
+# ============================================================
+
+@bp_tableaux_bord.route("/plotView_js", methods=["GET"])
+def plotView_js():
+    """Afficher le tableau de bord des administrateurs avec graphiques.
+
+    Contenu du tableau de bord :
+    * histogramme de tickets en cours par intervenant et par priorité
+    * comparatif budget vs réel des dépenses par catégorie pour l'année budgétaire en cours
+    * sommaire des dépenses année à date par type de travail
+    * top équipements (tag) par nombre de tickets
+    * charge préventive mensuelle estimée sur 12 mois glissants
+    * indicateurs de synthèse en tête de page :
+        - nombre de tickets en cours et délais par priorité
+        - âge moyen
+        - heures estimées des tickets en cours (employés)
+
+    Le traitement est séparé en sections :
+    A. KPI DATA
+    B. TICKETS BY INTERVENANT
+    C. BUDGET VS ACTUAL
+    D. WORK TYPE SUMMARY
+    E. EQUIPMENT TREEMAP
+    F. PREVENTIVE HOURS
+    """
+    context = _get_dashboard_context()
+    if context is None:
+        return render_template('session_ferme.html')
+
+    if context['user_type'] == 3:
+        return redirect(url_for('bp_admin.permission'))
+
+    client_ident = context['client_ident']
+    mode_connexion = context['mode_connexion']
+    bd = context['bd']
+
+    indicateurs = [0] * 14
+    intervenant_list = []
+    priorite_1_count = []
+    priorite_2_count = []
+    priorite_3_count = []
+    priorite_4_count = []
+    ytd_pourcent = ''
+    labels_12 = []
+    budgets_12 = []
+    records_12 = []
+    tableau_list = ['nil', 'nil', 'nil', 'nil']
+    labels_pie = []
+    tickets_pie = []
+    labels_preventif = []
+    heures_fournisseurs = []
+    heures_employes = []
+
     try:
-        if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
-            return render_template('session_ferme.html')
-        profile_list=session.get('ProfilUsager')
-        client_ident=profile_list[0]
-        version_client=profile_list[6]
-
-        mode_connexion = profile_list[8]
         cnx = connect_db(mode_connexion)
-        cur = cnx.cursor()
-        date_annee_cour=date.today()
-        cible_age=0
-        # trouver la date du début d'année fiscale budgétaire
-        cur.execute("SELECT DateDebutBudget, CibleAgeMoyenTicket FROM parametres WHERE IDClient=%s",(client_ident,))
-        for item in cur.fetchall():
-            date_annee_cour=item[0]
-            cible_age=item[1]
-        ticket_priorite_list=[]
-        ticket_statut_list=[]
-        count_prior1=0
-        count_prior2=0
-        count_prior3=0
-        count_prior4=0
-        count_tot_encours=0
-        cum_jrs_prior1=0
-        cum_jrs_prior2=0
-        cum_jrs_prior3=0
-        cum_jrs_prior4=0
-        cum_jrs_encours=0
-        count_completes=0
-        cum_jrs_completes=0
-        count_fermes=0
-        moy_jrs_prior1=0
-        moy_jrs_prior2=0
-        moy_jrs_prior3=0
-        moy_jrs_prior4=0
-        moy_jrs_encours=0
-        moy_jrs_completes=0
-        cum_hres_est=0
-        cum_hres_estimees=0
-        cum_hres_req=0
-        cum_tot_tickets_1 = 0
-        cum_tot_tickets_2 = 0
-        cum_tot_tickets_3 = 0
-        cum_tot_tickets_4 = 0
-        # préparer liste des tickets en cours incluant ceux créés avant la date de début du budget
-        cur.execute("SELECT Priorite, DatePrevue, Statut, HeuresEstimees, IDIntervenant FROM tickets "
-                "WHERE Statut=%s AND IDClient=%s",(2,client_ident,))
-        for row in cur.fetchall():
-            ticket_priorite_list.append(row)
-        for item in ticket_priorite_list:
-            # vérifier si le ticket touche un employé
-            cur.execute("SELECT IDTypeIntervenant from intervenants WHERE IDIntervenant=%s", (item[4],))
-            for row in cur.fetchall():
-                if row[0] == 1:
-                    cum_hres_estimees = cum_hres_estimees + item[3]
 
-            #calcul du nombre de jours par rapport à date prévue
-            a = item[1]
-            b = date.today()
-            delta = b - a
-            #selon statut, on sépare les bp_tickets
-            if item[2]==2:
-                if item[0]==1:
-                    cum_tot_tickets_1 += 1
-                    # éviter de compter les tickets avec une date prévue ultérieure
-                    if delta.days<=0:
-                        continue
-                    else:
-                        count_prior1+=1
-                        cum_jrs_prior1=cum_jrs_prior1+delta.days
-                elif item[0]==2:
-                    cum_tot_tickets_2 += 1
-                    # éviter de compter les tickets avec une date prévue ultérieure
-                    if delta.days <= 0:
-                        continue
-                    else:
-                        count_prior2+=1
-                        cum_jrs_prior2=cum_jrs_prior2+delta.days
-                elif item[0]==3:
-                    cum_tot_tickets_3 += 1
-                    # éviter de compter les tickets avec une date prévue ultérieure
-                    if delta.days <= 0:
-                        continue
-                    else:
-                        count_prior3+=1
-                        cum_jrs_prior3=cum_jrs_prior3+delta.days
-                elif item[0]==4:
-                    cum_tot_tickets_4 += 1
-                    # éviter de compter les tickets avec une date prévue ultérieure
-                    if delta.days <= 0:
-                        continue
-                    else:
-                        count_prior4+=1
-                        cum_jrs_prior4=cum_jrs_prior4+delta.days
-                count_tot_encours+=1
-                cum_jrs_encours=cum_jrs_encours+delta.days
-        if count_prior1!=0:
-            moy_jrs_prior1=round(cum_jrs_prior1/count_prior1,1)
-        if count_prior2!=0:
-            moy_jrs_prior2=round(cum_jrs_prior2/count_prior2,1)
-        if count_prior3!=0:
-            moy_jrs_prior3=round(cum_jrs_prior3/count_prior3,1)
-        if count_prior4!=0:
-            moy_jrs_prior4=round(cum_jrs_prior4/count_prior4,1)
-        if count_tot_encours!=0:
-            moy_jrs_encours=int(cum_jrs_encours/count_tot_encours)
+        # === A. KPI DATA ===
+        indicateurs = get_kpi_data(cnx, client_ident)
 
-        #préparer liste de tickets selon statut durant année de budget en cours
-        cur.execute("SELECT Priorite, DateCreation, Statut, HeuresEstimees, HeuresRequises, IDIntervenant FROM tickets "
-                    "WHERE DateCreation >= %s AND IDClient=%s",(date_annee_cour,client_ident))
-        for row in cur.fetchall():
-            ticket_statut_list.append(row)
+        # === B. TICKETS BY INTERVENANT ===
+        (
+            intervenant_list,
+            priorite_1_count,
+            priorite_2_count,
+            priorite_3_count,
+            priorite_4_count
+        ) = get_ticket_distribution(cnx, client_ident)
 
-        count_tot_encours=0
-        for item in ticket_statut_list:
-            #calcul du nombre de jours depuis création
-            a = item[1]
-            b = date.today()
-            delta = b - a
+        # === C. BUDGET VS ACTUAL ===
+        ytd_pourcent, labels_12, budgets_12, records_12 = get_budget_data(cnx, client_ident)
 
-            #selon statut, on sépare les tickets
-            if item[2]==2:
-                count_tot_encours+=1
-                cum_jrs_encours=cum_jrs_encours+delta.days
-            elif item[2] == 3:
-                count_completes += 1
-                cum_jrs_completes = cum_jrs_completes + delta.days
-                if item[3] != None:
-                    cum_hres_est = cum_hres_est + item[3]
-                if item[4] != None:
-                    cum_hres_req = cum_hres_req + item[4]
-            elif item[2] == 4:
-                count_fermes += 1
-                if item[3] != None:
-                    cum_hres_est = cum_hres_est + item[3]
-                if item[4] != None:
-                    cum_hres_req = cum_hres_req + item[4]
-        cnx.close()
-        if count_completes!=0:
-            moy_jrs_completes=int(cum_jrs_completes/count_completes)
-        if cum_hres_req!=0:
-            performance_estimation=int((cum_hres_est/cum_hres_req)*100)
-        else:
-            performance_estimation=0
-        # on remplace la performance d'estimation avec le total des heures estimées pour les tickets en cours
-        indicateurs=[cum_tot_tickets_1,moy_jrs_prior1,cum_tot_tickets_2,moy_jrs_prior2,cum_tot_tickets_3,moy_jrs_prior3,cum_tot_tickets_4,
-                     moy_jrs_prior4,moy_jrs_encours,count_tot_encours,count_completes,count_fermes,int(cum_hres_estimees),cible_age]
-        print('indicateurs:',indicateurs)
-    except:
-        print(traceback.format_exc())
-        indicateurs=[0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        # === D. WORK TYPE SUMMARY ===
+        tableau_list = get_worktype_summary(cnx, client_ident)
 
-    # ***************** Tickets par intervenant et priorité histogramme **********************************
-    try:
-        if session.get('ProfilUsager') is None:
-            # probablement délai de session atteint
-            return render_template('session_ferme.html')
-        profile_list = session.get('ProfilUsager')
-        # vérifier type d'usager si employé
-        if profile_list[2] == 3:
-            return redirect(url_for('bp_admin.permission'))
-        client_ident = profile_list[0]
-        mode_connexion = profile_list[8]
-        cnx = connect_db(mode_connexion)
-        cur = cnx.cursor()
+        # === E. EQUIPMENT TREEMAP ===
+        labels_pie, tickets_pie = get_equipment_data(cnx, client_ident)
 
-        intervenant_list=[]
-        priorite_1_count=[]
-        priorite_2_count=[]
-        priorite_3_count=[]
-        priorite_4_count=[]
-        #trouver les 10 bp_intervenants ayant le plus de bp_tickets en cours
-        select_interv_list=[]
-        cur.execute("SELECT IDIntervenant FROM tickets WHERE Statut=2 AND IDClient=%s",(client_ident,))
-        NomIntervenant=''
-        for row in cur.fetchall():
-            cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s", (row[0],client_ident))
-            for item_1 in cur.fetchall():
-                NomIntervenant=item_1[0]
-            select_interv_list.append(NomIntervenant)
-        #compter le nombre de bp_tickets par intervenant
-        counter=collections.Counter(select_interv_list)
-        interv_dict=dict(counter)
-        #print('Tickets par intervenant:',interv_dict)
-        sorted_list=sorted(interv_dict.items(), key=lambda x:x[1], reverse=True)
-        top_15_list=sorted_list[0:15]
-        #print('10 premiers:',top_10_list)
-        intervenant_list=[]
-        for i in top_15_list:
-            intervenant_list.append(i[0])
-        #print('Liste finale:',intervenant_list)
-        #traiter les bp_tickets en cours
-        ticket_list=[]
-        cur.execute("SELECT IDIntervenant, Priorite FROM tickets WHERE Statut=2 AND IDClient=%s",(client_ident,))
-        for row in cur.fetchall():
-            cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s", (row[0],client_ident))
-            for item_1 in cur.fetchall():
-                NomIntervenant=item_1[0]
-            list_item=(str(NomIntervenant),(row[1]))
-            ticket_list.append(list_item)
-        cnx.close()
-        #intervenant_list=list(dict.fromkeys(intervenant_list))
-        # pour compter le nombre de billets par priorité par intervenant
-        for i in intervenant_list:
-            count_1=0
-            count_2=0
-            count_3=0
-            count_4=0
-            for j in ticket_list:
-                if j[0]==i:
-                    if j[1]==1:
-                        count_1+=1
-                    elif j[1]==2:
-                        count_2+=1
-                    elif j[1]==3:
-                        count_3+=1
-                    elif j[1]==4:
-                        count_4+=1
-            priorite_1_count.append(count_1)
-            priorite_2_count.append(count_2)
-            priorite_3_count.append(count_3)
-            priorite_4_count.append(count_4)
-
-    except:
-        print(traceback.format_exc())
-
-#     #***************** Activité par catégorie d'équipement histogramme******************************
-    try:
-        if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
-            return render_template('session_ferme.html')
-        profile_list=session.get('ProfilUsager')
-        client_ident=profile_list[0]
-        mode_connexion = profile_list[8]
-        cnx = connect_db(mode_connexion)
-        cur = cnx.cursor()
-        date_annee_cour=date.today()
-        cible_age=0
-        # trouver la date du début d'année fiscale budgétaire
-        cur.execute("SELECT DateDebutBudget, CibleAgeMoyenTicket FROM parametres WHERE IDClient=%s",(client_ident,))
-        for item in cur.fetchall():
-            date_annee_cour=item[0]
-            cible_age=item[1]
-
-        #calculer avancement sur année budgétaire
-        a = date_annee_cour
-        b = date.today()
-        delta = b - a
-        days_ytd=delta.days
-        ytd_pourcent=str(round(int(days_ytd*100/365)))+'%'
-
-        #trouver budget pour chaque catégorie
-        cur.execute("SELECT IDCategorie,Description,BudgetAnnuel FROM categories WHERE IDClient=%s",(client_ident,))
-        categ_list=[]
-        for row in cur.fetchall():
-            #listes en ordre de catégorie dont IDCategorie=1 sera budget_list[0]
-            categ_list.append(row)
-
-        #trouver tickets selon année courante et statut>2
-        ticket_list=[]
-        IDCateg_list_tickets=[]
-        cur.execute("SELECT IDCategorie, CoutTotalTTC, Statut FROM tickets "
-            "WHERE Statut>2 AND DateComplet > %s AND TypeTravail IN ('1','3') AND IDClient=%s",(date_annee_cour,client_ident))
-        for row in cur.fetchall():
-            IDCateg_list_tickets.append(row[0])
-            ticket_list.append(row)
-
-        # s'assurer que les 4 catégories liées au salaires sont dans la liste
-        if 8 not in IDCateg_list_tickets:
-            IDCateg_list_tickets.append(8)
-        if 17 not in IDCateg_list_tickets:
-            IDCateg_list_tickets.append(17)
-        if 20 not in IDCateg_list_tickets:
-            IDCateg_list_tickets.append(20)
-        if 21 not in IDCateg_list_tickets:
-            IDCateg_list_tickets.append(21)
-
-        # trouver les salaires par catégorie
-        list_salaires_categ=[]
-        cur.execute("SELECT SalairesTotal, PartCateg_8, PartCateg_17, PartCateg_20, PartCateg_21 FROM parametres "
-                    "WHERE IDClient=%s",(client_ident,))
-        for row in cur.fetchall():
-            list_salaires_categ.append(row)
-        cnx.close()
-        #compter le nombre de tickets par catégorie: ex. IDCateg:nbre tickets
-        res_count_numeros=Counter(IDCateg_list_tickets)
-        unique_cat_list_numeros=list(res_count_numeros)
-        budgets=[]
-        labels=[]
-        records=[]
-
-        for item in unique_cat_list_numeros:
-            for item_1 in categ_list:
-                if item_1[0]==item:
-                    label_contenu=item_1[1]+'('+str(res_count_numeros[item])+')'
-                    labels.append(label_contenu)
-                    if item_1[2] is None or item_1[2]=='None':
-                        budgets.append(0)
-                    elif item_1[2]=='':
-                        budgets.append(0)
-                    else:
-                        budgets.append(int(item_1[2]))
-            cum_dep=0
-
-            for i in ticket_list:
-                if i[0]==item:
-                    if i[1]==None or i[1]=='':
-                        cum_dep=cum_dep
-                    else:
-                        cum_dep=cum_dep+i[1]
-
-            #ajout des salaires pour catégories (8,17,20,21)
-            salaires=0
-            if item==8:
-                salaires=list_salaires_categ[0][0]*(list_salaires_categ[0][1]/100)*days_ytd/365
-            elif item==17:
-                salaires=list_salaires_categ[0][0]*(list_salaires_categ[0][2]/100)*days_ytd/365
-            elif item==20:
-                salaires=list_salaires_categ[0][0]*(list_salaires_categ[0][3]/100)*days_ytd/365
-            elif item==21:
-                salaires=list_salaires_categ[0][0]*(list_salaires_categ[0][4]/100)*days_ytd/365
-
-            cum_dep=int(cum_dep+int(salaires))
-            records.append(cum_dep)
-
-        # trier les trois listes en même temps basé sur les dépenses (records) en ordre décroissant
-        zipped_list=zip(records,budgets,labels)
-        liste_triee=sorted(zipped_list,key=None, reverse=True)
-
-        #choisir les 12 premières catégories (plus de dépenses)
-        records_12=[i[0] for i in liste_triee[0:12]]
-        budgets_12=[i[1] for i in liste_triee[0:12]]
-        labels_12=[i[2] for i in liste_triee[0:12]]
-
-    except:
-        print(traceback.format_exc())
-
-    #*************** Tableau des dépenses année à date *********************************
-
-    #trouver tickets selon année courante et statut>2
-    try:
-        if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
-            return render_template('session_ferme.html')
-        profile_list=session.get('ProfilUsager')
-        client_ident=profile_list[0]
-        mode_connexion = profile_list[8]
-        cnx = connect_db(mode_connexion)
-        cur = cnx.cursor()
-        date_annee_cour=date.today()
-        # trouver la date du début d'année fiscale budgétaire
-        cur.execute("SELECT DateDebutBudget FROM parametres WHERE IDClient=%s",(client_ident,))
-        for item in cur.fetchall():
-            date_annee_cour=item[0]
-        ticket_list=[]
-        cur.execute("SELECT TypeTravail, HeuresRequises, CoutTotalTTC, Statut FROM tickets "
-            "WHERE Statut>2 AND DateComplet > %s AND IDClient=%s",(date_annee_cour,client_ident))
-        for row in cur.fetchall():
-            ticket_list.append(row)
-
-        # comptage des dépenses et des heures selon type de travail
-        cum_totalTTC_1=0
-        cum_totalTTC_2 = 0
-        cum_totalTTC_3 = 0
-        cum_totalTTC_4 = 0
-        cum_totalTTC_5 = 0
-
-        for item in ticket_list:
-            if item[0]==1:
-                cum_totalTTC_1=cum_totalTTC_1+((0 if item[2] == None or item[2] == '' else item[2]))
-            elif item[0]==2:
-                cum_totalTTC_2=cum_totalTTC_2+((0 if item[2] == None or item[2] == '' else item[2]))
-            elif item[0]==3:
-                cum_totalTTC_3=cum_totalTTC_3+((0 if item[2] == None or item[2] == '' else item[2]))
-            elif item[0]==4:
-                cum_totalTTC_4 = cum_totalTTC_4 + ((0 if item[2] == None or item[2] == '' else item[2]))
-            elif item[0]==5:
-                cum_totalTTC_5 = cum_totalTTC_5 + ((0 if item[2] == None or item[2] == '' else item[2]))
-
-        #calculer avancement sur année budgétaire
-        a = date_annee_cour
-        b = date.today()
-        delta = b - a
-        days_ytd=delta.days
-
-        # trouver les salaires par catégorie
-        list_salaires_categ=[]
-        cur.execute("SELECT SalairesTotal FROM parametres WHERE IDClient=%s",(client_ident,))
-        for row in cur.fetchall():
-            list_salaires_categ.append(row)
-        cnx.close()
-        # ajout des salaires au total de main d'oeuvre
-        ajout_salaires=list_salaires_categ[0][0]*days_ytd/365
-
-        cum_totalTTC_1=int(cum_totalTTC_1)+int(ajout_salaires)
-        tot_totalTTC=int(cum_totalTTC_1)+int(cum_totalTTC_2)+int(cum_totalTTC_3)+int(cum_totalTTC_4)+int(cum_totalTTC_5)
-        if tot_totalTTC!=0:
-            part_1 = 100*float(cum_totalTTC_1) / float(tot_totalTTC)
-            part_2 = 100*float(cum_totalTTC_2) / float(tot_totalTTC)
-            part_3 = 100*float(cum_totalTTC_3) / float(tot_totalTTC)
-            part_4 = 100*float(cum_totalTTC_4) / float(tot_totalTTC)
-            part_5 = 100 * float(cum_totalTTC_5) / float(tot_totalTTC)
-            part_mdo_tot = 100 * (cum_totalTTC_1 + cum_totalTTC_2 + cum_totalTTC_3 + cum_totalTTC_4) / tot_totalTTC
-
-        else:
-            part_1 = 0
-            part_2 = 0
-            part_3 = 0
-            part_4 = 0
-            part_5 = 0
-            part_mdo_tot = 0
-
-        tableau_list=[("Entretien/réparations",int(cum_totalTTC_1), round(part_1,1)),("Fonds de prévoyance",int(cum_totalTTC_2),round(part_2,1)),
-                      ("Préventif",int(cum_totalTTC_3),round(part_3,1)),("Projets d'amélioration",int(cum_totalTTC_4),
-                    round(part_4,1)),("Sinistres",int(cum_totalTTC_5),round(part_5,1)),("Total ($)",tot_totalTTC,round(part_mdo_tot,1))]
-
-    except:
-        print(traceback.format_exc())
-        tableau_list=['nil','nil','nil','nil']
-
-
-#         #*************** Tickets par équipement pie chart (Carnet PLus seulement) *********************************
-    try:
-        if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
-            return render_template('session_ferme.html')
-        profile_list=session.get('ProfilUsager')
-        client_ident=profile_list[0]
-        mode_connexion = profile_list[8]
-        cnx = connect_db(mode_connexion)
-        cur = cnx.cursor()
-        ticket_list=[]
-        # comptage des bp_tickets par IDEquipement
-        cur.execute("SELECT IDEquipement FROM tickets WHERE IDClient=%s",(client_ident,))
-        for row in cur.fetchall():
-            if row[0]!='':
-                #ticket_list.append(row[0])
-                cur.execute("SELECT Actif FROM equipements WHERE IDEquipement=%s AND IDClient=%s",(row[0],client_ident))
-                for row_1 in cur.fetchall():
-                    if row_1[0]==1:
-                        ticket_list.append(row[0])
-
-        counter=collections.Counter(ticket_list)
-        equip_dict=dict(counter)
-        sorted_list=sorted(equip_dict.items(), key=lambda x:x[1], reverse=True)
-        top_10_list=sorted_list[0:10]
-        labels_pie=[]
-        tickets_pie=[]
-        for item in top_10_list:
-            cur.execute("SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s",(item[0],client_ident))
-            for row in cur.fetchall():
-                desc=str(row[0])+' - '+str(row[1])
-                labels_pie.append(desc)
-                tickets_pie.append(item[1])
-        cnx.close()
-
-    except:
-        print(traceback.format_exc())
-
-##*************** Tickets par catégorie pie chart (Carnet Entretien seulement) *********************************
-    try:
-        if session.get('ProfilUsager') is None:
-            # probablement délai de session atteint
-            return render_template('session_ferme.html')
-        profile_list = session.get('ProfilUsager')
-        client_ident = profile_list[0]
-        mode_connexion = profile_list[8]
-        cnx = connect_db(mode_connexion)
-        cur = cnx.cursor()
-        ticket_list_categ = []
-        # comptage des bp_tickets par IDEquipement
-        cur.execute("SELECT IDCategorie FROM tickets WHERE IDClient=%s", (client_ident,))
-        for row in cur.fetchall():
-            if row[0] != '':
-                # ticket_list.append(row[0])
-                cur.execute("SELECT Actif FROM categories WHERE IDCategorie=%s AND IDClient=%s",
-                            (row[0], client_ident))
-                for row_1 in cur.fetchall():
-                    if row_1[0] == 1:
-                        ticket_list_categ.append(row[0])
-
-        counter = collections.Counter(ticket_list_categ)
-        equip_dict_categ = dict(counter)
-        sorted_list = sorted(equip_dict_categ.items(), key=lambda x: x[1], reverse=True)
-        top_10_categ_list = sorted_list[0:10]
-        labels_categ_pie = []
-        tickets_categ_pie = []
-        for item in top_10_categ_list:
-            cur.execute("SELECT Description FROM categories WHERE IDCategorie=%s AND IDClient=%s",
-                        (item[0], client_ident))
-            for row in cur.fetchall():
-                desc = str(row[0])
-                labels_categ_pie.append(desc)
-                tickets_categ_pie.append(item[1])
-        cnx.close()
-
-    except:
-        print(traceback.format_exc())
-
-    # *************************Histogramme d'entretien préventif déjà cédulé dans l'année
-    try:
-        if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
-            return render_template('session_ferme.html')
-        profile_list=session.get('ProfilUsager')
-        client_ident=profile_list[0]
-        mode_connexion = profile_list[8]
-        cnx = connect_db(mode_connexion)
-        cur = cnx.cursor()
-        prev_list=[]
-        #obtenir tous les préventifs d'ici à un an
-        end_date=date.today()+ relativedelta(years=1)
-        # utiliser `Dec` pour éviter erreur mysql due à 'mot réservé'
-        cur.execute("SELECT IDIntervenant, IDPreventif, HresEstimees,FreqAns,Janv,Fev,Mars,"
-                    "Avril,Mai,Juin,Juil,Aout,Sept,Oct,Nov,`Dec`,DateProchain FROM preventif "
-                    "WHERE IDTypeTravail=3 AND DateProchain <= %s AND IDClient=%s",(end_date,client_ident))
-        for row in cur.fetchall():
-            prev_list.append(row)
-        # tous les cumulatifs sont de type 'float' pour éviter erreur numpy dû à comparaison entre float et decimal.Decimal (dans liste)
-        Hres_janv = float()
-        Hres_fev = float()
-        Hres_mars = float()
-        Hres_avril = float()
-        Hres_mai = float()
-        Hres_juin = float()
-        Hres_juil = float()
-        Hres_aout = float()
-        Hres_sept = float()
-        Hres_oct = float()
-        Hres_nov = float()
-        Hres_dec = float()
-        # cumul d'heures pour employé
-        Hres_janv_1 = float()
-        Hres_fev_1 = float()
-        Hres_mars_1 = float()
-        Hres_avril_1 = float()
-        Hres_mai_1 = float()
-        Hres_juin_1 = float()
-        Hres_juil_1 = float()
-        Hres_aout_1 = float()
-        Hres_sept_1 = float()
-        Hres_oct_1 = float()
-        Hres_nov_1 = float()
-        Hres_dec_1 = float()
-        Interv_type = int()
-        for item in prev_list:
-            cur.execute("SELECT IDTypeIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
-                        (item[0], client_ident))
-            for res in cur.fetchall():
-                Interv_type = res[0]
-            # cumuler les Dates prochaines de tous les mois car si freqans-1, il pourrait y avoir répétition, sinon, pas de répétition.
-            # date_enreg=item[16]
-            # tous les cumulatifs sont de type 'float' pour éviter erreur numpy dû à comparaison entre float et decimal.Decimal (dans liste)
-
-            if item[4] == 1:  # janvier
-                if Interv_type == 1:  # employé
-                    Hres_janv_1 += float(item[2])
-                else:
-                    Hres_janv += float(item[2])
-            if item[5] == 1:
-                if Interv_type == 1:
-                    Hres_fev_1 += float(item[2])
-                else:
-                    Hres_fev += float(item[2])
-            if item[6] == 1:
-                if Interv_type == 1:
-                    Hres_mars_1 += float(item[2])
-                else:
-                    Hres_mars += float(item[2])
-            if item[7] == 1:
-                if Interv_type == 1:
-                    Hres_avril_1 += float(item[2])
-                else:
-                    Hres_avril += float(item[2])
-
-            if item[8] == 1:
-                if Interv_type == 1:
-                    Hres_mai_1 += float(item[2])
-                else:
-                    Hres_mai += float(item[2])
-            if item[9] == 1:
-                if Interv_type == 1:
-                    Hres_juin_1 += float(item[2])
-                else:
-                    Hres_juin += float(item[2])
-            if item[10] == 1:
-                if Interv_type == 1:
-                    Hres_juil_1 += float(item[2])
-                else:
-                    Hres_juil += float(item[2])
-            if item[11] == 1:
-                if Interv_type == 1:
-                    Hres_aout_1 += float(item[2])
-                else:
-                    Hres_aout += float(item[2])
-            if item[12] == 1:
-                if Interv_type == 1:
-                    Hres_sept_1 += float(item[2])
-                else:
-                    Hres_sept += float(item[2])
-            if item[13] == 1:
-                if Interv_type == 1:
-                    Hres_oct_1 += float(item[2])
-                else:
-                    Hres_oct += float(item[2])
-            if item[14] == 1:
-                if Interv_type == 1:
-                    Hres_nov_1 += float(item[2])
-                else:
-                    Hres_nov += float(item[2])
-            if item[15] == 1:
-                if Interv_type == 1:
-                    Hres_dec_1 += float(item[2])
-                else:
-                    Hres_dec += float(item[2])
+        # === F. PREVENTIVE HOURS ===
+        labels_preventif, heures_fournisseurs, heures_employes = get_preventive_hours(cnx, client_ident)
 
         cnx.close()
-        liste_mois=['Jan','Fev','Mar','Avr','Mai','Juin','Juil','Aout','Sept','Oct','Nov','Dec']
-        liste_hres_fournisseurs=[Hres_janv,Hres_fev,Hres_mars,Hres_avril,int(Hres_mai),Hres_juin,Hres_juil,Hres_aout,Hres_sept,Hres_oct,Hres_nov,Hres_dec]
-        liste_hres_employes=[Hres_janv_1,Hres_fev_1,Hres_mars_1,Hres_avril_1,Hres_mai_1,Hres_juin_1,Hres_juil_1,Hres_aout_1,Hres_sept_1,Hres_oct_1,Hres_nov_1,Hres_dec_1]
-
-        date_cour = date.today()
-        mois_courant=date_cour.month
-
-        #rotation des listes à partir d'un indice à partir de la fin de la liste
-        deq=collections.deque(liste_mois)
-        deq.rotate(12-int(mois_courant)+1)
-        labels_preventif=list(deq)
-        deq=collections.deque(liste_hres_fournisseurs)
-        deq.rotate(12-int(mois_courant)+1)
-        heures_fournisseurs=list(deq)
-        deq=collections.deque(liste_hres_employes)
-        deq.rotate(12-int(mois_courant)+1)
-        heures_employes=list(deq)
-        # les 2 listes sont maintenant en ordre de mois à partir du mois courant
 
     except:
         print(traceback.format_exc())
 
-
-    return render_template('dashboard_plus.html', indicateurs=indicateurs, intervenant_list=intervenant_list,
-                           priorite_1=priorite_1_count, priorite_2=priorite_2_count, priorite_3=priorite_3_count, priorite_4=priorite_4_count,
-                           ytd_pourcent=ytd_pourcent, labels_12=labels_12, budget_12=budgets_12, records_12=records_12, tableau_list=tableau_list,
-                           labels_pie=labels_pie, tickets_pie=tickets_pie, labels_preventif=labels_preventif, heures_fournisseurs=heures_fournisseurs,
-                           heures_employes=heures_employes, bd=profile_list[3])
+    return render_template(
+        'dashboard_plus.html',
+        indicateurs=indicateurs,
+        intervenant_list=intervenant_list,
+        priorite_1=priorite_1_count,
+        priorite_2=priorite_2_count,
+        priorite_3=priorite_3_count,
+        priorite_4=priorite_4_count,
+        ytd_pourcent=ytd_pourcent,
+        labels_12=labels_12,
+        budget_12=budgets_12,
+        records_12=records_12,
+        tableau_list=tableau_list,
+        labels_pie=labels_pie,
+        tickets_pie=tickets_pie,
+        labels_preventif=labels_preventif,
+        heures_fournisseurs=heures_fournisseurs,
+        heures_employes=heures_employes,
+        bd=bd
+    )

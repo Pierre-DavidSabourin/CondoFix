@@ -1,42 +1,297 @@
 {% extends "-public_layout_new.html" %}
-{% block content %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Suivez l'évolution de votre fonds de prévoyance</title>
-    <meta name="description" content="Logiciel de gestion d'entretien pour copropriétés au Québec.">
-    <meta name="keywords" content="gmao, entretien copropriété, gestion d'entretien, logiciel entretien, syndicat de copropriété">
-    <!--    icone sur onglet-->
-    <link rel="icon" href="../static/ToolsIcon.png">
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="../static/bootstrap.css">
-    <link rel="stylesheet" href="../static/styles_1.css">
-</head>
-<body>
 
-<div class="container-fluid">
+{% block meta_title %}CondoFix — Module de fonds de prévoyance{% endblock %}
+{% block meta_description %}
+Suivez et modélisez l’évolution réelle de votre fonds de prévoyance avec CondoFix grâce à un outil conçu pour les syndicats de copropriété.
+{% endblock %}
+{% block meta_keywords %}
+fonds de prévoyance, condo, copropriété, modélisation fonds, suivi fonds de prévoyance, CondoFix
+{% endblock %}
+{% block canonical %}
+<link rel="canonical" href="{{ url_for('bp_public.module_fdp', _external=True) }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .fdp-hero {
+    background: #6d8496;
+    color: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  }
+
+  .fdp-panel {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: .9rem;
+    padding: 1.2rem;
+    height: 100%;
+  }
+
+  .fdp-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+  }
+
+  .fdp-actions .btn {
+    min-width: 142px;
+    text-align: center;
+  }
+
+  .fdp-kicker {
+    display: inline-block;
+    font-size: .9rem;
+    font-weight: 700;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+    color: #ffd97a;
+    margin-bottom: .7rem;
+  }
+
+  .fdp-hero p,
+  .fdp-hero li {
+    color: rgba(255,255,255,.96);
+  }
+
+  .fdp-bullets {
+    padding-left: 1.15rem;
+    margin-bottom: 0;
+  }
+
+  .fdp-bullets li {
+    margin-bottom: .5rem;
+    line-height: 1.45;
+  }
+
+  .fdp-image-wrap {
+    border-radius: 1rem;
+    overflow: hidden;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 18px 36px rgba(0,0,0,.16);
+  }
+
+  .fdp-image-link {
+    display: block;
+    text-decoration: none;
+  }
+
+  .fdp-image-wrap img {
+    width: 100%;
+    display: block;
+    transition: transform .22s ease, filter .22s ease;
+  }
+
+  .fdp-image-link:hover img,
+  .fdp-image-link:focus img {
+    transform: scale(1.015);
+    filter: brightness(1.02);
+  }
+
+  .fdp-image-caption {
+    font-size: 1.06rem;
+    line-height: 1.65;
+    color: #31404d;
+  }
+
+  .section-card,
+  .method-card,
+  .cta-band,
+  .graph-focus-card {
+    border: 1px solid #dde5ec;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0,0,0,.04);
+  }
+
+  .section-card .card-body,
+  .method-card .card-body {
+    padding: 1.35rem;
+  }
+
+  .cta-band {
+    background: #f3f7fa;
+    border-color: #dbe4ec;
+    padding: 1.5rem;
+  }
+
+  .graph-focus-card {
+    overflow: hidden;
+  }
+
+  .graph-focus-card .card-body {
+    padding: 1.5rem;
+  }
+
+  .graph-focus-grid {
+    display: block;
+  }
+
+  .section-intro {
+    color: #627180;
+    line-height: 1.6;
+  }
+
+  .mini-kicker {
+    display: inline-block;
+    font-size: .86rem;
+    font-weight: 800;
+    letter-spacing: .025em;
+    text-transform: uppercase;
+    color: #58728a;
+    margin-bottom: .55rem;
+    line-height: 1.3;
+  }
+
+  .soft-blue {
+    background: #f7fbff;
+    border-color: #d9e7f2;
+  }
+
+  .soft-sand {
+    background: #fffaf1;
+    border-color: #ead9b6;
+  }
+
+  .formula-copy {
+    color: #31404d;
+    line-height: 1.7;
+    font-size: 1.02rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .fdp-hero { padding: 1.2rem; }
+    .fdp-actions .btn { min-width: 0; }
+    .graph-focus-grid {
+      display: block;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .fdp-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .65rem;
+    }
+
+    .fdp-actions .btn {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .fdp-actions .btn:last-child {
+      grid-column: 1 / -1;
+      justify-self: stretch;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .graph-focus-card .card-body {
+      padding: 1.1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <section class="fdp-hero mb-4">
     <div class="row">
-        <div class="col-12 mt-4">
-            <style>
-                #image1{
-                  border: 1px solid #000;
-                }
-            </style>
-            <h1>Module de fonds de prévoyance</h1>
-            <h5>Un outil indispensable pour faire le suivi et modéliser le vrai solde de votre fonds</h5>
-            <ul>
-              <li>Génère automatiquement un bon de travail pour chaque intervention selon l'année prévue dans l'analyse</li>
-              <li>Tient compte des dépenses attribuées au fonds de prévoyance</li>
-              <li>Permet aux copropriétaires de connaître la situation du fonds en tout temps</li>
-              <li>Données ajustées: projection du solde du fonds en tenant compte des taux d'inflation et des taux d'intérêt réels</li>
-            </ul>
-            <img  class="img-fluid rounded-0 mb-3" id=image1 src="../static/images_publiques/FDP_Pageweb.png"/>
+      <div class="col-12">
+        <div class="fdp-panel">
+          <span class="fdp-kicker">Module de fonds de prévoyance</span>
+          <h1 class="h2 text-white mb-3">Suivez et modélisez le vrai solde de votre fonds de prévoyance</h1>
+          <p class="mb-3">
+            CondoFix permet de suivre l’évolution du fonds de prévoyance au-delà d’un simple solde statique. Le module aide le syndicat
+            à visualiser les dépenses prévues, les ajustements et l’incidence de différents paramètres financiers sur le fonds, dans une vue claire et exploitable.
+          </p>
+          <ul class="fdp-bullets">
+            <li>Génère automatiquement un bon de travail pour chaque intervention selon l’année prévue dans l’analyse</li>
+            <li>Tient compte des dépenses attribuées au fonds de prévoyance</li>
+            <li>Permet aux copropriétaires de connaître la situation du fonds en tout temps</li>
+            <li>Présente des données ajustées pour mieux refléter la réalité financière à long terme</li>
+          </ul>
+
+          <p class="mb-0 mt-4">
+            Le module aide ainsi le syndicat à relier les analyses théoriques à une lecture plus concrète, visuelle et évolutive du fonds.
+          </p>
         </div>
+      </div>
     </div>
-    <div class="row">
-        <a class="btn-lg btn-primary btn-rounded my-4" role="button" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
-        <a class="btn-lg text-black btn-warning btn-rounded mx-2 my-4" role="button" href="/video_infos">Vidéo 3 min.</a>
-        <a class="btn-lg text-white btn-danger btn-rounded my-4" role="button" href="/demo">Essai gratuit</a></div>
+  </section>
+
+  <section class="mb-4">
+    <div class="graph-focus-card">
+      <div class="card-body">
+        <h2 class="h3 mb-3">Données ajustées et modélisation</h2>
+        <p class="fdp-image-caption mb-4">
+          Le module permet d’interpréter l’évolution du fonds à partir d’hypothèses réalistes sur les coûts, l’inflation et le rendement. Le graphique ci-dessous met en évidence le <strong>solde projeté</strong>, les <strong>dépenses prévues</strong> et l’effet des paramètres financiers dans une vue unique.
+        </p>
+        <div class="graph-focus-grid">
+          <a class="fdp-image-link" href="{{ url_for('static', filename='images_publiques/FDP_Pageweb.png') }}" target="_blank" rel="noopener" aria-label="Ouvrir le graphique du fonds de prévoyance en grand">
+            <div class="fdp-image-wrap">
+              <img src="{{ url_for('static', filename='images_publiques/FDP_Pageweb.png') }}" alt="Graphique de modélisation du fonds de prévoyance dans CondoFix">
+            </div>
+          </a>
+        </div>
+        <p class="section-intro mt-3 mb-0">
+          Le graphique de modélisation constitue la pièce centrale du module : il permet de visualiser rapidement l’effet combiné des dépenses futures, des ajustements et du rendement sur le fonds.
+        </p>
+      </div>
     </div>
-</body>
-{% endblock content %}
+  </section>
+
+  <section class="mb-4">
+    <div class="row align-items-stretch">
+      <div class="col-lg-6 mb-3 mb-lg-0">
+        <div class="method-card soft-blue h-100">
+          <div class="card-body">
+            <span class="mini-kicker">Comment les dépenses ajustées sont calculées</span>
+            <p class="formula-copy mb-0">
+              Les dépenses ajustées sont projetées à partir de l’indice réel du coût de construction (ICC*) lorsque cet indice est disponible,
+              puis prolongées selon les hypothèses d’inflation retenues dans l’analyse pour les années subséquentes. Cette méthode permet
+              de refléter plus fidèlement l’évolution anticipée du coût des interventions prévues au fonds de prévoyance.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="method-card soft-sand h-100">
+          <div class="card-body">
+            <span class="mini-kicker">Comment le solde ajusté est compilé</span>
+            <p class="formula-copy mb-0">
+              Le solde ajusté est compilé à partir du solde actuel le plus récent, en appliquant un rendement moyen** correspondant aux
+              paramètres financiers utilisés dans la modélisation. Cette approche permet d’estimer l’évolution du fonds dans le temps
+              en tenant compte du rendement anticipé des placements.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-7 mb-3 mb-lg-0">
+        <h2 class="h4 mb-2">Vous voulez mieux visualiser l’évolution de votre fonds?</h2>
+        <p class="mb-0 section-intro">
+          CondoFix aide le syndicat à relier les interventions prévues, les dépenses projetées et le solde du fonds dans un même environnement.
+        </p>
+      </div>
+      <div class="col-lg-5 text-lg-right">
+        <div class="fdp-actions justify-content-lg-end">
+          <a class="btn btn-warning text-dark font-weight-bold" href="{{ url_for('bp_public.produits') }}">Nos offres</a>
+          <a class="btn btn-light" href="/video_infos">Vidéo 3 min.</a>
+          <a class="btn btn-danger text-white" href="/demo">Essai gratuit</a>
+          <a class="btn btn-primary" href="{{ url_for('bp_public.demande_info') }}">En savoir plus</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

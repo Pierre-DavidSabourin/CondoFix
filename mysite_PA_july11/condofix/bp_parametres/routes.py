@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,g,session,url_for,redirect,request,flash
+from flask import Blueprint, render_template, g, session, url_for, redirect, request, flash, make_response
 import mysql.connector
 import collections
 from collections import Counter
@@ -47,7 +47,13 @@ def parametres():
     cnx.commit()
     cnx.close()
     #return render_template('parametres_futur.html', version=version_client, fill_parametres=fill_parametres, bd=profile_list[3])
-    return render_template('parametres.html', fill_parametres=fill_parametres, bd=profile_list[3])
+    theme_ui = request.cookies.get('condofix_theme_ui', 'normal-condofix-classic')
+    return render_template(
+        'parametres.html',
+        fill_parametres=fill_parametres,
+        theme_ui=theme_ui,
+        bd=profile_list[3]
+    )
 
 
 @bp_parametres.route('/reglages_modif', methods=['POST'])
@@ -571,3 +577,42 @@ def reservations_modif():
     cnx.commit()
     cnx.close()
     return redirect(url_for('bp_parametres.parametres'))
+
+@bp_parametres.route('/themes', methods=['POST', 'GET'])
+def themes():
+    """Affichage et sauvegarde du thème visuel CondoFix via cookie."""
+
+    if session.get('ProfilUsager') is None:
+        return render_template('session_ferme.html')
+
+    profile_list = session.get('ProfilUsager')
+
+    # pour l'instant, on conserve la même restriction d'accès que la page paramètres
+    if profile_list[2] > 2:
+        return redirect(url_for('bp_admin.permission'))
+
+    default_theme = 'normal-condofix-classic'
+    theme_ui = request.cookies.get('condofix_theme_ui', default_theme)
+
+    if request.method == 'POST':
+        selected_theme = request.form.get('theme_ui', '').strip()
+
+        if selected_theme == '':
+            selected_theme = default_theme
+
+        response = make_response(redirect(url_for('bp_parametres.themes')))
+        response.set_cookie(
+            'condofix_theme_ui',
+            selected_theme,
+            max_age=60 * 60 * 24 * 365,   # 1 an
+            httponly=False,
+            samesite='Lax'
+        )
+        flash("Le thème visuel a été enregistré pour ce navigateur.", "success")
+        return response
+
+    return render_template(
+        'themes.html',
+        theme_ui=theme_ui,
+        bd=profile_list[3]
+    )

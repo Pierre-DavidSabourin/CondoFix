@@ -922,143 +922,324 @@ def dupliquer_en_attente(id_ticket):
     cnx.close()
     return redirect(url_for('bp_factures.attente_facture', version=version_client))
 
-# tableau dynamique de d'historique des travaux d'entretien
-@bp_tickets.route('/histo/<mode>', methods=['POST','GET'])
+# tableau dynamique de l'historique des travaux d'entretien
+@bp_tickets.route('/histo/<mode>', methods=['POST', 'GET'])
 def histo(mode):
-    """Recherche et affichage des tickets >1000$ ou selon paramètre de l'usager"""
+    """Affiche l'historique des tickets fermés et les graphiques associés."""
     if session.get('ProfilUsager') is None:
         # probablement délai de session atteint
         return render_template('session_ferme.html')
+
     profile_list = session.get('ProfilUsager')
     client_ident = profile_list[0]
     version_client = profile_list[6]
-    # trouver le mode de connexion (Dev ou sur serveur PA)
-    profile_list = session.get('ProfilUsager')
     mode_connexion = profile_list[8]
+    bd = profile_list[3]
 
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
 
-    # ************ traitement du tableau dynamique de l'historique ****************
-    ticket_list = []
-    if mode=='initialiser':
-        montant_min=1000
-    else:
-        montant_min=request.form['montant_min']
-    cur.execute(
-        "SELECT DateComplet, IDCategorie, Description_travail, IDEquipement, IDIntervenant, CoutTotalTTC, Emplacement, IDTicket, NoFacture, TypeTravail "
-        "FROM tickets WHERE Statut=4 AND IDClient=%s", (client_ident,))
-    for row in cur.fetchall():
-        cout_tot=row[5]
-        # on élimine les tickets en bas de 1000$
-        if cout_tot is not None:
-            if int(cout_tot) < int(montant_min):
-                continue
-        cur.execute("SELECT Description FROM categories WHERE IDCategorie=%s AND IDClient=%s",
-                    (row[1], client_ident,))
-        CategorieNom = str()
-        for item in cur.fetchall():
-            CategorieNom = item[0]
-        row += (CategorieNom,)
+    try:
+        # ==========================================================
+        # Paramètre de filtre du tableau
+        # ==========================================================
+        if mode == 'initialiser':
+            montant_min = 1000
+        else:
+            montant_min = request.form.get('montant_min', 1000)
 
-        IntervenantNom = str()
+        try:
+            montant_min = int(montant_min)
+        except (TypeError, ValueError):
+            montant_min = 1000
+
+        # ==========================================================
+        # Traitement du tableau dynamique de l'historique
+        # ==========================================================
+        ticket_list = []
+
         cur.execute(
-            "SELECT NomIntervenant, IDTypeIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
-            (row[4], client_ident,))
-        for item_1 in cur.fetchall():
-            IntervenantNom = item_1[0]
-        row += (IntervenantNom,)
+            """
+            SELECT
+                DateComplet,
+                IDCategorie,
+                Description_travail,
+                IDEquipement,
+                IDIntervenant,
+                CoutTotalTTC,
+                Emplacement,
+                IDTicket,
+                NoFacture,
+                TypeTravail
+            FROM tickets
+            WHERE Statut = 4
+              AND IDClient = %s
+            """,
+            (client_ident,)
+        )
 
-        if row[3] == None or row[3] == '':
-            row += ('',)
-        else:
-            cur.execute("SELECT Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s",
-                        (row[3], client_ident,))
-            Desc_equip = str()
-            for item_2 in cur.fetchall():
-                Desc_equip = item_2[0]
-            row += ('no. ' + str(row[3]) + ', ' + str(Desc_equip),)
-        cur.execute("SELECT Description FROM typetravail WHERE IDTypeTravail=%s", (row[9],))
-        for item_3 in cur.fetchall():
-            Desc_travail = item_3[0]
-            row += (Desc_travail,)
-        ticket_list.append(row)
-        ticket_list.sort(key=lambda x: x[0])
+        for row in cur.fetchall():
+            date_complet = row[0]
+            id_categorie = row[1]
+            description_travail = row[2]
+            id_equipement = row[3]
+            id_intervenant = row[4]
+            cout_total_ttc = row[5]
+            emplacement = row[6]
+            id_ticket = row[7]
+            no_facture = row[8]
+            type_travail_id = row[9]
 
-    # ************ traitement des graphiques ****************
-    cur.execute("SELECT DateComplet, IDCategorie, CoutTotalTTC FROM tickets WHERE Statut=4 AND IDClient=%s", (client_ident,))
-    cum_tickets_tot=0
-    cum_cout_tot=0
-    cum_0=0
-    cum_moins_250=0
-    cum_250_1000 = 0
-    cum_1000_5000=0
-    cum_plus_5000=0
-    liste_annuelle=[]
-    liste_categories=[]
-    liste_groupe_cout=[]
-    for row in cur.fetchall():
-        # graphique par année
-        annee=str(row[0].year)
-        ajout_1=(annee,row[2])
-        liste_annuelle.append(ajout_1)
-        # graphique par catégorie
-        ajout_2=(row[1],row[2])
-        liste_categories.append(ajout_2)
-        # graphique par cout total des tickets (groupés)
-        if row[2] == 0:
-            cum_0 += 1
-        if 0 < row[2] < 250:
-            cum_moins_250 +=1
-        elif 249.99 <= row[2] < 1000:
-            cum_250_1000 +=1
-        elif 999.99 < row[2] < 5000:
-            cum_1000_5000 +=1
-        elif row[2] >= 5000:
-            cum_plus_5000 +=1
+            # Filtre du tableau : ne garder que les tickets >= montant_min
+            if cout_total_ttc is not None and int(cout_total_ttc) < montant_min:
+                continue
 
-        cum_tickets_tot +=1
-        cum_cout_tot += row[2]
+            # Description de catégorie
+            categorie_nom = ''
+            cur.execute(
+                """
+                SELECT Description
+                FROM categories
+                WHERE IDCategorie = %s
+                  AND IDClient = %s
+                """,
+                (id_categorie, client_ident)
+            )
+            res_categorie = cur.fetchone()
+            if res_categorie:
+                categorie_nom = res_categorie[0]
 
-    totals_1 = {}
-    for uid, x in liste_annuelle:
-        if uid not in totals_1:
-            totals_1[uid] = x
-        else:
-            totals_1[uid] += x
-    liste_annuelle_triee=sorted(totals_1.items(), key=lambda x: x[0], reverse=False)
-    liste_etiq_annees=[]
-    liste_dep_annuelles=[]
-    for item in liste_annuelle_triee:
-        liste_etiq_annees.append(item[0])
-        liste_dep_annuelles.append(int(item[1]))
-    totals_2 = {}
-    for uid, x in liste_categories:
-        if uid not in totals_2:
-            totals_2[uid] = x
-        else:
-            totals_2[uid] += x
-    liste_categories_triee = sorted(totals_2.items(), key=lambda x: x[1], reverse=True)
-    liste_etiq_categories=[]
-    liste_dep_categories=[]
-    i=0
-    for item in liste_categories_triee:
-        cur.execute("SELECT Description FROM categories WHERE IDCategorie=%s AND IDClient=%s",(item[0],client_ident))
-        for res in cur.fetchone():
-            liste_etiq_categories.append(res)
-        liste_dep_categories.append(int(item[1]))
-        i+=1
-        if i==10:
-            break
+            # Nom de l'intervenant
+            intervenant_nom = ''
+            cur.execute(
+                """
+                SELECT NomIntervenant
+                FROM intervenants
+                WHERE IDIntervenant = %s
+                  AND IDClient = %s
+                """,
+                (id_intervenant, client_ident)
+            )
+            res_intervenant = cur.fetchone()
+            if res_intervenant:
+                intervenant_nom = res_intervenant[0]
 
-    cnx.close()
-    tot_dep_globales=int(cum_cout_tot)
-    liste_etiq_groupe_brut='0$,Moins de 250$,250 à 1000$,1000 à 5000$,Plus de 5000$'
-    liste_etiq_groupe=liste_etiq_groupe_brut.split(',')
-    liste_nbre_groupe=[cum_0, cum_moins_250, cum_250_1000, cum_1000_5000, cum_plus_5000]
-    return render_template('historique_new.html', version=version_client, labels_annees=liste_etiq_annees, dep_annuelles=liste_dep_annuelles,
-                           labels_pie=liste_etiq_categories, depenses_pie=liste_dep_categories, cum_dep_globales=tot_dep_globales,tot_tickets=cum_tickets_tot,
-                           labels_groupes=liste_etiq_groupe,nombre_groupes=liste_nbre_groupe,fill_histo=ticket_list, montant_min=montant_min, bd=profile_list[3])
+            # Description équipement
+            if id_equipement is None or id_equipement == '':
+                equipement_desc = ''
+            else:
+                equipement_desc = ''
+                cur.execute(
+                    """
+                    SELECT Nom
+                    FROM equipements
+                    WHERE IDEquipement = %s
+                      AND IDClient = %s
+                    """,
+                    (id_equipement, client_ident)
+                )
+                res_equipement = cur.fetchone()
+                if res_equipement:
+                    equipement_desc = f"no. {id_equipement}, {res_equipement[0]}"
+
+            # Description type de travail
+            desc_travail = ''
+            cur.execute(
+                """
+                SELECT Description
+                FROM typetravail
+                WHERE IDTypeTravail = %s
+                """,
+                (type_travail_id,)
+            )
+            res_travail = cur.fetchone()
+            if res_travail:
+                desc_travail = res_travail[0]
+
+            ticket_list.append(
+                (
+                    date_complet,
+                    id_categorie,
+                    description_travail,
+                    id_equipement,
+                    id_intervenant,
+                    cout_total_ttc,
+                    emplacement,
+                    id_ticket,
+                    no_facture,
+                    type_travail_id,
+                    categorie_nom,
+                    intervenant_nom,
+                    equipement_desc,
+                    desc_travail,
+                )
+            )
+
+        ticket_list.sort(key=lambda x: x[0] if x[0] is not None else datetime.min.date())
+
+        # ==========================================================
+        # Traitement des graphiques
+        # ==========================================================
+        cur.execute(
+            """
+            SELECT
+                DateComplet,
+                IDCategorie,
+                CoutTotalTTC,
+                TypeTravail
+            FROM tickets
+            WHERE Statut = 4
+              AND IDClient = %s
+            """,
+            (client_ident,)
+        )
+
+        cum_tickets_tot = 0
+        cum_cout_tot = 0.0
+
+        liste_annuelle = []
+        liste_categories = []
+        liste_types_travail = []
+
+        for row in cur.fetchall():
+            date_complet = row[0]
+            id_categorie = row[1]
+            cout_total_ttc = row[2]
+            type_travail_id = row[3]
+
+            if cout_total_ttc is None:
+                cout_total_ttc = 0.0
+
+            # Graphique 1 : dépenses annuelles
+            if date_complet is not None:
+                liste_annuelle.append((str(date_complet.year), cout_total_ttc))
+
+            # Graphique 2 : catégories par dépenses
+            liste_categories.append((id_categorie, cout_total_ttc))
+
+            # Graphique 3 : dépenses par type de travail
+            liste_types_travail.append((type_travail_id, cout_total_ttc))
+
+            cum_tickets_tot += 1
+            cum_cout_tot += float(cout_total_ttc)
+
+        # ----------------------------------------------------------
+        # Graphique 1 : Dépenses annuelles
+        # ----------------------------------------------------------
+        totals_annees = {}
+        for annee, montant in liste_annuelle:
+            if annee not in totals_annees:
+                totals_annees[annee] = montant
+            else:
+                totals_annees[annee] += montant
+
+        liste_annuelle_triee = sorted(totals_annees.items(), key=lambda x: x[0])
+
+        liste_etiq_annees = []
+        liste_dep_annuelles = []
+        for annee, montant in liste_annuelle_triee:
+            liste_etiq_annees.append(annee)
+            liste_dep_annuelles.append(round(float(montant), 2))
+
+        # ----------------------------------------------------------
+        # Graphique 2 : Top 10 catégories par dépenses
+        # ----------------------------------------------------------
+        totals_categories = {}
+        for id_categorie, montant in liste_categories:
+            if id_categorie not in totals_categories:
+                totals_categories[id_categorie] = montant
+            else:
+                totals_categories[id_categorie] += montant
+
+        liste_categories_triee = sorted(
+            totals_categories.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        liste_etiq_categories = []
+        liste_dep_categories = []
+
+        i = 0
+        for id_categorie, montant in liste_categories_triee:
+            cur.execute(
+                """
+                SELECT Description
+                FROM categories
+                WHERE IDCategorie = %s
+                  AND IDClient = %s
+                """,
+                (id_categorie, client_ident)
+            )
+            res_categorie = cur.fetchone()
+            if res_categorie:
+                liste_etiq_categories.append(res_categorie[0])
+                liste_dep_categories.append(round(float(montant), 2))
+                i += 1
+            if i == 10:
+                break
+
+        # Inverser pour affichage horizontal : plus grand en haut
+        liste_etiq_categories.reverse()
+        liste_dep_categories.reverse()
+
+        # ----------------------------------------------------------
+        # Graphique 3 : Dépenses par type de travail
+        # ----------------------------------------------------------
+        totals_types = {}
+        for type_travail_id, montant in liste_types_travail:
+            if type_travail_id not in totals_types:
+                totals_types[type_travail_id] = montant
+            else:
+                totals_types[type_travail_id] += montant
+
+        liste_types_triee = sorted(
+            totals_types.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+        liste_etiq_types = []
+        liste_dep_types = []
+
+        for type_travail_id, montant in liste_types_triee:
+            cur.execute(
+                """
+                SELECT Description
+                FROM typetravail
+                WHERE IDTypeTravail = %s
+                """,
+                (type_travail_id,)
+            )
+            res_type = cur.fetchone()
+            if res_type:
+                liste_etiq_types.append(res_type[0])
+                liste_dep_types.append(round(float(montant), 2))
+
+        # Inverser pour affichage horizontal : plus grand en haut
+        liste_etiq_types.reverse()
+        liste_dep_types.reverse()
+
+    finally:
+        cnx.close()
+
+    tot_dep_globales = round(float(cum_cout_tot), 2)
+
+    return render_template(
+        'historique_new.html',
+        version=version_client,
+        labels_annees=liste_etiq_annees,
+        dep_annuelles=liste_dep_annuelles,
+        labels_categories=liste_etiq_categories,
+        depenses_categories=liste_dep_categories,
+        labels_types=liste_etiq_types,
+        depenses_types=liste_dep_types,
+        cum_dep_globales=tot_dep_globales,
+        tot_tickets=cum_tickets_tot,
+        fill_histo=ticket_list,
+        montant_min=montant_min,
+        bd=bd
+    )
 
 #page de saisie de facture avec ocr et création de ticket simultanée
 @bp_tickets.route('/facture_ocr')

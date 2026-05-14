@@ -1,131 +1,794 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
 
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Documents'
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
 
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .docs-page {
+        --docs-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --docs-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --docs-radius-xl: 20px;
+        --docs-radius-lg: 16px;
+        --docs-radius-md: 14px;
+        --docs-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .docs-page .docs-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--docs-radius-xl);
+        box-shadow: var(--docs-shadow);
+        padding: 1.25rem;
+    }
+
+    .docs-page .docs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .docs-page .docs-header-copy {
+        min-width: 0;
+    }
+
+    .docs-page .docs-header-copy h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .docs-page .docs-header-copy p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .docs-page .docs-storage-card {
+        width: 360px;
+        max-width: 100%;
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--docs-radius-lg);
+        padding: 1rem;
+        box-shadow: var(--docs-shadow-soft);
+    }
+
+    .docs-page .docs-storage-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .docs-page .docs-storage-label {
+        display: block;
+        color: var(--theme-text-muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+    }
+
+    .docs-page .docs-storage-value {
+        display: block;
+        color: var(--theme-text);
+        font-size: 1.05rem;
+        font-weight: 800;
+        line-height: 1.15;
+    }
+
+    .docs-page .docs-storage-badge {
+        flex: 0 0 auto;
+        min-width: 64px;
+        padding: 0.35rem 0.55rem;
+        border-radius: 999px;
+        text-align: center;
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        color: var(--theme-text);
+        font-weight: 800;
+        font-size: 0.85rem;
+    }
+
+    .docs-page .docs-storage-progress {
+        width: 100%;
+        height: 14px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        margin-bottom: 0.65rem;
+    }
+
+    .docs-page .docs-storage-fill {
+        display: block;
+        height: 100%;
+        min-width: 4px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--theme-link-edit), var(--theme-kpi-hours));
+    }
+
+    .docs-page .docs-storage-card.is-warning .docs-storage-fill {
+        background: linear-gradient(90deg, var(--theme-link-complete), var(--theme-priority-high));
+    }
+
+    .docs-page .docs-storage-card.is-danger .docs-storage-fill {
+        background: linear-gradient(90deg, var(--theme-link-delete), var(--theme-priority-critical));
+    }
+
+    .docs-page .docs-storage-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        color: var(--theme-text-muted);
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    .docs-page .docs-storage-folder-warning {
+        margin-top: 0.65rem;
+        color: var(--theme-link-delete);
+        font-weight: 800;
+        font-size: 0.86rem;
+    }
+
+    .docs-page .docs-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .docs-page .docs-toolbar-left,
+    .docs-page .docs-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .docs-page .docs-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--docs-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .docs-page .docs-btn:hover,
+    .docs-page .docs-btn:focus {
+        text-decoration: none;
+        color: var(--theme-text);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .docs-page .docs-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+        border-color: transparent;
+    }
+
+    .docs-page .docs-btn-primary:hover,
+    .docs-page .docs-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+        opacity: 0.96;
+    }
+
+    .docs-page .docs-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--docs-radius-lg);
+        box-shadow: var(--docs-shadow);
+        overflow: hidden;
+    }
+
+    .docs-page .docs-table-inner {
+        padding: 0;
+    }
+
+    .docs-page .docs-table-scroll-top,
+    .docs-page .docs-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .docs-page .docs-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .docs-page .docs-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1050px;
+    }
+
+    .docs-page .docs-table-scroll table {
+        min-width: 1050px !important;
+    }
+
+    .docs-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--docs-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .docs-page .dt-buttons .dt-button:hover,
+    .docs-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .docs-page #docs-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .docs-page #docs-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .docs-page #docs-dt-search .dataTables_filter input,
+    .docs-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .docs-page #docs-dt-search .dataTables_filter input::placeholder,
+    .docs-page .dataTables_wrapper .dataTables_filter input::placeholder {
+        color: var(--theme-text-muted);
+    }
+
+    .docs-page #docs-dt-search .dataTables_filter input:focus,
+    .docs-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .docs-page .dataTables_wrapper .dataTables_length,
+    .docs-page .dataTables_wrapper .dataTables_filter,
+    .docs-page .dataTables_wrapper .dt-buttons,
+    .docs-page .dataTables_wrapper .dataTables_info,
+    .docs-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .docs-page table.dataTable,
+    .docs-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+    }
+
+    .docs-page table.dataTable thead th,
+    .docs-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+    }
+
+    .docs-page table.dataTable thead th.sorting_disabled,
+    .docs-page table#table_data thead th.sorting_disabled {
+        padding-right: 12px !important;
+    }
+
+    .docs-page table.dataTable tbody td,
+    .docs-page table#table_data tbody td {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: top;
+    }
+
+    .docs-page table.dataTable tbody tr:nth-child(even) td,
+    .docs-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .docs-page .docs-description-cell {
+        font-weight: 800;
+    }
+
+    .docs-page .docs-actions {
+        min-width: 180px;
+    }
+
+    .docs-page .docs-actions-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.7rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .docs-page .doc-action-link {
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .docs-page .doc-action-view {
+        color: var(--theme-link-edit);
+    }
+
+    .docs-page .doc-action-edit {
+        color: var(--theme-link-complete);
+    }
+
+    .docs-page .doc-action-delete {
+        color: var(--theme-link-delete);
+    }
+
+    .docs-page .doc-action-link:hover,
+    .docs-page .doc-action-link:focus {
+        opacity: 0.88;
+        text-decoration: none;
+    }
+
+    .docs-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .docs-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .docs-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .docs-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .docs-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .docs-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .docs-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 991px) {
+        .docs-page .docs-header {
+            flex-direction: column;
+        }
+
+        .docs-page .docs-storage-card {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .docs-page {
+            padding-top: 1rem;
+        }
+
+        .docs-page .docs-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .docs-page .docs-header-copy h1 {
+            font-size: 1.6rem;
+        }
+
+        .docs-page #docs-dt-search .dataTables_filter input,
+        .docs-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .docs-page .docs-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .docs-page .docs-toolbar-left,
+        .docs-page .docs-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .docs-page #docs-dt-search .dataTables_filter label,
+        .docs-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .docs-page #docs-dt-search .dataTables_filter input,
+        .docs-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        .docs-page .docs-storage-top,
+        .docs-page .docs-storage-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    html[data-theme^="dark-"] .docs-page .docs-shell {
+        background: linear-gradient(180deg, rgba(13, 26, 48, 0.96), rgba(10, 21, 40, 0.96));
+        border-color: rgba(126, 149, 176, 0.22);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
+    }
+
+    html[data-theme^="dark-"] .docs-page .docs-storage-card,
+    html[data-theme^="dark-"] .docs-page .docs-table-card {
+        background: rgba(26, 41, 66, 0.88);
+        border-color: rgba(126, 149, 176, 0.18);
+    }
+
+    html[data-theme^="dark-"] .docs-page table.dataTable thead th,
+    html[data-theme^="dark-"] .docs-page table#table_data thead th {
+        background: rgba(33, 49, 78, 0.94);
+    }
+
+    html[data-theme^="dark-"] .docs-page table.dataTable tbody td,
+    html[data-theme^="dark-"] .docs-page table#table_data tbody td {
+        background: rgba(10, 27, 51, 0.9);
+    }
+
+    html[data-theme^="dark-"] .docs-page table.dataTable tbody tr:nth-child(even) td,
+    html[data-theme^="dark-"] .docs-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(16, 35, 62, 0.92);
+    }
+
+    html[data-theme^="dark-"] .docs-page .dataTables_wrapper .dataTables_filter input,
+    html[data-theme^="dark-"] .docs-page .docs-storage-progress,
+    html[data-theme^="dark-"] .docs-page .docs-storage-badge {
+        background: rgba(26, 41, 66, 0.95) !important;
+        border-color: rgba(126, 149, 176, 0.22) !important;
+    }
+
+    html[data-theme^="dark-"] .docs-page .docs-btn,
+    html[data-theme^="dark-"] .docs-page .dt-buttons .dt-button {
+        background: rgba(26, 41, 66, 0.95) !important;
+        border-color: rgba(126, 149, 176, 0.20) !important;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.docs-table-scroll');
+        const $topScroll = $('.docs-table-scroll-top');
+        const $topInner = $('.docs-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncDocsScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Documents',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: 6
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
             },
-        ],
-        columnDefs: [
-            { "visible": false, "targets": [  ], }
-        ],
-        "pageLength":100,
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#docs-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#docs-dt-search');
+
+                setTimeout(syncDocsScrollWidth, 0);
             }
         });
-    } );
-    </script>
-</script>
-</head>
-<body>
 
-<div class="container">
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncDocsScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncDocsScrollWidth, 0);
+        });
+
+        setTimeout(syncDocsScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid docs-page">
     <div class="row">
-        <div class="col-md-12 col-xs-12 col-sm-12">
-            <div class="form-group form-inline justify-content-between">
-                <div><h2>Registre de documentation</h2></div>
-                <div>
-                    <label for="disk"><small>Répertoire 2GB max.:</small></label>
-                    <meter id="disk" value="{{ jauge_val }}"></meter>
-                </div>
-            </div>
-            <a class="btn bg-steel text-white btn-rounded mb-2" role="button" href="{{ url_for('bp_documentation.doc_enreg', parametre=0) }}">Nouveau</a>
-            <div class="datagrid">
-                <style>
-                    table {
-                        font-family: arial, sans-serif;
-                        font-size: 10px;
-                        border-collapse: collapse;
-                        width: 100%;
-                        z-index: -1;
-                    }
-                    td, th {
-                        border: 1px solid #dddddd;
-                        text-align: center;
-                        padding: 2px;
-                    }
-                    tr:nth-child(even) {
-                        background-color: #dddddd;
-                    }
-                </style>
-                <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                <tr>
-                    <th width="80px"><strong>Description</strong></th>
-                    <th width="60px"><strong>Type</strong></th>
-                    <th width="40px"><strong>Fréq. (ans)</strong></th>
-                    <th width="70px"><strong>Fournisseur</strong></th>
-                    <th width="50px"><strong>Montant ($)</strong></th>
-                    <th width="60px"><strong>Date prochain</strong></th>
-                    <th width="60px"><strong>Action</strong></th>
-                </tr>
-                </thead>
-                {% for item in fill_documents %}
-                <tr>
-                    <th width="80px">{{ item[2] }}</th>
-                    <td width="60px">{{ item[7] }}</td>
-                    <td width="40px">{{ item[3] }}</td>
-                    <td width="70px">{{ item[4] }}</td>
-                    <td width="50px">{{ item[5] }}</td>
-                    <td width="60px">{{ item[6] }}</td>
-                    <td class="align-middle" >
-                        <a href="{{ url_for('bp_documentation.doc_affiche_admin',id_doc=item[0]) }}" class="text-primary"><small><b>Afficher</b></small></a>
-                        <a href="{{ url_for('bp_documentation.doc_enreg',parametre=item[0]) }}" class="text-warning"><small><b>Modifier</b></small></a>
-                        <a href="" class="text-danger" data-toggle="modal" data-target="#Supprimer_Modal{{ item[0] }}"><small><b>Supprimer</b></small>
-                        </a>
-                        <div class="form-group">
-                            <form action="{{ url_for('bp_documentation.doc_delete',id_doc=item[0]) }}" method=post class="form-horizontal" role="form">
-                                <!-- Modal -->
-                                <div class="modal fade" id="Supprimer_Modal{{ item[0] }}" tabindex="-1" role="dialog" aria-labelledby="SupprimerModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-body">
-                                                <h5>Voulez-vous vraiment SUPPRIMER ce document?</h5><br>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-primary">Oui</button>
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
+        <div class="col-12">
+            <section class="docs-shell">
+                <div class="docs-header">
+                    <div class="docs-header-copy">
+                        <h1>Registre de documentation</h1>
+                        <p>Consultez, ajoutez et maintenez les documents administratifs du syndicat.</p>
+                    </div>
+
+                    <aside class="docs-storage-card is-{{ storage_status_level|default('healthy') }}">
+                        <div class="docs-storage-top">
+                            <div>
+                                <span class="docs-storage-label">Capacité documentation</span>
+                                <strong class="docs-storage-value">
+                                    {{ storage_used_label|default('0 Mo') }} / {{ storage_limit_label|default('2 Go') }}
+                                </strong>
+                            </div>
+
+                            <div class="docs-storage-badge">
+                                {{ storage_used_pct|default(0) }} %
+                            </div>
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-            </div>
+
+                        <div class="docs-storage-progress"
+                             role="progressbar"
+                             aria-valuenow="{{ storage_used_pct|default(0) }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            <span class="docs-storage-fill"
+                                  style="width: {{ storage_used_pct_capped|default(0) }}%;"></span>
+                        </div>
+
+                        <div class="docs-storage-footer">
+                            <span>{{ storage_status_label|default('Capacité saine') }}</span>
+                            <span>{{ storage_available_label|default('2 Go') }} disponible</span>
+                            <span>{{ storage_file_count|default(0) }} fichier(s)</span>
+                        </div>
+
+                        {% if storage_folder_exists is defined and not storage_folder_exists %}
+                            <div class="docs-storage-folder-warning">
+                                Répertoire introuvable pour ce client.
+                            </div>
+                        {% endif %}
+                    </aside>
+                </div>
+
+                <div class="docs-toolbar">
+                    <div class="docs-toolbar-left">
+                        <a class="docs-btn docs-btn-primary"
+                           role="button"
+                           href="{{ url_for('bp_documentation.doc_enreg', parametre=0) }}">
+                            Nouveau
+                        </a>
+
+                        <div id="docs-dt-buttons"></div>
+                    </div>
+
+                    <div class="docs-toolbar-right">
+                        <div id="docs-dt-search"></div>
+                    </div>
+                </div>
+
+                <div class="docs-table-card">
+                    <div class="docs-table-inner">
+                        <div class="docs-table-scroll-top">
+                            <div class="docs-table-scroll-top-inner"></div>
+                        </div>
+
+                        <div class="docs-table-scroll">
+                            <table id="table_data" class="table" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Type</th>
+                                        <th>Fréq. (ans)</th>
+                                        <th>Fournisseur</th>
+                                        <th>Montant ($)</th>
+                                        <th>Date prochain</th>
+                                        <th style="min-width: 190px;">Action</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {% for item in fill_documents %}
+                                    <tr>
+                                        <td class="docs-description-cell">{{ item[2] }}</td>
+                                        <td>{{ item[7] }}</td>
+                                        <td>{{ item[3] }}</td>
+                                        <td>{{ item[4] }}</td>
+                                        <td>{{ item[5] }}</td>
+                                        <td>{{ item[6] }}</td>
+                                        <td class="align-middle docs-actions">
+                                            <div class="docs-actions-row">
+                                                <a href="{{ url_for('bp_documentation.doc_affiche_admin', id_doc=item[0]) }}"
+                                                   class="doc-action-link doc-action-view"
+                                                target="_blank"
+                                                rel="noopener">
+                                                    Afficher
+                                                </a>
+
+                                                <a href="{{ url_for('bp_documentation.doc_enreg', parametre=item[0]) }}"
+                                                   class="doc-action-link doc-action-edit">
+                                                    Modifier
+                                                </a>
+
+                                                <a href=""
+                                                   class="doc-action-link doc-action-delete"
+                                                   data-toggle="modal"
+                                                   data-target="#Supprimer_Modal{{ item[0] }}">
+                                                    Supprimer
+                                                </a>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <form action="{{ url_for('bp_documentation.doc_delete', id_doc=item[0]) }}"
+                                                      method="post"
+                                                      class="form-horizontal"
+                                                      role="form">
+                                                    <div class="modal fade"
+                                                         id="Supprimer_Modal{{ item[0] }}"
+                                                         tabindex="-1"
+                                                         role="dialog"
+                                                         aria-labelledby="SupprimerModalLabel"
+                                                         aria-hidden="true">
+                                                        <div class="modal-dialog" role="document">
+                                                            <div class="modal-content">
+                                                                <div class="modal-body">
+                                                                    <h5>Voulez-vous vraiment SUPPRIMER ce document?</h5><br>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="submit" class="btn btn-primary">Oui</button>
+                                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </div>
-</div>
-</body>
-{% endblock %}
 
-
+{% endblock content %}

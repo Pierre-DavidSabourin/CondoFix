@@ -50,6 +50,7 @@ Identify intervenant IDs for the client (LOCAL example: IDClient=1):
   -- result: 59 (Autre)
 
 Dry-run (LOCAL):
+
 python .\condofix\scripts\Import_EntretiensPreventif.py `
   --client-id 1 `
   --xlsx .\condofix\ImportEntretien2112.xlsx `
@@ -94,7 +95,7 @@ Identify intervenant IDs for the target client (PROD example: IDClient=4):
 Dry-run (PROD):
 python condofix/scripts/Import_EntretiensPreventif.py \
   --client-id 4 \
-  --xlsx condofix/ImportEntretien2112.xlsx \
+  --xlsx condofix/ImportEntretien2112_REVISION.xlsx \
   --id-concierge 78 \
   --id-interv-autre 71 \
   --dry-run
@@ -102,7 +103,7 @@ python condofix/scripts/Import_EntretiensPreventif.py \
 Real run (PROD):
 python condofix/scripts/Import_EntretiensPreventif.py \
   --client-id 4 \
-  --xlsx condofix/ImportEntretien2112.xlsx \
+  --xlsx condofix/ImportEntretien2112_REVISION.xlsx \
   --id-concierge 78 \
   --id-interv-autre 71
 

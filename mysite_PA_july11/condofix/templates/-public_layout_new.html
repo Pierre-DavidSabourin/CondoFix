@@ -33,7 +33,28 @@
   <link href="{{ url_for('static', filename='font-awesome-4.7.0/css/font-awesome.min.css') }}" rel="stylesheet" />
 
   <style>
-    .navbar-brand img { width: 2.5rem; height: 2.5rem; }
+    .navbar-brand .brand-icon { width: 2.5rem; height: 2.5rem; display:block; flex:0 0 auto; }
+    .navbar-brand .brand-text { line-height: 1; }
+
+    .site-footer .brand-icon-footer { width: 50px; height: 50px; display:block; flex:0 0 auto; }
+    .site-footer .brand-text-footer { line-height: 1; }
+    .site-footer .brand-text-footer .name {
+      color: #9ec5ff;
+      font-weight: 700;
+      font-size: 2rem;
+      line-height: 1;
+      display: block;
+      margin-bottom: .2rem;
+    }
+    .site-footer .brand-text-footer .tagline-inline {
+      color: #cdd6dc;
+      font-size: .78rem;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      line-height: 1.2;
+      display:block;
+    }
+
     body { padding-top: 64px; }
   </style>
 
@@ -67,9 +88,16 @@
   <header class="site-header">
     <nav class="navbar navbar-expand-lg navbar-dark bg-steel fixed-top py-0">
       <div class="container px-3">
-        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('bp_public.home') }}">
-          <img class="mr-2" src="{{ url_for('static', filename='ToolsIconSmall.png') }}" alt="Logo" style="width:2.5rem;height:2.5rem;">
-          <span class="mb-0 h4">CondoFix</span>
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('bp_public.home') }}" aria-label="CondoFix accueil">
+          <svg class="mr-2 brand-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+            <g transform="translate(12,12) scale(4.75)" fill="#ffffff">
+              <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
+            </g>
+            <g transform="translate(37.6,37.4) scale(3.42)">
+              <path d="M.102 2.223A3.004 3.004 0 0 0 3.78 5.897l6.341 6.252A3.003 3.003 0 0 0 13 16a3 3 0 1 0-.851-5.878L5.897 3.781A3.004 3.004 0 0 0 2.223.1l2.141 2.142L4 4l-1.757.364zm13.37 9.019.528.026.287.445.445.287.026.529L15 13l-.242.471-.026.529-.445.287-.287.445-.529.026L13 15l-.471-.242-.529-.026-.287-.445-.445-.287-.026-.529L11 13l.242-.471.026-.529.445-.287.287-.445.529-.026L13 11z" fill="#ffffff" stroke="#445564" stroke-width="0.8" stroke-linejoin="round" paint-order="stroke fill"/>
+            </g>
+          </svg>
+          <span class="mb-0 h4 brand-text">CondoFix</span>
         </a>
 
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
@@ -95,7 +123,6 @@
                  aria-haspopup="true" aria-expanded="false">LOI 16</a>
               <div class="dropdown-menu" aria-labelledby="nav-loi16">
                 <a class="dropdown-item" href="{{ url_for('bp_public.carnet_entretien') }}">Carnet d'entretien</a>
-<!--                <a class="dropdown-item" href="{{ url_for('bp_public.attestation_home') }}">Attestation</a>-->
                 <a class="dropdown-item" href="{{ url_for('bp_public.attestation_home') }}" target="_blank" rel="noopener">Attestation</a>
                 <a class="dropdown-item" href="{{ url_for('bp_public.module_fdp') }}">Fonds de prévoyance</a>
               </div>
@@ -124,10 +151,19 @@
     <div class="row">
       <div class="col-md-4 mb-4">
         <div class="brand">
-          <img src="{{ url_for('static', filename='ToolsIconSmall.png') }}" alt="Logo" width="50" height="50">
-          <span class="name h4 mb-0">CondoFix</span>
+          <svg class="brand-icon-footer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+            <g transform="translate(12,12) scale(4.75)" fill="#ffffff">
+              <path d="M8.932.727c-.243-.97-1.62-.97-1.864 0l-.071.286a.96.96 0 0 1-1.622.434l-.205-.211c-.695-.719-1.888-.03-1.613.931l.08.284a.96.96 0 0 1-1.186 1.187l-.284-.081c-.96-.275-1.65.918-.931 1.613l.211.205a.96.96 0 0 1-.434 1.622l-.286.071c-.97.243-.97 1.62 0 1.864l.286.071a.96.96 0 0 1 .434 1.622l-.211.205c-.719.695-.03 1.888.931 1.613l.284-.08a.96.96 0 0 1 1.187 1.187l-.081.283c-.275.96.918 1.65 1.613.931l.205-.211a.96.96 0 0 1 1.622.434l.071.286c.243.97 1.62.97 1.864 0l.071-.286a.96.96 0 0 1 1.622-.434l.205.211c.695.719 1.888.03 1.613-.931l-.08-.284a.96.96 0 0 1 1.187-1.187l.283.081c.96.275 1.65-.918.931-1.613l-.211-.205a.96.96 0 0 1 .434-1.622l.286-.071c.97-.243.97-1.62 0-1.864l-.286-.071a.96.96 0 0 1-.434-1.622l.211-.205c.719-.695.03-1.888-.931-1.613l-.284.08a.96.96 0 0 1-1.187-1.186l.081-.284c.275-.96-.918-1.65-1.613-.931l-.205.211a.96.96 0 0 1-1.622-.434zM8 12.997a4.998 4.998 0 1 1 0-9.995 4.998 4.998 0 0 1 0 9.996z"/>
+            </g>
+            <g transform="translate(37.6,37.4) scale(3.42)">
+              <path d="M.102 2.223A3.004 3.004 0 0 0 3.78 5.897l6.341 6.252A3.003 3.003 0 0 0 13 16a3 3 0 1 0-.851-5.878L5.897 3.781A3.004 3.004 0 0 0 2.223.1l2.141 2.142L4 4l-1.757.364zm13.37 9.019.528.026.287.445.445.287.026.529L15 13l-.242.471-.026.529-.445.287-.287.445-.529.026L13 15l-.471-.242-.529-.026-.287-.445-.445-.287-.026-.529L11 13l.242-.471.026-.529.445-.287.287-.445.529-.026L13 11z" fill="#ffffff" stroke="#445564" stroke-width="0.8" stroke-linejoin="round" paint-order="stroke fill"/>
+            </g>
+          </svg>
+          <div class="brand-text-footer">
+            <span class="name">CondoFix</span>
+            <span class="tagline-inline">CONSERVEZ VOTRE IMMEUBLE</span>
+          </div>
         </div>
-        <p class="tagline mb-0 mt-2">CONSERVEZ VOTRE IMMEUBLE</p>
       </div>
 
       <div class="col-md-4 mb-4">

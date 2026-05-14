@@ -259,19 +259,35 @@ def read_xlsx_rows(
 # DB operations
 # -----------------------------
 
-def archive_existing(cur: MySQLCursor, client_id: int, part_syndicat: str = "all") -> int:
+def archive_existing(
+    cur: MySQLCursor,
+    client_id: int,
+    part_syndicat: str = "all",
+    except_idgroupe: Optional[int] = None,
+) -> int:
     sql = """
-        UPDATE fondsprevoyance
-        SET historique = 1
-        WHERE IDClient = %s
-          AND (historique IS NULL OR historique = 0)
+        UPDATE fondsprevoyance fp
+        SET fp.historique = 1
+        WHERE fp.IDClient = %s
+          AND (fp.historique IS NULL OR fp.historique = 0)
     """
     params: List[Any] = [client_id]
 
     if part_syndicat != "all":
-        # PartSyndicat is effectively 0/1 in your data model (owner vs syndicate responsibility)
-        sql += " AND PartSyndicat = %s"
+        sql += " AND fp.PartSyndicat = %s"
         params.append(int(part_syndicat))
+
+    if except_idgroupe is not None:
+        # Keep active rows whose category belongs to this IDGroupe for that client
+        sql += """
+          AND fp.IDCategorie NOT IN (
+              SELECT c.IDCategorie
+              FROM categories c
+              WHERE c.IDClient = %s
+                AND c.IDGroupe = %s
+          )
+        """
+        params.extend([client_id, except_idgroupe])
 
     cur.execute(sql, tuple(params))
     return cur.rowcount
@@ -340,7 +356,12 @@ def main() -> int:
     ap.add_argument("--historique-new", type=int, default=0, choices=[0, 1], help="historique value for newly inserted rows")
     ap.add_argument("--dry-run", action="store_true", help="Rollback at end; prints what would happen")
     ap.add_argument("--max-errors", type=int, default=10, help="Max row errors to show before aborting")
-    ap.add_argument("--archive-part-syndicat",type=str,default="all",choices=["all", "0", "1"],help="When --archive-existing is used: archive only rows matching PartSyndicat (0 or 1). Default: all.",
+    ap.add_argument("--archive-part-syndicat",type=str,default="all",choices=["all", "0", "1"],help="When --archive-existing is used: archive only rows matching PartSyndicat (0 or 1). Default: all.",)
+    ap.add_argument(
+        "--archive-except-idgroupe",
+        type=int,
+        default=None,
+        help="When --archive-existing is used: archive all rows except those whose IDCategorie belongs to categories.IDGroupe = this value (for the same client).",
     )
 
     # Header mapping overrides
@@ -398,7 +419,12 @@ def main() -> int:
 
         archived_count = 0
         if args.archive_existing:
-            archived_count = archive_existing(cur, args.client_id, args.archive_part_syndicat)
+            archived_count = archive_existing(
+                cur,
+                args.client_id,
+                args.archive_part_syndicat,
+                args.archive_except_idgroupe,
+            )
 
         inserted_count = insert_fdp_rows(cur, args.client_id, rows, args.historique_new)
 

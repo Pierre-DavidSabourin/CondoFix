@@ -163,6 +163,11 @@ dropzone = Dropzone(app)
 #         server.close()
 #         return render_template('-erreur.html')
 
+@app.context_processor
+def inject_theme_ui() -> object:
+    return {
+        "theme_ui": request.cookies.get("condofix_theme_ui", "normal-condofix-classic")
+    }
 
 # #ajout de 'host' et port pour s'assurer de la vitesse du site en test
 if __name__ == '__main__':
