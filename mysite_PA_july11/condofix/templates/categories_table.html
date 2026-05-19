@@ -1,95 +1,689 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Catégories'
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container-fluid categories-page mb-3">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
 
-            },
-        ],
-        "pageLength":100,
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
-            }
-        });
-    } );
-    </script>
-</head>
-<body>
-<div class="container col-md-8 page">
-    <div class="form-group form-inline justify-content-between mb-1">
-        <h2>Catégories/budget</h2>
-        <h6>Budget total: <strong>{{ cum_budget }}$</strong></h6>
-    </div>
-    <a class="btn bg-steel text-white btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_categories.categorie_enreg', parametre=0) }}">Nouveau</a>
-    <br>
-    <div class="datagrid">
-        <style>
-        table {
-            font-family: arial, sans-serif;
-            font-size: 12px;
-            border-collapse: collapse;
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .categories-page {
+        --cat-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --cat-radius-xl: 20px;
+        --cat-radius-lg: 16px;
+        --cat-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .categories-page .cat-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--cat-radius-xl);
+        box-shadow: var(--cat-shadow);
+        padding: 1.25rem;
+    }
+
+    .categories-page .cat-header-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+
+    .categories-page .cat-header h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .categories-page .cat-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .categories-page .cat-budget-card {
+        min-width: 330px;
+        padding: 1rem;
+        border: 1px solid var(--theme-border);
+        border-radius: var(--cat-radius-lg);
+        background: var(--theme-surface-alt);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .categories-page .cat-budget-label {
+        color: var(--theme-text-muted);
+        font-size: 0.78rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .categories-page .cat-budget-value {
+        margin-top: 0.2rem;
+        color: var(--theme-text);
+        font-size: 1.25rem;
+        font-weight: 900;
+        line-height: 1.15;
+    }
+
+    .categories-page .cat-budget-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem;
+        margin-top: 0.75rem;
+        color: var(--theme-text-muted);
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    .categories-page .cat-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .categories-page .cat-toolbar-left,
+    .categories-page .cat-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .categories-page .cat-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--cat-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .categories-page .cat-btn:hover,
+    .categories-page .cat-btn:focus {
+        color: var(--theme-text);
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .categories-page .cat-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+        border-color: transparent;
+    }
+
+    .categories-page .cat-btn-primary:hover,
+    .categories-page .cat-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+    }
+
+    .categories-page .cat-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--cat-radius-lg);
+        box-shadow: var(--cat-shadow);
+        overflow: hidden;
+    }
+
+    .categories-page .cat-table-scroll-top,
+    .categories-page .cat-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .categories-page .cat-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .categories-page .cat-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1120px;
+    }
+
+    .categories-page .cat-table-scroll table {
+        min-width: 1120px !important;
+    }
+
+    .categories-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--cat-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .categories-page .dt-buttons .dt-button:hover,
+    .categories-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .categories-page #cat-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .categories-page #cat-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .categories-page #cat-dt-search .dataTables_filter input,
+    .categories-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        appearance: none;
+    }
+
+    .categories-page #cat-dt-search .dataTables_filter input:focus,
+    .categories-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .categories-page .dataTables_wrapper .dataTables_length,
+    .categories-page .dataTables_wrapper .dataTables_filter,
+    .categories-page .dataTables_wrapper .dt-buttons,
+    .categories-page .dataTables_wrapper .dataTables_info,
+    .categories-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .categories-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .categories-page table.dataTable,
+    .categories-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+    }
+
+    .categories-page table.dataTable thead th,
+    .categories-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+    }
+
+    .categories-page table.dataTable tbody td,
+    .categories-page table.dataTable tbody th,
+    .categories-page table#table_data tbody td,
+    .categories-page table#table_data tbody th {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: middle;
+        font-weight: 400;
+    }
+
+    .categories-page table.dataTable tbody tr:nth-child(even) td,
+    .categories-page table.dataTable tbody tr:nth-child(even) th,
+    .categories-page table#table_data tbody tr:nth-child(even) td,
+    .categories-page table#table_data tbody tr:nth-child(even) th {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .categories-page .cat-description-cell {
+        font-weight: 650;
+    }
+
+    .categories-page .cat-budget-cell {
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .categories-page .cat-group-pill,
+    .categories-page .cat-status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .categories-page .cat-group-pill {
+        border-color: color-mix(in srgb, var(--theme-text-muted) 36%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-text-muted) 8%, var(--theme-surface));
+        color: var(--theme-text);
+    }
+
+    .categories-page .cat-group-pill.is-undefined {
+        border-color: color-mix(in srgb, var(--theme-text-muted) 32%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-text-muted) 8%, var(--theme-surface));
+        color: var(--theme-text-muted);
+        font-style: italic;
+    }
+
+    .categories-page .cat-status-pill.is-active {
+        border-color: color-mix(in srgb, var(--theme-priority-low) 35%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-priority-low) 13%, var(--theme-surface));
+        color: var(--theme-link-complete);
+    }
+
+    .categories-page .cat-status-pill.is-inactive {
+        border-color: color-mix(in srgb, var(--theme-priority-critical) 25%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-priority-critical) 10%, var(--theme-surface));
+        color: var(--theme-link-delete);
+    }
+
+    .categories-page .cat-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0.4rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-link-edit);
+        font-weight: 800;
+        text-decoration: none;
+        line-height: 1.1;
+        white-space: nowrap;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .categories-page .cat-action-link:hover,
+    .categories-page .cat-action-link:focus {
+        color: var(--theme-link-edit);
+        opacity: 0.9;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .categories-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .categories-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .categories-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .categories-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .categories-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .categories-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 991px) {
+        .categories-page .cat-header-row {
+            grid-template-columns: 1fr;
+        }
+
+        .categories-page .cat-budget-card {
+            min-width: 0;
             width: 100%;
         }
-        td, th {
-            border: 1px solid #dddddd;
-            text-align: center;
-            padding: 2px;
+    }
+
+    @media (max-width: 768px) {
+        .categories-page {
+            padding-top: 1rem;
         }
-        tr:nth-child(even) {
-            background-color: #dddddd;
+
+        .categories-page .cat-shell {
+            padding: 1rem;
+            border-radius: 16px;
         }
-        </style>
-        <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                    <tr>
-                        <th width="100px"><strong>Description</strong></th>
-                        <th width="100px"><strong>Budget annuel ($) </strong><p><small>(débute le {{ date_budget }})</small></p></th>
-                        <th width="100px"><strong>Groupe</strong></th>
-                        <th width="50px"><strong>Compte GL</strong></th>
-                        <th width="40px"><strong>Actif</strong></th>
-                        <th width="40px"><strong>Action</strong></th>
-                    </tr>
-                </thead>
-                {% for item in fill_categories %}
-                <tr>
-                    <td width="100px">{{ item[2] }}</td>
-                    <td width="100px">{{ item[3] }}</td>
-                    <td width="100px">{{ item[6] }}</td>
-                    <td width="50px">{{  item[4]  }}</td>
-                    <td width="40px">{{  item[7]  }}</td>
-                    <td class="text-center">
-                        <div class="btn-group">
-                            <a class="btn bg-steel text-white btn-rounded btn-sm my-1" role="button" href="{{ url_for('bp_categories.categorie_enreg',parametre=item[0]) }}">Modifier</a>
+
+        .categories-page .cat-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .categories-page #cat-dt-search .dataTables_filter input,
+        .categories-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .categories-page .cat-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .categories-page .cat-toolbar-left,
+        .categories-page .cat-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .categories-page #cat-dt-search .dataTables_filter label,
+        .categories-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .categories-page #cat-dt-search .dataTables_filter input,
+        .categories-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.cat-table-scroll');
+        const $topScroll = $('.cat-table-scroll-top');
+        const $topInner = $('.cat-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncCategoriesScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            order: [[0, 'asc']],
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Catégories',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: 5
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
+            },
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#cat-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#cat-dt-search');
+
+                setTimeout(syncCategoriesScrollWidth, 0);
+            }
+        });
+
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncCategoriesScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncCategoriesScrollWidth, 0);
+        });
+
+        setTimeout(syncCategoriesScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid categories-page">
+    <div class="row">
+        <div class="col-12">
+            <section class="cat-shell">
+                <div class="cat-header-row">
+                    <div class="cat-header">
+                        <h1>Catégories / budget</h1>
+                        <p>Consultez et maintenez les catégories de travaux, les groupes Uniformat et les budgets annuels.</p>
+                    </div>
+
+                    <aside class="cat-budget-card" aria-label="Résumé budgétaire">
+                        <div class="cat-budget-label">Budget annuel total</div>
+                        <div class="cat-budget-value">
+                            {{ "{:,.0f}".format(cum_budget|float).replace(",", " ") }} $
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
+                        <div class="cat-budget-meta">
+                            <span>Début : {{ date_budget }}</span>
+                            <span>{{ nb_actives|default(0) }} actives</span>
+                            <span>{{ nb_categories|default(fill_categories|length) }} catégories</span>
+                        </div>
+                    </aside>
+                </div>
+
+                <div class="cat-toolbar">
+                    <div class="cat-toolbar-left">
+                        <a class="cat-btn cat-btn-primary"
+                           role="button"
+                           href="{{ url_for('bp_categories.categorie_enreg', parametre=0) }}">
+                            Nouveau
+                        </a>
+
+                        <div id="cat-dt-buttons"></div>
+                    </div>
+
+                    <div class="cat-toolbar-right">
+                        <div id="cat-dt-search"></div>
+                    </div>
+                </div>
+
+                <div class="cat-table-card">
+                    <div class="cat-table-scroll-top">
+                        <div class="cat-table-scroll-top-inner"></div>
+                    </div>
+
+                    <div class="cat-table-scroll">
+                        <table id="table_data" class="table" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Budget annuel ($)</th>
+                                    <th>Groupe</th>
+                                    <th>Compte GL</th>
+                                    <th>Actif</th>
+                                    <th style="min-width: 120px;">Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for item in fill_categories %}
+                                {% set groupe_label = item[6] if item[6] not in [none, '', 'None'] else 'Non défini' %}
+                                {% set actif_label = item[7] if item[7] not in [none, '', 'None'] else 'non' %}
+                                {% set actif_value = actif_label|string|lower %}
+
+                                <tr>
+                                    <td class="cat-description-cell">{{ item[2] }}</td>
+
+                                    <td class="cat-budget-cell">
+                                        {% if item[3] not in [none, '', 'None'] %}
+                                            {{ item[3] }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if groupe_label == 'Non défini' %}
+                                            <span class="cat-group-pill is-undefined">Non défini</span>
+                                        {% else %}
+                                            <span class="cat-group-pill">{{ groupe_label }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if item[4] not in [none, '', 'None'] %}
+                                            {{ item[4] }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if actif_value == 'oui' %}
+                                            <span class="cat-status-pill is-active">oui</span>
+                                        {% else %}
+                                            <span class="cat-status-pill is-inactive">non</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <a class="cat-action-link"
+                                           role="button"
+                                           href="{{ url_for('bp_categories.categorie_enreg', parametre=item[0]) }}">
+                                            Modifier
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </div>
-</body>
+
 {% endblock %}

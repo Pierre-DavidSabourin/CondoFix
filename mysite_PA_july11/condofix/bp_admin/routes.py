@@ -215,7 +215,29 @@ def login():
             cnx.commit()
 
         # ---------------------------------------------------------------------
-        # 2. VÉRIFICATION DU BUDGET — Renouvellement annuel
+        # 2. REDIRECTION DES COPROPRIÉTAIRES
+        # ---------------------------------------------------------------------
+        # Important:
+        # Les copropriétaires ne doivent pas déclencher les traitements administratifs
+        # au login, comme la MAJ du calendrier préventif ou l'envoi du rapport d'activité.
+        # Ces traitements peuvent rediriger vers des pages protégées et produire
+        # l'écran "Vous n'avez pas accès à cette fonctionnalité!".
+        # ---------------------------------------------------------------------
+        if type_ident == 5:
+            print("LOGIN FINAL REDIRECT - COPROPRIETAIRE", {
+                "user_ident": user_ident,
+                "type_ident": type_ident,
+                "client_ident": client_ident,
+                "module_rez": module_rez,
+                "carnet_plus": carnet_plus,
+                "target": "bp_documentation.docs_table_proprios"
+            })
+
+            cnx.close()
+            return redirect(url_for('bp_documentation.docs_table_proprios'))
+
+        # ---------------------------------------------------------------------
+        # 3. VÉRIFICATION DU BUDGET — Renouvellement annuel
         # ---------------------------------------------------------------------
         cur.execute(
             "SELECT DateDebutBudget FROM parametres WHERE IDClient=%s",
@@ -236,7 +258,9 @@ def login():
                 cnx.commit()
 
         # ---------------------------------------------------------------------
-        # 3. PRÉVENTIF + RAPPORT D'ACTIVITÉ
+        # 4. PRÉVENTIF + RAPPORT D'ACTIVITÉ
+        # ---------------------------------------------------------------------
+        # Ces traitements restent réservés aux profils administratifs.
         # ---------------------------------------------------------------------
         cur.execute(
             "SELECT Date_MAJ_Preventif, DateRapportActivite, FreqRapportActivite "
@@ -250,12 +274,28 @@ def login():
             today = datetime.today().date()
 
             # MAJ du calendrier d'entretien ?
-            if today >= date_preventif:
+            if date_preventif and today >= date_preventif:
+                print("LOGIN ADMIN REDIRECT - MAJ CALENDRIERS", {
+                    "user_ident": user_ident,
+                    "type_ident": type_ident,
+                    "client_ident": client_ident,
+                    "target": "bp_admin.maj_calendriers",
+                    "date_preventif": str(date_preventif)
+                })
+
                 cnx.close()
                 return redirect(url_for('bp_admin.maj_calendriers', date_maj=str(date_preventif)))
 
-            # Rapport d’activité ?
-            if (today - date_rapport).days >= freq_rapport:
+            if date_rapport and freq_rapport and (today - date_rapport).days >= freq_rapport:
+                print("LOGIN ADMIN REDIRECT - RAPPORT ACTIVITE", {
+                    "user_ident": user_ident,
+                    "type_ident": type_ident,
+                    "client_ident": client_ident,
+                    "target": "bp_rapports.envoi_rapport_activite",
+                    "dernier_envoi": str(date_rapport),
+                    "freq_rapport": freq_rapport
+                })
+
                 cnx.close()
                 return redirect(url_for(
                     'bp_rapports.envoi_rapport_activite',
@@ -263,14 +303,16 @@ def login():
                     type_usager=type_ident
                 ))
 
+        print("LOGIN FINAL REDIRECT - ADMIN/OTHER", {
+            "user_ident": user_ident,
+            "type_ident": type_ident,
+            "client_ident": client_ident,
+            "module_rez": module_rez,
+            "carnet_plus": carnet_plus,
+            "target": "bp_tickets.en_cours"
+        })
+
         cnx.close()
-
-        # ---------------------------------------------------------------------
-        # Redirection finale selon le type d'usager
-        # ---------------------------------------------------------------------
-        if type_ident == 5:
-            return redirect(url_for('bp_documentation.docs_table_proprios'))
-
         return redirect(url_for('bp_tickets.en_cours'))
 
     except Exception as e:

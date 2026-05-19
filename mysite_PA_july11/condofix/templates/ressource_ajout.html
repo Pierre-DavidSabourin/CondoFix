@@ -1,140 +1,331 @@
 {% extends "layout_admin.html" %}
 {% block content %}
-<body>
+
 <div class="list-group">
-    <form action="{{ url_for('bp_ressources.ressource_ajout') }}" method=post class="form-horizontal" role="form">
+    <form id="ressource-ajout-form"
+          action="{{ url_for('bp_ressources.ressource_ajout') }}"
+          method="post"
+          class="form-horizontal"
+          role="form">
+
         <div class="row">
             <div class="container col-md-6 bg-form-bground p-4 rounded">
-                <div class="text-center mb-3" >
+
+                <div class="text-center mb-3">
                     <h4 class="text-secondary">Nouvelle ressource</h4>
                 </div>
+
                 <div class="row">
                     <div class="col-md-6">
                         <p class="mb-0"><small>Description</small></p>
                         <div class="input-group mb-2">
-                               <div class="input-group-prepend bg-white">
-                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-comment"></i></span>
-                               </div>
-                               <input type="text" class="form-control border-right-0" name="ress_desc" placeholder="Description"
-                                      aria-label="ress_desc" autofocus="autofocus" required>
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-comment"></i>
+                                </span>
+                            </div>
+                            <input type="text"
+                                   class="form-control border-right-0"
+                                   name="ress_desc"
+                                   placeholder="Nom de la ressource"
+                                   aria-label="Description de la ressource"
+                                   maxlength="120"
+                                   autofocus="autofocus"
+                                   required>
                         </div>
                     </div>
+
                     <div class="col-md-6">
-                        <p class="mb-0"><small>Durée maximum de réservation (h.)</small></p>
+                        <p class="mb-0"><small>Durée maximale d’une réservation (h.)</small></p>
                         <div class="input-group mb-2">
-                               <div class="input-group-prepend bg-white">
-                                    <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
-                               </div>
-                               <input type="number" class="form-control border-right-0" step="0.5" min="0" name="duree_max" placeholder="Durée maximale en heures"
-                                      aria-label="duree_max" autofocus="autofocus" required>
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-clock-o"></i>
+                                </span>
+                            </div>
+                            <input type="number"
+                                   class="form-control border-right-0"
+                                   step="0.5"
+                                   min="0.5"
+                                   name="duree_max"
+                                   placeholder="Ex. 2, 4, 24"
+                                   aria-label="Durée maximale de réservation en heures"
+                                   required>
+                        </div>
+                        <small class="form-text text-muted">
+                            Durée maximale permise pour une seule réservation.
+                        </small>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Réservation permise au plus tôt (h.)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-clock-o"></i>
+                                </span>
+                            </div>
+                            <input type="number"
+                                   class="form-control border-right-0"
+                                   step="1"
+                                   min="0"
+                                   name="delai_min"
+                                   placeholder="Ex. 0, 1, 24"
+                                   aria-label="Délai minimal avant le début de la réservation"
+                                   required>
+                        </div>
+                        <small class="form-text text-muted">
+                            Nombre d’heures minimum avant le début. 0 = réservation immédiate permise.
+                        </small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Réservation permise jusqu’à (jours)</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-calendar"></i>
+                                </span>
+                            </div>
+                            <input type="number"
+                                   class="form-control border-right-0"
+                                   step="1"
+                                   min="1"
+                                   name="delai_max"
+                                   placeholder="Ex. 30, 60, 90"
+                                   aria-label="Nombre maximal de jours à l’avance"
+                                   required>
+                        </div>
+                        <small class="form-text text-muted">
+                            Nombre de jours maximum à l’avance pour créer une réservation.
+                        </small>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Heure de début permise</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-clock-o"></i>
+                                </span>
+                            </div>
+                            <input type="time"
+                                   class="form-control border-right-0"
+                                   value="00:00"
+                                   name="heure_debut"
+                                   aria-label="Heure de début permise"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <p class="mb-0"><small>Heure de fin permise</small></p>
+                        <div class="input-group mb-2">
+                            <div class="input-group-prepend bg-white">
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-clock-o"></i>
+                                </span>
+                            </div>
+                            <input type="time"
+                                   class="form-control border-right-0"
+                                   value="00:00"
+                                   name="heure_fin"
+                                   aria-label="Heure de fin permise"
+                                   required>
                         </div>
                     </div>
                 </div>
+
+                <small class="form-text text-muted mb-3">
+                    00:00 à 00:00 signifie que la ressource est disponible 24 h/24.
+                </small>
+
                 <div class="row">
                     <div class="col-md-6">
-                        <p class="mb-0"><small>Délai minimal (h.)</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                        <p class="mb-0"><small>Pause obligatoire entre deux réservations</small></p>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="input-group mb-2">
+                                    <div class="input-group-prepend bg-white">
+                                        <span class="input-group-text border-left-0 rounded-right bg-white">
+                                            <i class="fa fa-clock-o"></i>
+                                        </span>
+                                    </div>
+                                    <input type="number"
+                                           class="form-control border-right-0"
+                                           step="1"
+                                           min="0"
+                                           value="0"
+                                           name="intervalle_heures"
+                                           aria-label="Intervalle en heures"
+                                           required>
+                                </div>
+                                <small class="form-text text-muted">Heures</small>
                             </div>
-                            <input type="number" class="form-control border-right-0" step="1" min="0" name="delai_min" placeholder="Délai minimal en heures"
-                                  aria-label="delai_min" autofocus="autofocus" required>
+
+                            <div class="col-6">
+                                <select class="form-control mb-2"
+                                        name="intervalle_minutes"
+                                        aria-label="Intervalle en minutes"
+                                        required>
+                                    <option value="0" selected>0 min</option>
+                                    <option value="5">5 min</option>
+                                    <option value="10">10 min</option>
+                                    <option value="15">15 min</option>
+                                    <option value="30">30 min</option>
+                                    <option value="45">45 min</option>
+                                </select>
+                                <small class="form-text text-muted">Minutes</small>
+                            </div>
                         </div>
                     </div>
+
                     <div class="col-md-6">
-                        <p class="mb-0"><small>Délai maximal (jours)</small></p>
+                        <p class="mb-0"><small>Jours consécutifs permis</small></p>
                         <div class="input-group mb-2">
                             <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-calendar"></i>
+                                </span>
                             </div>
-                            <input type="number" class="form-control border-right-0" step="1" min="0" name="delai_max" placeholder="Délai maximal en jours"
-                                  aria-label="delai_max" autofocus="autofocus" required>
+                            <input type="number"
+                                   class="form-control border-right-0"
+                                   step="1"
+                                   min="1"
+                                   value="1"
+                                   name="jrs_consecutifs"
+                                   placeholder="Nombre de jours"
+                                   aria-label="Nombre de jours consécutifs permis"
+                                   required>
                         </div>
+                        <small class="form-text text-muted">
+                            Maximum de jours consécutifs pour une même réservation.
+                        </small>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p class="mb-0"><small>Heure début permise</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
-                            </div>
-                            <input type="time" class="form-control border-right-0" value="00:00:00" name="heure_debut" placeholder="Heure début des réservations"
-                                  aria-label="heure_debut" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-0"><small>Heure fin permise</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
-                            </div>
-                            <input type="time" class="form-control border-right-0" value="00:00:00" name="heure_fin" placeholder="Heures fin des réservations"
-                                  aria-label="heure_fin" autofocus="autofocus" required>
-                        </div>
-                    </div>
+
+                <hr>
+
+                <div class="form-check mb-2">
+                    <input type="checkbox"
+                           class="form-check-input"
+                           id="non_dispo_active"
+                           name="non_dispo_active">
+                    <label class="form-check-label" for="non_dispo_active">
+                        Configurer une période temporaire de non-disponibilité
+                    </label>
                 </div>
-                <div class="row">
+
+                <div id="non-dispo-fields" class="row" style="display: none;">
                     <div class="col-md-6">
-                        <p class="mb-0"><small>Intervalle entre réservations (h.)</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
-                            </div>
-                            <input type="number" class="form-control border-right-0" step="0.1" min="0" value=0 name="intervalle" placeholder="Intervalle en heures"
-                                  aria-label="intervalle" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="mb-0"><small>Jours consécutifs</small></p>
-                        <div class="input-group mb-2">
-                            <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
-                            </div>
-                            <input type="number" class="form-control border-right-0" step="1" min="0" name="jrs_consecutifs" placeholder="Nombre de jours"
-                                  value="1" aria-label="jrs_consecutifs" autofocus="autofocus" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p class="mb-0"><small>Date début de non-disponibilité</small></p>
+                        <p class="mb-0"><small>Début de la période non disponible</small></p>
                         <div class="input-group mb-3">
                             <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-calendar"></i></span>
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-calendar"></i>
+                                </span>
                             </div>
-                            <input type="date" class="form-control border-right-0" value="2021-01-01" name="date_debut_non_dispo" placeholder="Début de non-disponibilité"
-                                  aria-label="date_debut_non_dispo" autofocus="autofocus" required>
+                            <input type="date"
+                                   class="form-control border-right-0"
+                                   name="date_debut_non_dispo"
+                                   aria-label="Date de début de non-disponibilité"
+                                   disabled>
                         </div>
                     </div>
+
                     <div class="col-md-6">
-                        <p class="mb-0"><small>Durée de non-disponibilité (h.)</small></p>
+                        <p class="mb-0"><small>Durée de la période non disponible (h.)</small></p>
                         <div class="input-group mb-3">
                             <div class="input-group-prepend bg-white">
-                                <span class="input-group-text border-left-0 rounded-right bg-white"><i class="fa fa-clock-o"></i></span>
+                                <span class="input-group-text border-left-0 rounded-right bg-white">
+                                    <i class="fa fa-clock-o"></i>
+                                </span>
                             </div>
-                            <input type="number" class="form-control border-right-0" min="0" value="24" step="1" name="duree_non_dispo" placeholder="Heures de non-disponibilité"
-                                  aria-label="duree_non_dispo" autofocus="autofocus" required>
+                            <input type="number"
+                                   class="form-control border-right-0"
+                                   min="1"
+                                   step="1"
+                                   name="duree_non_dispo"
+                                   placeholder="Ex. 24, 48, 72"
+                                   aria-label="Durée de non-disponibilité en heures"
+                                   disabled>
                         </div>
                     </div>
                 </div>
+
+                <small class="form-text text-muted mb-3">
+                    Pour plusieurs dates ou plages de non-disponibilité, une future amélioration devra ajouter une table dédiée.
+                </small>
+
+                <hr>
+
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="facturable">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   id="facturable"
+                                   name="facturable">
                             <label class="form-check-label" for="facturable">Facturable</label>
                         </div>
+
                         <div class="form-check">
-                            <input type="checkbox" class="form-check-input" name="actif" checked>
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   id="actif"
+                                   name="actif"
+                                   checked>
                             <label class="form-check-label" for="actif">Actif</label>
                         </div>
                     </div>
+
                     <div class="col-md-6">
-                        <button type="submit" class="btn bg-steel text-white float-right mb-2">Soumettre</button>
+                        <button type="submit" class="btn bg-steel text-white float-right mb-2">
+                            Soumettre
+                        </button>
                     </div>
                 </div>
+
             </div>
+        </div>
     </form>
 </div>
-</body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const nonDispoCheckbox = document.getElementById("non_dispo_active");
+        const nonDispoFields = document.getElementById("non-dispo-fields");
+        const dateNonDispo = document.querySelector("[name='date_debut_non_dispo']");
+        const dureeNonDispo = document.querySelector("[name='duree_non_dispo']");
+
+        function toggleNonDispoFields() {
+            const isEnabled = nonDispoCheckbox.checked;
+
+            nonDispoFields.style.display = isEnabled ? "flex" : "none";
+
+            dateNonDispo.disabled = !isEnabled;
+            dureeNonDispo.disabled = !isEnabled;
+
+            dateNonDispo.required = isEnabled;
+            dureeNonDispo.required = isEnabled;
+
+            if (!isEnabled) {
+                dateNonDispo.value = "";
+                dureeNonDispo.value = "";
+            }
+        }
+
+        nonDispoCheckbox.addEventListener("change", toggleNonDispoFields);
+        toggleNonDispoFields();
+    });
+</script>
+
 {% endblock content %}

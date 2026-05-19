@@ -103,70 +103,396 @@ def ressource_enreg(parametre):
 #fonctions pour ajouter ou modifier une ressource
 @bp_ressources.route("/ressource_ajout", methods=['POST'])
 def ressource_ajout():
-    """Ajouter un enregistrement dans la table mysql suivi par retour à la page affichant les enregistrements"""
+    """Ajouter une ressource réservable.
+
+    Notes fonctionnelles:
+    - DureeMaxHres: durée maximale d'une réservation, en heures.
+    - DelaiMinHres: délai minimal avant le début de la réservation, en heures.
+    - DelaiMaxJrs: délai maximal pour réserver à l'avance, en jours.
+    - IntervalleRezHres: pause obligatoire entre deux réservations, stockée en heures décimales.
+      Le formulaire expose cette valeur en heures + minutes pour éviter que l'utilisateur doive saisir
+      des décimales comme 0.5 pour 30 minutes.
+    - DateDebutNonDispo / DureeNonDispoHres: ancienne logique de non-disponibilité unique.
+      Si la section n'est pas activée, on conserve une valeur neutre avec durée 0.
+    """
 
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    # vérifier type d'usager si admin ou non (Admin syst.-1 et gestionnaire - 2 seulement)
-    if profile_list[2] >2:
-        return redirect(url_for('permission'))
-    client_ident=profile_list[0]
+
+    profile_list = session.get('ProfilUsager')
+
+    # Admin système / gestionnaire seulement.
+    if profile_list[2] > 2:
+        return redirect(url_for('bp_admin.permission'))
+
+    client_ident = profile_list[0]
     mode_connexion = profile_list[8]
+
+    def parse_float(field_name, default=None):
+        raw_value = request.form.get(field_name)
+
+        if raw_value is None or str(raw_value).strip() == '':
+            if default is not None:
+                return default
+            raise ValueError(field_name)
+
+        return float(str(raw_value).replace(',', '.'))
+
+    def parse_int(field_name, default=None):
+        raw_value = request.form.get(field_name)
+
+        if raw_value is None or str(raw_value).strip() == '':
+            if default is not None:
+                return default
+            raise ValueError(field_name)
+
+        return int(float(str(raw_value).replace(',', '.')))
+
+    try:
+        ress_desc = request.form.get('ress_desc', '').strip()
+        if not ress_desc:
+            flash("La description de la ressource est obligatoire.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+        duree_max = parse_float('duree_max')
+        delai_min = parse_int('delai_min')
+        delai_max = parse_int('delai_max')
+        jrs_consecutifs = parse_int('jrs_consecutifs', 1)
+
+        heure_debut = request.form.get('heure_debut', '00:00')
+        heure_fin = request.form.get('heure_fin', '00:00')
+
+        intervalle_heures = parse_int('intervalle_heures', 0)
+        intervalle_minutes = parse_int('intervalle_minutes', 0)
+        intervalle = round(intervalle_heures + (intervalle_minutes / 60), 2)
+
+        val_facturable = 1 if request.form.get('facturable') is not None else 0
+        val_actif = 1 if request.form.get('actif') is not None else 0
+
+        non_dispo_active = request.form.get('non_dispo_active') is not None
+
+        if non_dispo_active:
+            date_debut_non_dispo = request.form.get('date_debut_non_dispo', '').strip()
+            duree_non_dispo = parse_int('duree_non_dispo')
+
+            if not date_debut_non_dispo:
+                flash("La date de début de non-disponibilité est obligatoire si la section est activée.", "warning")
+                return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+            if duree_non_dispo < 1:
+                flash("La durée de non-disponibilité doit être d'au moins 1 heure.", "warning")
+                return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+        else:
+            # Valeurs neutres pour l'ancienne logique de non-disponibilité.
+            date_debut_non_dispo = '2021-01-01'
+            duree_non_dispo = 0
+
+        if duree_max < 0.5:
+            flash("La durée maximale de réservation doit être d'au moins 0.5 heure.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+        if delai_min < 0:
+            flash("Le délai minimal ne peut pas être négatif.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+        if delai_max < 1:
+            flash("Le délai maximal doit être d'au moins 1 jour.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+        if delai_max * 24 < delai_min:
+            flash("Le délai maximal en jours doit être supérieur ou égal au délai minimal en heures.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+        if jrs_consecutifs < 1:
+            flash("Le nombre de jours consécutifs doit être d'au moins 1.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+        if intervalle < 0:
+            flash("L'intervalle entre les réservations ne peut pas être négatif.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
+    except ValueError:
+        flash("Veuillez vérifier les valeurs numériques du formulaire.", "warning")
+        return redirect(url_for('bp_ressources.ressource_enreg', parametre=0))
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
-    if request.form.get('facturable')==None:
-        val_facturable=0
-    else:
-        val_facturable=1
-    cur.execute("INSERT INTO ressources (IDClient, Description,DureeMaxHres, DelaiMinHres, DelaiMaxJrs, JoursConsecutifsPermis, HreDebutPermise, "
-                "HreFinPermise, DateDebutNonDispo, DureeNonDispoHres, IntervalleRezHres ,Facturable, Actif) "
-                "VALUES (%s, %s, %s, %s, %s, %s,  %s, %s, %s, %s, %s, %s, %s)",
-                [client_ident,request.form['ress_desc'],float(request.form['duree_max']),int(request.form['delai_min']),int(request.form['delai_max']),
-                 int(request.form['jrs_consecutifs']),request.form['heure_debut'],request.form['heure_fin'],request.form['date_debut_non_dispo'],
-                 int(request.form['duree_non_dispo']),float(request.form['intervalle']), val_facturable, 1])
+
+    # Protection serveur: si la nouvelle ressource est active, on valide encore la limite de 10 ressources actives.
+    if val_actif == 1:
+        cur.execute(
+            "SELECT COUNT(*) FROM ressources WHERE IDClient = %s AND Actif = 1",
+            (client_ident,)
+        )
+        nbre_actifs = cur.fetchone()[0]
+
+        if nbre_actifs >= 10:
+            cnx.close()
+            flash("Le nombre de ressources actives ne peut dépasser 10. Veuillez désactiver une ressource avant un ajout.", "warning")
+            return redirect(url_for('bp_ressources.ressources_table'))
+
+    cur.execute(
+        "INSERT INTO ressources "
+        "(IDClient, Description, DureeMaxHres, DelaiMinHres, DelaiMaxJrs, JoursConsecutifsPermis, "
+        "HreDebutPermise, HreFinPermise, DateDebutNonDispo, DureeNonDispoHres, IntervalleRezHres, Facturable, Actif) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        [
+            client_ident,
+            ress_desc,
+            duree_max,
+            delai_min,
+            delai_max,
+            jrs_consecutifs,
+            heure_debut,
+            heure_fin,
+            date_debut_non_dispo,
+            duree_non_dispo,
+            intervalle,
+            val_facturable,
+            val_actif
+        ]
+    )
+
     cnx.commit()
     cnx.close()
+
     return redirect(url_for('bp_ressources.ressources_table'))
+# @bp_ressources.route("/ressource_ajout", methods=['POST'])
+# def ressource_ajout():
+#     """Ajouter un enregistrement dans la table mysql suivi par retour à la page affichant les enregistrements"""
+#
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     # vérifier type d'usager si admin ou non (Admin syst.-1 et gestionnaire - 2 seulement)
+#     if profile_list[2] >2:
+#         return redirect(url_for('permission'))
+#     client_ident=profile_list[0]
+#     mode_connexion = profile_list[8]
+#     cnx = connect_db(mode_connexion)
+#     cur = cnx.cursor()
+#     if request.form.get('facturable')==None:
+#         val_facturable=0
+#     else:
+#         val_facturable=1
+#     cur.execute("INSERT INTO ressources (IDClient, Description,DureeMaxHres, DelaiMinHres, DelaiMaxJrs, JoursConsecutifsPermis, HreDebutPermise, "
+#                 "HreFinPermise, DateDebutNonDispo, DureeNonDispoHres, IntervalleRezHres ,Facturable, Actif) "
+#                 "VALUES (%s, %s, %s, %s, %s, %s,  %s, %s, %s, %s, %s, %s, %s)",
+#                 [client_ident,request.form['ress_desc'],float(request.form['duree_max']),int(request.form['delai_min']),int(request.form['delai_max']),
+#                  int(request.form['jrs_consecutifs']),request.form['heure_debut'],request.form['heure_fin'],request.form['date_debut_non_dispo'],
+#                  int(request.form['duree_non_dispo']),float(request.form['intervalle']), val_facturable, 1])
+#     cnx.commit()
+#     cnx.close()
+#     return redirect(url_for('bp_ressources.ressources_table'))
+
 
 @bp_ressources.route('/ressource_modif/<ident_ress>', methods=['POST'])
 def ressource_modif(ident_ress):
-    """Modifier un enregistrement dans la table mysql suivi par retour à la page affichant les enregistrements"""
+    """Modifier une ressource réservable.
+
+    Cette version est alignée avec le nouveau formulaire:
+    - l'intervalle entre réservations est reçu en heures + minutes;
+    - la non-disponibilité temporaire est optionnelle;
+    - les validations serveur protègent l'intégrité même si la validation HTML est contournée.
+    """
 
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    # vérifier type d'usager si admin ou non (Admin syst.-1 et gestionnaire - 2 seulement)
+
+    profile_list = session.get('ProfilUsager')
+
+    # Admin système / gestionnaire seulement.
     if profile_list[2] > 2:
         return redirect(url_for('bp_admin.permission'))
-    if request.form.get('facturable')==None:
-        val_facturable=0
-    else:
-        val_facturable=1
-    if request.form.get('actif')==None:
-        val_actif=0
-    else:
-        val_actif=1
-    client_ident=profile_list[0]
+
+    client_ident = profile_list[0]
     mode_connexion = profile_list[8]
+
+    def parse_float(field_name, default=None):
+        raw_value = request.form.get(field_name)
+
+        if raw_value is None or str(raw_value).strip() == '':
+            if default is not None:
+                return default
+            raise ValueError(field_name)
+
+        return float(str(raw_value).replace(',', '.'))
+
+    def parse_int(field_name, default=None):
+        raw_value = request.form.get(field_name)
+
+        if raw_value is None or str(raw_value).strip() == '':
+            if default is not None:
+                return default
+            raise ValueError(field_name)
+
+        return int(float(str(raw_value).replace(',', '.')))
+
+    try:
+        ress_desc = request.form.get('ress_desc', '').strip()
+        if not ress_desc:
+            flash("La description de la ressource est obligatoire.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+        duree_max = parse_float('duree_max')
+        delai_min = parse_int('delai_min')
+        delai_max = parse_int('delai_max')
+        jrs_consecutifs = parse_int('jrs_consecutifs', 1)
+
+        heure_debut = request.form.get('heure_debut', '00:00')
+        heure_fin = request.form.get('heure_fin', '00:00')
+
+        intervalle_heures = parse_int('intervalle_heures', 0)
+        intervalle_minutes = parse_int('intervalle_minutes', 0)
+        intervalle = round(intervalle_heures + (intervalle_minutes / 60), 2)
+
+        val_facturable = 1 if request.form.get('facturable') is not None else 0
+        val_actif = 1 if request.form.get('actif') is not None else 0
+
+        non_dispo_active = request.form.get('non_dispo_active') is not None
+
+        if non_dispo_active:
+            date_debut_non_dispo = request.form.get('date_debut_non_dispo', '').strip()
+            duree_non_dispo = parse_int('duree_non_dispo')
+
+            if not date_debut_non_dispo:
+                flash("La date de début de non-disponibilité est obligatoire si la section est activée.", "warning")
+                return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+            if duree_non_dispo < 1:
+                flash("La durée de non-disponibilité doit être d'au moins 1 heure.", "warning")
+                return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+        else:
+            # Valeurs neutres pour l'ancienne logique de non-disponibilité.
+            date_debut_non_dispo = '2021-01-01'
+            duree_non_dispo = 0
+
+        if duree_max < 0.5:
+            flash("La durée maximale de réservation doit être d'au moins 0.5 heure.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+        if delai_min < 0:
+            flash("Le délai minimal ne peut pas être négatif.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+        if delai_max < 1:
+            flash("Le délai maximal doit être d'au moins 1 jour.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+        if delai_max * 24 < delai_min:
+            flash("Le délai maximal en jours doit être supérieur ou égal au délai minimal en heures.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+        if jrs_consecutifs < 1:
+            flash("Le nombre de jours consécutifs doit être d'au moins 1.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+        if intervalle < 0:
+            flash("L'intervalle entre les réservations ne peut pas être négatif.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+        if intervalle_minutes < 0 or intervalle_minutes > 59:
+            flash("Les minutes de l'intervalle doivent être entre 0 et 59.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+    except ValueError:
+        flash("Veuillez vérifier les valeurs numériques du formulaire.", "warning")
+        return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
-    # étant donné champ non obligatoire dans formulaire
-    if request.form['duree_non_dispo']=='':
-        duree_non_dispo=0
-    else:
-        duree_non_dispo=request.form['duree_non_dispo']
-    cur.execute("UPDATE ressources SET Description= %s, DureeMaxHres= %s, DelaiMinHres= %s, DelaiMaxJrs= %s, JoursConsecutifsPermis= %s, "
-                "HreDebutPermise= %s, HreFinPermise= %s, DateDebutNonDispo= %s, DureeNonDispoHres= %s, IntervalleRezHres= %s,"
-                "Facturable=%s, Actif= %s WHERE IDRessource = %s AND IDClient=%s",
-                 [request.form['ress_desc'],float(request.form['duree_max']),int(request.form['delai_min']),int(request.form['delai_max']),
-                  int(request.form['jrs_consecutifs']),request.form['heure_debut'],request.form['heure_fin'],request.form['date_debut_non_dispo'],
-                  duree_non_dispo,float(request.form['intervalle']),val_facturable,val_actif,ident_ress,client_ident])
+
+    # Protection serveur: si on active cette ressource, vérifier la limite de 10 ressources actives.
+    # On exclut la ressource courante du décompte.
+    if val_actif == 1:
+        cur.execute(
+            "SELECT COUNT(*) FROM ressources "
+            "WHERE IDClient = %s AND Actif = 1 AND IDRessource <> %s",
+            (client_ident, ident_ress)
+        )
+        nbre_autres_actifs = cur.fetchone()[0]
+
+        if nbre_autres_actifs >= 10:
+            cnx.close()
+            flash("Le nombre de ressources actives ne peut dépasser 10. Veuillez désactiver une ressource avant d'activer celle-ci.", "warning")
+            return redirect(url_for('bp_ressources.ressource_enreg', parametre=ident_ress))
+
+    cur.execute(
+        "UPDATE ressources SET "
+        "Description = %s, "
+        "DureeMaxHres = %s, "
+        "DelaiMinHres = %s, "
+        "DelaiMaxJrs = %s, "
+        "JoursConsecutifsPermis = %s, "
+        "HreDebutPermise = %s, "
+        "HreFinPermise = %s, "
+        "DateDebutNonDispo = %s, "
+        "DureeNonDispoHres = %s, "
+        "IntervalleRezHres = %s, "
+        "Facturable = %s, "
+        "Actif = %s "
+        "WHERE IDRessource = %s AND IDClient = %s",
+        [
+            ress_desc,
+            duree_max,
+            delai_min,
+            delai_max,
+            jrs_consecutifs,
+            heure_debut,
+            heure_fin,
+            date_debut_non_dispo,
+            duree_non_dispo,
+            intervalle,
+            val_facturable,
+            val_actif,
+            ident_ress,
+            client_ident
+        ]
+    )
+
     cnx.commit()
     cnx.close()
+
     return redirect(url_for('bp_ressources.ressources_table'))
+
+# @bp_ressources.route('/ressource_modif/<ident_ress>', methods=['POST'])
+# def ressource_modif(ident_ress):
+#     """Modifier un enregistrement dans la table mysql suivi par retour à la page affichant les enregistrements"""
+#
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     # vérifier type d'usager si admin ou non (Admin syst.-1 et gestionnaire - 2 seulement)
+#     if profile_list[2] > 2:
+#         return redirect(url_for('bp_admin.permission'))
+#     if request.form.get('facturable')==None:
+#         val_facturable=0
+#     else:
+#         val_facturable=1
+#     if request.form.get('actif')==None:
+#         val_actif=0
+#     else:
+#         val_actif=1
+#     client_ident=profile_list[0]
+#     mode_connexion = profile_list[8]
+#     cnx = connect_db(mode_connexion)
+#     cur = cnx.cursor()
+#     # étant donné champ non obligatoire dans formulaire
+#     if request.form['duree_non_dispo']=='':
+#         duree_non_dispo=0
+#     else:
+#         duree_non_dispo=request.form['duree_non_dispo']
+#     cur.execute("UPDATE ressources SET Description= %s, DureeMaxHres= %s, DelaiMinHres= %s, DelaiMaxJrs= %s, JoursConsecutifsPermis= %s, "
+#                 "HreDebutPermise= %s, HreFinPermise= %s, DateDebutNonDispo= %s, DureeNonDispoHres= %s, IntervalleRezHres= %s,"
+#                 "Facturable=%s, Actif= %s WHERE IDRessource = %s AND IDClient=%s",
+#                  [request.form['ress_desc'],float(request.form['duree_max']),int(request.form['delai_min']),int(request.form['delai_max']),
+#                   int(request.form['jrs_consecutifs']),request.form['heure_debut'],request.form['heure_fin'],request.form['date_debut_non_dispo'],
+#                   duree_non_dispo,float(request.form['intervalle']),val_facturable,val_actif,ident_ress,client_ident])
+#     cnx.commit()
+#     cnx.close()
+#     return redirect(url_for('bp_ressources.ressources_table'))
 
 #***************Gestion des modes de paiement pour les ressources facturables ******************************
 @bp_ressources.route("/modes_paiement_table")

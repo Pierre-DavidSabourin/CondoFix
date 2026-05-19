@@ -8,46 +8,102 @@ bp_categories = Blueprint('bp_categories', __name__)
 #***************Gestion des catégories (paramétrables) ******************************
 @bp_categories.route("/categories")
 def categories():
-    """afficher la page de la table d'enregistrements avec fonction ajout et modif
-"""
+    """Afficher la page de la table d'enregistrements avec fonction ajout et modif."""
+
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    # vérifier type d'usager
-    if profile_list[2]==3 or profile_list[2]==5 :# pas accessible par l'employé ou le proprio
+
+    profile_list = session.get('ProfilUsager')
+
+    # Pas accessible par l'employé ou le proprio
+    if profile_list[2] == 3 or profile_list[2] == 5:
         return redirect(url_for('bp_admin.permission'))
-    client_ident=profile_list[0]
+
+    from decimal import Decimal, InvalidOperation
+
+    client_ident = profile_list[0]
     version_client = profile_list[6]
     mode = profile_list[8]
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
-    fill_categories=[]
-    cum_budget=0
-    cur.execute("SELECT IDCategorie, IDGroupe, Description, BudgetAnnuel, CodeGL, Actif FROM categories WHERE IDClient=%s",(client_ident,))
-    for row in cur.fetchall():
-        cur.execute("SELECT Descriptif FROM groupesuniformat WHERE IDGroupe=%s", (row[1],))
-        for item in cur.fetchall():
-            row+=(item[0],)
-        # champ row[3] rempli et catégorie row[5] active
-        if row[3] is None or row[3]=='None':
-            cum_budget=cum_budget
-        elif row[3]=='':
-            cum_budget=cum_budget
-        else:
-            cum_budget=cum_budget+int(row[3])
 
-        if row[5]==1:
-            actif='oui'
+    fill_categories = []
+    cum_budget = Decimal('0')
+    nb_categories = 0
+    nb_actives = 0
+    nb_inactives = 0
+
+    cur.execute(
+        "SELECT IDCategorie, IDGroupe, Description, BudgetAnnuel, CodeGL, Actif "
+        "FROM categories "
+        "WHERE IDClient=%s",
+        (client_ident,)
+    )
+
+    for row in cur.fetchall():
+        nb_categories += 1
+
+        # Groupe Uniformat
+        groupe_desc = 'Non défini'
+
+        if row[1] is not None:
+            cur.execute(
+                "SELECT Descriptif "
+                "FROM groupesuniformat "
+                "WHERE IDGroupe=%s",
+                (row[1],)
+            )
+            groupe = cur.fetchone()
+
+            if groupe is not None:
+                groupe_desc = groupe[0]
+
+        # Budget annuel
+        budget_value = row[3]
+
+        if budget_value not in (None, '', 'None'):
+            try:
+                cum_budget += Decimal(str(budget_value))
+            except (InvalidOperation, ValueError, TypeError):
+                pass
+
+        # Actif
+        if row[5] == 1:
+            actif = 'oui'
+            nb_actives += 1
         else:
-            actif='non'
-        row+=(actif,)
+            actif = 'non'
+            nb_inactives += 1
+
+        row += (groupe_desc, actif)
         fill_categories.append(row)
-    cur.execute("SELECT DateDebutBudget FROM parametres WHERE IDClient=%s",(client_ident,))
-    for row_2 in cur.fetchall():
-        date_budget=row_2[0]
+
+    date_budget = ''
+    cur.execute(
+        "SELECT DateDebutBudget "
+        "FROM parametres "
+        "WHERE IDClient=%s",
+        (client_ident,)
+    )
+    row_date_budget = cur.fetchone()
+
+    if row_date_budget is not None:
+        date_budget = row_date_budget[0]
+
     cnx.close()
-    return render_template('categories_table.html', version=version_client, fill_categories=fill_categories,date_budget=date_budget,cum_budget=cum_budget,bd=profile_list[3])
+
+    return render_template(
+        'categories_table.html',
+        version=version_client,
+        fill_categories=fill_categories,
+        date_budget=date_budget,
+        cum_budget=float(cum_budget),
+        nb_categories=nb_categories,
+        nb_actives=nb_actives,
+        nb_inactives=nb_inactives,
+        bd=profile_list[3]
+    )
 
 @bp_categories.route('/categorie_enreg/<parametre>')
 def categorie_enreg(parametre):

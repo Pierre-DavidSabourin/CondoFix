@@ -1,9 +1,11 @@
 import sys
 
-from flask import Blueprint, render_template, g, session, request, redirect, url_for, flash, send_file
+from flask import Blueprint, render_template, g, session, request, redirect, url_for, flash, send_file, current_app
+import inspect
+import mimetypes
+import os
 from markupsafe import Markup  # Import Markup separately
 import mysql.connector
-import os
 import time
 from datetime import datetime,timedelta
 from utils import connect_db, chemin_rep
@@ -276,30 +278,66 @@ def facture_modif(id_facture):
     return render_template('facture_modif.html', facture_list=facture_list[0], afficher_MDO_MAT = afficher_MDO_MAT, bd=profile_list[3])
 
 #affichage de l'image de facture
-@bp_factures.route('/facture_affiche/<id_facture>', methods=['POST','GET'])
+@bp_factures.route('/facture_affiche/<id_facture>', methods=['POST', 'GET'])
 def facture_affiche(id_facture):
-    """Afficher l'image numérisée d'une facture existante"""
+    """Afficher l'image ou le PDF numérisé d'une facture existante."""
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    facture_list=[]
-    client_ident=profile_list[0]
+
+    profile_list = session.get('ProfilUsager')
+    client_ident = profile_list[0]
     mode_connexion = profile_list[8]
+
     cnx = connect_db(mode_connexion)
-    cur = cnx.cursor()
-    chemin_doc = str()
-    cur.execute("SELECT CheminPath FROM factures WHERE IDFacture=%s AND IDClient=%s", (id_facture, client_ident))
-    for item in cur.fetchall():
-        folder=chemin_rep(mode_connexion)
-        # ajout du chemin du fichier recherché
-        if item[0] == None or item[0] == '':
-            return redirect(url_for('bp_factures.factures_table'))
-        chemin_doc = folder+ item[0]
-        # pour obtenir le titre du doc seulement
-        titre = item[0].split("docs/", 1)[1]
+
+    try:
+        cur = cnx.cursor()
+        cur.execute(
+            "SELECT CheminPath FROM factures WHERE IDFacture=%s AND IDClient=%s",
+            (id_facture, client_ident)
+        )
+        row = cur.fetchone()
+    finally:
         cnx.close()
-    return send_file(chemin_doc, attachment_filename=titre, cache_timeout=0)
+
+    if not row or not row[0]:
+        flash("Aucun fichier numérisé n'est associé à cette facture.", "warning")
+        return redirect(url_for('bp_factures.factures_table'))
+
+    stored_path = row[0]
+    base_folder = chemin_rep(mode_connexion)
+
+    if os.path.isabs(stored_path):
+        chemin_doc = stored_path
+    else:
+        chemin_doc = os.path.normpath(os.path.join(base_folder, stored_path))
+
+    if not os.path.isfile(chemin_doc):
+        current_app.logger.warning("Facture introuvable: %s", chemin_doc)
+        flash("Le fichier de la facture est introuvable sur le serveur.", "warning")
+        return redirect(url_for('bp_factures.factures_table'))
+
+    mime_type = mimetypes.guess_type(chemin_doc)[0] or 'application/octet-stream'
+    titre = os.path.basename(chemin_doc)
+
+    send_file_params = inspect.signature(send_file).parameters
+
+    if 'download_name' in send_file_params:
+        return send_file(
+            chemin_doc,
+            mimetype=mime_type,
+            as_attachment=False,
+            download_name=titre,
+            max_age=0
+        )
+
+    return send_file(
+        chemin_doc,
+        mimetype=mime_type,
+        as_attachment=False,
+        attachment_filename=titre,
+        cache_timeout=0
+    )
 
 @bp_factures.route('/facture_modif_post/<id_facture>', methods=['POST','GET'])
 def facture_modif_post(id_facture):

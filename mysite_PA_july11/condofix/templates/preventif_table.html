@@ -1,158 +1,703 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Calendrier Entretien'
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container-fluid preventif-page mb-3">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
 
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .preventif-page {
+        --pf-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --pf-radius-xl: 20px;
+        --pf-radius-lg: 16px;
+        --pf-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .preventif-page .pf-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--pf-radius-xl);
+        box-shadow: var(--pf-shadow);
+        padding: 1.25rem;
+    }
+
+    .preventif-page .pf-header {
+        margin-bottom: 1rem;
+    }
+
+    .preventif-page .pf-header h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .preventif-page .pf-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .preventif-page .pf-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .preventif-page .pf-toolbar-left,
+    .preventif-page .pf-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .preventif-page .pf-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--pf-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .preventif-page .pf-btn:hover,
+    .preventif-page .pf-btn:focus {
+        color: var(--theme-text);
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .preventif-page .pf-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+        border-color: transparent;
+    }
+
+    .preventif-page .pf-btn-primary:hover,
+    .preventif-page .pf-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+    }
+
+    .preventif-page .pf-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--pf-radius-lg);
+        box-shadow: var(--pf-shadow);
+        overflow: hidden;
+    }
+
+    .preventif-page .pf-table-scroll-top,
+    .preventif-page .pf-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .preventif-page .pf-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .preventif-page .pf-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1400px;
+    }
+
+    .preventif-page .pf-table-scroll table {
+        min-width: 1400px !important;
+    }
+
+    .preventif-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--pf-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .preventif-page .dt-buttons .dt-button:hover,
+    .preventif-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .preventif-page #pf-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .preventif-page #pf-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .preventif-page #pf-dt-search .dataTables_filter input,
+    .preventif-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        appearance: none;
+    }
+
+    .preventif-page #pf-dt-search .dataTables_filter input:focus,
+    .preventif-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .preventif-page .dataTables_wrapper .dataTables_length,
+    .preventif-page .dataTables_wrapper .dataTables_filter,
+    .preventif-page .dataTables_wrapper .dt-buttons,
+    .preventif-page .dataTables_wrapper .dataTables_info,
+    .preventif-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .preventif-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .preventif-page table.dataTable,
+    .preventif-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+    }
+
+    .preventif-page table.dataTable thead th,
+    .preventif-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+    }
+
+    .preventif-page table.dataTable tbody td,
+    .preventif-page table.dataTable tbody th,
+    .preventif-page table#table_data tbody td,
+    .preventif-page table#table_data tbody th {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: middle;
+        font-weight: 400;
+    }
+
+    .preventif-page table.dataTable tbody tr:nth-child(even) td,
+    .preventif-page table.dataTable tbody tr:nth-child(even) th,
+    .preventif-page table#table_data tbody tr:nth-child(even) td,
+    .preventif-page table#table_data tbody tr:nth-child(even) th {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .preventif-page .pf-date-cell,
+    .preventif-page .pf-description-cell {
+        font-weight: 650;
+    }
+
+    .preventif-page .pf-type-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 118px;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .preventif-page .pf-type-pill.is-maintenance {
+        border-color: color-mix(in srgb, var(--theme-kpi-hours) 52%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-kpi-hours) 18%, var(--theme-surface));
+        color: var(--theme-text);
+    }
+
+    .preventif-page .pf-type-pill.is-reserve {
+        border-color: color-mix(in srgb, var(--theme-chart-actual) 55%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-chart-actual) 20%, var(--theme-surface));
+        color: var(--theme-text);
+    }
+
+    .preventif-page .pf-type-pill.is-preventive {
+        border-color: color-mix(in srgb, var(--theme-priority-low) 45%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-priority-low) 14%, var(--theme-surface));
+        color: var(--theme-text);
+    }
+
+    .preventif-page .pf-type-pill.is-undefined {
+        border-color: color-mix(in srgb, var(--theme-text-muted) 32%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-text-muted) 8%, var(--theme-surface));
+        color: var(--theme-text-muted);
+        font-style: italic;
+    }
+
+    .preventif-page .pf-actions {
+        min-width: 140px;
+    }
+
+    .preventif-page .pf-actions-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .preventif-page .pf-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0.4rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        font-weight: 800;
+        text-decoration: none;
+        line-height: 1.1;
+        white-space: nowrap;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .preventif-page .pf-action-link:hover,
+    .preventif-page .pf-action-link:focus {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .preventif-page .pf-action-link.is-edit {
+        color: var(--theme-link-edit);
+    }
+
+    .preventif-page .pf-action-link.is-delete {
+        color: var(--theme-link-delete);
+        background: transparent;
+        border-color: transparent;
+        padding-left: 0.3rem;
+        padding-right: 0.3rem;
+    }
+
+    .preventif-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .preventif-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .preventif-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .preventif-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .preventif-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .preventif-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 768px) {
+        .preventif-page {
+            padding-top: 1rem;
+        }
+
+        .preventif-page .pf-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .preventif-page .pf-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .preventif-page #pf-dt-search .dataTables_filter input,
+        .preventif-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .preventif-page .pf-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .preventif-page .pf-toolbar-left,
+        .preventif-page .pf-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .preventif-page #pf-dt-search .dataTables_filter label,
+        .preventif-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .preventif-page #pf-dt-search .dataTables_filter input,
+        .preventif-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.pf-table-scroll');
+        const $topScroll = $('.pf-table-scroll-top');
+        const $topInner = $('.pf-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncPreventifScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            order: [[0, 'asc']],
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Calendrier Entretien',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    visible: false,
+                    targets: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+                },
+                {
+                    orderable: false,
+                    targets: 22
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
             },
-        ],
-        columnDefs: [
-            { "visible": false, "targets": [ 10,11,12,13,14,15,16,17,18,19,20,21 ], }
-        ],
-        "pageLength":100,
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#pf-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#pf-dt-search');
+
+                setTimeout(syncPreventifScrollWidth, 0);
             }
         });
-    } );
-    </script>
 
-</head>
-<body>
-<div class="container">
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncPreventifScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncPreventifScrollWidth, 0);
+        });
+
+        setTimeout(syncPreventifScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid preventif-page">
     <div class="row">
-        <div class="col-md-12 col-xs-12 col-sm-12">
-            <h2>Calendrier d'entretien</h2>
-            <div class="form-group form-inline justify-content-between">
-                <a class="btn bg-steel text-white btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_preventif.preventif_enreg', parametre=0) }}">Nouveau</a>
-            </div>
-            <div class="datagrid">
-                <style>
-                    table {
-                        font-family: arial, sans-serif;
-                        font-size: 10px;
-                        border-collapse: collapse;
-                        width: 100%;
-                        z-index: -1;
-                    }
-                    td, th {
-                        border: 1px solid #dddddd;
-                        text-align: left;
-                        padding: 8px;
-                    }
-                    tr:nth-child(even) {
-                        background-color: #dddddd;
-                    }
-                </style>
-                <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-                <thead>
-                <tr>
-                    <th width="120px"><strong>Date prochain</strong></th>
-                    <th width="130px"><strong>Description</strong></th>
-                    <th width="100px"><strong>Intervenant</strong></th>
-                    <th width="70px"><strong>Catégorie</strong></th>
-                    <th width="70px"><strong>Équipement</strong></th>
-                    <th width="70px"><strong>Référence</strong></th>
-                    <th width="50px"><strong>Fréquence (ans)</strong></th>
-                    <th width="40px"><strong>Type</strong></th>
-                    <th width="80px"><strong>Emplacement</strong></th>
-                    <th width="40px"><strong>Heures estimées</strong></th>
-                    <th width="30px"><strong>Jan</strong></th>
-                    <th width="30px"><strong>Fev</strong></th>
-                    <th width="30px"><strong>Mar</strong></th>
-                    <th width="30px"><strong>Avr</strong></th>
-                    <th width="30px"><strong>Mai</strong></th>
-                    <th width="30px"><strong>Juin</strong></th>
-                    <th width="30px"><strong>Juil</strong></th>
-                    <th width="30px"><strong>Aout</strong></th>
-                    <th width="30px"><strong>Sep</strong></th>
-                    <th width="30px"><strong>Oct</strong></th>
-                    <th width="30px"><strong>Nov</strong></th>
-                    <th width="30px"><strong>Dec</strong></th>
-                    <th width="80px"><strong>Action</strong></th>
-                </tr>
-                </thead>
-                {% for item in fill_preventif %}
-                <tr>
-                    <td width="120px">{{ item[8] }}</td>
-                    <td width="130px">{{ item[1] }}</td>
-                    <td width="100px">{{ item[24] }}</td>
-                    <td width="70px">{{ item[25] }}</td>
-                    <td width="70px">{{ item[23] }}</td>
-                    <td width="70px">{{ item[9] }}</td>
-                    <td width="50px">{{ item[7] }}</td>
-                    <td width="40px">{{ item[26] }}</td>
-                    <td width="80px">{{ item[2] }}</td>
-                    <td width="40px">{{ item[3] }}</td>
-                    <td width="30px">{{ item[11] }}</td>
-                    <td width="30px">{{ item[12] }}</td>
-                    <td width="30px">{{ item[13] }}</td>
-                    <td width="30px">{{ item[14] }}</td>
-                    <td width="30px">{{ item[15] }}</td>
-                    <td width="30px">{{ item[16] }}</td>
-                    <td width="30px">{{ item[17] }}</td>
-                    <td width="30px">{{ item[18] }}</td>
-                    <td width="30px">{{ item[19] }}</td>
-                    <td width="30px">{{ item[20] }}</td>
-                    <td width="30px">{{ item[21] }}</td>
-                    <td width="30px">{{ item[22] }}</td>
-                    <td class="text-center align-middle">
-                        <div class="btn-group">
-                            <a class="btn bg-steel text-white btn-rounded btn-sm" role="button" href="{{ url_for('bp_preventif.preventif_enreg',parametre=item[0]) }}">Modifier</a>
-                        </div>
-                        <div class="btn-group">
-                            <h6><a href="" class="text-danger" data-toggle="modal" data-target="#Supprimer_Modal{{ item[0] }}"><small>Supprimer</small></a></h6>
-                            <div class="form-group">
-                                <form action="{{ url_for('bp_preventif.supprimer',id_preventif=item[0]) }}" method=post class="form-horizontal" role="form">
-                                    <!-- Modal -->
-                                    <div class="modal fade" id="Supprimer_Modal{{ item[0] }}" tabindex="-1" role="dialog" aria-labelledby="SupprimerModalLabel" aria-hidden="true">
-                                        <div class="modal-dialog" role="document">
-                                            <div class="modal-content">
-                                                <div class="modal-body">
-                                                    <h5>Voulez-vous vraiment SUPPRIMER cet enregistrement?</h5><br>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="submit" class="btn btn-primary">Oui</button>
-                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+        <div class="col-12">
+            <section class="pf-shell">
+                <div class="pf-header">
+                    <h1>Calendrier d'entretien</h1>
+                    <p>Consultez et maintenez les entretiens récurrents planifiés du syndicat.</p>
+                </div>
+
+                <div class="pf-toolbar">
+                    <div class="pf-toolbar-left">
+                        <a class="pf-btn pf-btn-primary"
+                           role="button"
+                           href="{{ url_for('bp_preventif.preventif_enreg', parametre=0) }}">
+                            Nouveau
+                        </a>
+
+                        <div id="pf-dt-buttons"></div>
+                    </div>
+
+                    <div class="pf-toolbar-right">
+                        <div id="pf-dt-search"></div>
+                    </div>
+                </div>
+
+                <div class="pf-table-card">
+                    <div class="pf-table-scroll-top">
+                        <div class="pf-table-scroll-top-inner"></div>
+                    </div>
+
+                    <div class="pf-table-scroll">
+                        <table id="table_data" class="table" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Date prochain</th>
+                                    <th>Description</th>
+                                    <th>Intervenant</th>
+                                    <th>Catégorie</th>
+                                    <th>Équipement</th>
+                                    <th>Référence</th>
+                                    <th>Fréquence (ans)</th>
+                                    <th>Type</th>
+                                    <th>Emplacement</th>
+                                    <th>Heures estimées</th>
+                                    <th>Jan</th>
+                                    <th>Fév</th>
+                                    <th>Mar</th>
+                                    <th>Avr</th>
+                                    <th>Mai</th>
+                                    <th>Juin</th>
+                                    <th>Juil</th>
+                                    <th>Août</th>
+                                    <th>Sep</th>
+                                    <th>Oct</th>
+                                    <th>Nov</th>
+                                    <th>Déc</th>
+                                    <th style="min-width: 140px;">Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for item in fill_preventif %}
+                                {% set type_value = item[26]|string|lower %}
+                                <tr>
+                                    <td class="pf-date-cell">{{ item[8] }}</td>
+                                    <td class="pf-description-cell">{{ item[1] }}</td>
+                                    <td>{{ item[24] }}</td>
+                                    <td>{{ item[25] }}</td>
+                                    <td>{{ item[23] }}</td>
+                                    <td>{{ item[9] }}</td>
+                                    <td>{{ item[7] }}</td>
+                                    {% set type_label = item[26] if item[26] not in [none, '', 'None'] else 'Non défini' %}
+                                    {% set type_value = type_label|string|lower %}
+
+                                    <td>
+                                        {% if type_label == 'Non défini' %}
+                                            <span class="pf-type-pill is-undefined">Non défini</span>
+                                        {% elif 'fonds' in type_value %}
+                                            <span class="pf-type-pill is-reserve">{{ type_label }}</span>
+                                        {% elif 'préventif' in type_value or 'preventif' in type_value %}
+                                            <span class="pf-type-pill is-preventive">{{ type_label }}</span>
+                                        {% elif 'entretien' in type_value or 'réparation' in type_value or 'reparation' in type_value %}
+                                            <span class="pf-type-pill is-maintenance">{{ type_label }}</span>
+                                        {% else %}
+                                            <span class="pf-type-pill">{{ type_label }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item[2] }}</td>
+                                    <td>{{ item[3] }}</td>
+                                    <td>{{ item[11] }}</td>
+                                    <td>{{ item[12] }}</td>
+                                    <td>{{ item[13] }}</td>
+                                    <td>{{ item[14] }}</td>
+                                    <td>{{ item[15] }}</td>
+                                    <td>{{ item[16] }}</td>
+                                    <td>{{ item[17] }}</td>
+                                    <td>{{ item[18] }}</td>
+                                    <td>{{ item[19] }}</td>
+                                    <td>{{ item[20] }}</td>
+                                    <td>{{ item[21] }}</td>
+                                    <td>{{ item[22] }}</td>
+                                    <td class="pf-actions">
+                                        <div class="pf-actions-row">
+                                            <a class="pf-action-link is-edit"
+                                               role="button"
+                                               href="{{ url_for('bp_preventif.preventif_enreg', parametre=item[0]) }}">
+                                                Modifier
+                                            </a>
+
+                                            <a href=""
+                                               class="pf-action-link is-delete"
+                                               data-toggle="modal"
+                                               data-target="#Supprimer_Modal{{ item[0] }}">
+                                                Supprimer
+                                            </a>
+                                        </div>
+
+                                        <form action="{{ url_for('bp_preventif.supprimer', id_preventif=item[0]) }}"
+                                              method="post"
+                                              class="form-horizontal"
+                                              role="form">
+                                            <div class="modal fade"
+                                                 id="Supprimer_Modal{{ item[0] }}"
+                                                 tabindex="-1"
+                                                 role="dialog"
+                                                 aria-labelledby="SupprimerModalLabel{{ item[0] }}"
+                                                 aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-body">
+                                                            <h5 id="SupprimerModalLabel{{ item[0] }}">
+                                                                Voulez-vous vraiment SUPPRIMER cet enregistrement?
+                                                            </h5>
+                                                        </div>
+
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-primary">
+                                                                Oui
+                                                            </button>
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                                                Non
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </div>
-</div>
-</body>
-{% endblock %}
 
+{% endblock content %}
