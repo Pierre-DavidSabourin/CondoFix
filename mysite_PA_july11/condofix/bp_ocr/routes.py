@@ -16,10 +16,68 @@ from datetime import datetime, timedelta
 import shutil
 import traceback
 from utils import connect_db,chemin_rep,chemin_factures,chemin_temp_images
-
+from uuid import uuid4
 
 bp_ocr = Blueprint('bp_ocr', __name__)
+OCR_LOCK_TIMEOUT_MINUTES = 10
+OCR_LOCK_DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
+
+def get_ocr_lock_path(chemin_ocr, nom_client):
+    return os.path.join(chemin_ocr, 'ocr_en_usage_' + nom_client + '.txt')
+
+
+def read_ocr_lock(chemin_ocr, nom_client):
+    lock_path = get_ocr_lock_path(chemin_ocr, nom_client)
+
+    with open(lock_path) as lock_file:
+        raw_value = lock_file.read().strip()
+
+    if raw_value == '' or raw_value == '0':
+        return lock_path, None, None, None
+
+    parts = raw_value.split('|')
+    raw_datetime = parts[0]
+    lock_user_id = parts[1] if len(parts) > 1 else None
+    lock_token = parts[2] if len(parts) > 2 else None
+
+    try:
+        lock_datetime = datetime.strptime(raw_datetime, OCR_LOCK_DATE_FORMAT)
+    except ValueError:
+        return lock_path, None, None, None
+
+    return lock_path, lock_datetime, lock_user_id, lock_token
+
+
+def write_ocr_lock(lock_path, user_id):
+    token = uuid4().hex
+    session['ocr_lock_token'] = token
+
+    with open(lock_path, 'w') as lock_file:
+        lock_file.write(str(datetime.now()) + '|' + str(user_id) + '|' + token)
+
+    return token
+
+
+def acquire_ocr_lock_or_get_wait_time(chemin_ocr, nom_client, user_id):
+    lock_path, lock_datetime, lock_user_id, lock_token = read_ocr_lock(chemin_ocr, nom_client)
+
+    if lock_datetime is None:
+        write_ocr_lock(lock_path, user_id)
+        return True, 0
+
+    elapsed_minutes = (datetime.now() - lock_datetime).total_seconds() / 60
+    session_token = session.get('ocr_lock_token')
+
+    same_user = str(lock_user_id) == str(user_id)
+    same_session = lock_token is not None and lock_token == session_token
+
+    if elapsed_minutes < OCR_LOCK_TIMEOUT_MINUTES and not same_user and not same_session:
+        minutes_remaining = round(OCR_LOCK_TIMEOUT_MINUTES - elapsed_minutes, 1)
+        return False, minutes_remaining
+
+    write_ocr_lock(lock_path, user_id)
+    return True, 0
 
 """Traitement pour une facture qui n'est pas rattachée à un ticket. Celui-ci est lancé
 à partir de la table des factures avec le bouton 'Scan OCR'.
@@ -33,166 +91,330 @@ def facture_ocr si facture est soumise pour sauvegarde incluant numérisation de
 """
 
 """Lancer le processus OCR"""
-@bp_ocr.route('/lancer_OCR',methods=['POST','GET'])
+"""Lancer le processus OCR"""
+@bp_ocr.route('/lancer_OCR', methods=['POST', 'GET'])
 def lancer_OCR():
     if session.get('ProfilUsager') is None:
         # probablement délai de session atteint
         return render_template('session_ferme.html')
+
     profile_list = session.get('ProfilUsager')
-    client_ident = profile_list[0]
-    mode_connexion=profile_list[8]
-    nom_client=profile_list[7]
-    chemin_ocr=chemin_temp_images(mode_connexion)
+    mode_connexion = profile_list[8]
+    nom_client = profile_list[7]
+    chemin_ocr = chemin_temp_images(mode_connexion)
 
-    # vérifier le statut du fichier de paramètres ocr avant de sauvegarder temporairement
-    # le statut est remis à '0' lors du clic de bouton 'soumettre' ou 'annuler' dans la page de saisie OCR
-    with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + nom_client + '.txt')) as m:
-        contenu_statut = []
-        for line in m:
-            # Remove linebreak which is the last character of the string
-            # curr_place = line[:-1]
-            # Add item to the list
-            contenu_statut.append(line)
-        dateheure = datetime.now()
-        dateheure_debut = dateheure - timedelta(minutes=3)
+    lock_acquired, min_restantes = acquire_ocr_lock_or_get_wait_time(
+        chemin_ocr,
+        nom_client,
+        profile_list[1]
+    )
 
-        if contenu_statut[0] != '0':
-            # fichier en cours d'utilisation CAR '0' signifie 'libre'
-            # on vérifie le délai depuis la dernière opération OCR en comparant dateheure actuel et celui inscrit lors de la dernière saisie
-            date_format = '%Y-%m-%d %H:%M:%S.%f'
-            dateheure_saisie = datetime.strptime(contenu_statut[0], date_format)
-
-            if dateheure_saisie>=dateheure_debut: # délai de moins de 3 minutes
-                diff=dateheure-dateheure_saisie
-                min_restantes=round(3-diff.total_seconds()/60,1)
-                flash("Un autre usager utilise présentement la fonctionnalité de facture OCR.",'warning')
-                flash("Il reste "+str(min_restantes)+" minute(s) avant qu'elle devienne disponible.", 'warning')
-                return render_template('OCR_NonDispo.html')
-            else:
-                # on met la dateheure actuelle
-                # modifier le statut du fichier de paramètres ocr pour le rendre accessible
-                with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + nom_client + '.txt'), 'w') as f:
-                    f.write(str(datetime.now()))
-        else:
-            # on met la dateheure actuelle
-            # modifier le statut du fichier de paramètres ocr pour le rendre accessible
-            with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + nom_client + '.txt'), 'w') as f:
-                f.write(str(datetime.now()))
+    if not lock_acquired:
+        flash(
+            "Un autre usager utilise présentement la fonctionnalité de facture OCR.",
+            'warning'
+        )
+        flash(
+            "Il reste "
+            + str(min_restantes)
+            + " minute(s) avant qu'elle devienne disponible.",
+            'warning'
+        )
+        return render_template('OCR_NonDispo.html')
 
     # selon l'appareil utilisé, on affiche la page de scan appropriée:
     # pour ios: pas de pdf visibles avec dropzone.js alors on utilise l'outil de téléchargement html
     # pour windows: on utilise dropzone.js qui fonctionne avec les pdf
     user_agent = request.headers.get('User-Agent')
+
     if 'Windows' in user_agent:
         return render_template('facture_ocr_scan_dz.html')
-    else:
-        return render_template('facture_ocr_scan_dnload.html')
+
+    return render_template('facture_ocr_scan_dnload.html')
+# @bp_ocr.route('/lancer_OCR',methods=['POST','GET'])
+# def lancer_OCR():
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list = session.get('ProfilUsager')
+#     client_ident = profile_list[0]
+#     mode_connexion=profile_list[8]
+#     nom_client=profile_list[7]
+#     chemin_ocr=chemin_temp_images(mode_connexion)
+#
+#     # vérifier le statut du fichier de paramètres ocr avant de sauvegarder temporairement
+#     # le statut est remis à '0' lors du clic de bouton 'soumettre' ou 'annuler' dans la page de saisie OCR
+#     with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + nom_client + '.txt')) as m:
+#         contenu_statut = []
+#         for line in m:
+#             # Remove linebreak which is the last character of the string
+#             # curr_place = line[:-1]
+#             # Add item to the list
+#             contenu_statut.append(line)
+#         dateheure = datetime.now()
+#         # dateheure_debut = dateheure - timedelta(minutes=3)
+#         dateheure_debut = dateheure - timedelta(minutes=OCR_LOCK_TIMEOUT_MINUTES)
+#         if contenu_statut[0] != '0':
+#             # fichier en cours d'utilisation CAR '0' signifie 'libre'
+#             # on vérifie le délai depuis la dernière opération OCR en comparant dateheure actuel et celui inscrit lors de la dernière saisie
+#             date_format = '%Y-%m-%d %H:%M:%S.%f'
+#             dateheure_saisie = datetime.strptime(contenu_statut[0], date_format)
+#
+#             if dateheure_saisie>=dateheure_debut: # délai de moins de 3 minutes
+#                 diff=dateheure-dateheure_saisie
+#                 # min_restantes=round(3-diff.total_seconds()/60,1)
+#                 min_restantes = round(OCR_LOCK_TIMEOUT_MINUTES - diff.total_seconds() / 60, 1)
+#                 flash("Un autre usager utilise présentement la fonctionnalité de facture OCR.",'warning')
+#                 flash("Il reste "+str(min_restantes)+" minute(s) avant qu'elle devienne disponible.", 'warning')
+#                 return render_template('OCR_NonDispo.html')
+#             else:
+#                 # on met la dateheure actuelle
+#                 # modifier le statut du fichier de paramètres ocr pour le rendre accessible
+#                 with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + nom_client + '.txt'), 'w') as f:
+#                     f.write(str(datetime.now()))
+#         else:
+#             # on met la dateheure actuelle
+#             # modifier le statut du fichier de paramètres ocr pour le rendre accessible
+#             with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + nom_client + '.txt'), 'w') as f:
+#                 f.write(str(datetime.now()))
+#
+#     # selon l'appareil utilisé, on affiche la page de scan appropriée:
+#     # pour ios: pas de pdf visibles avec dropzone.js alors on utilise l'outil de téléchargement html
+#     # pour windows: on utilise dropzone.js qui fonctionne avec les pdf
+#     user_agent = request.headers.get('User-Agent')
+#     if 'Windows' in user_agent:
+#         return render_template('facture_ocr_scan_dz.html')
+#     else:
+#         return render_template('facture_ocr_scan_dnload.html')
 
 #fonction d'ajout de facture à un ticket existant
-@bp_ocr.route('/lancer_facture_attente_ocr/<id_ticket>', methods=['POST','GET'])
+# fonction d'ajout de facture à un ticket existant
+@bp_ocr.route('/lancer_facture_attente_ocr/<id_ticket>', methods=['POST', 'GET'])
 def lancer_facture_attente_ocr(id_ticket):
-
     if session.get('ProfilUsager') is None:
         # probablement délai de session atteint
         return render_template('session_ferme.html')
+
     profile_list = session.get('ProfilUsager')
+
     # vérifier type d'usager si admin ou non
     if profile_list[2] > 2:
         return redirect(url_for('bp_admin.permission'))
+
     mode_connexion = profile_list[8]
-
+    nom_client = profile_list[7]
     chemin_ocr = chemin_temp_images(mode_connexion)
-    # vérifier le statut du fichier de paramètres ocr avant de sauvegarder temporairement
-    # le statut est remis à '0' lors du clic de bouton 'soumettre' ou 'annuler'
-    with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt')) as m:
-        contenu_statut = []
-        for line in m:
-            # Remove linebreak which is the last character of the string
-            # curr_place = line[:-1]
-            # Add item to the list
-            contenu_statut.append(line)
 
-        # vérifier le statut du fichier de paramètres ocr avant de sauvegarder temporairement
-        # le statut est remis à '0' lors du clic de bouton 'soumettre' ou 'annuler' dans la page de saisie OCR
-        with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt')) as m:
-            contenu_statut = []
-            for line in m:
-                # Remove linebreak which is the last character of the string
-                # curr_place = line[:-1]
-                # Add item to the list
-                contenu_statut.append(line)
-            dateheure = datetime.now()
-            dateheure_debut = dateheure - timedelta(minutes=3)
-            print('contenu statut:', contenu_statut)
-            if contenu_statut[0] != '0':
-                # fichier en cours d'utilisation CAR '0' signifie 'libre'
-                # on vérifie le délai depuis la dernière opération OCR en comparant dateheure actuel et celui inscrit lors de la dernière saisie
-                date_format = '%Y-%m-%d %H:%M:%S.%f'
-                dateheure_saisie = datetime.strptime(contenu_statut[0], date_format)
+    lock_acquired, min_restantes = acquire_ocr_lock_or_get_wait_time(
+        chemin_ocr,
+        nom_client,
+        profile_list[1]
+    )
 
-                if dateheure_saisie >= dateheure_debut:  # délai de moins de 3 minutes
-                    diff = dateheure - dateheure_saisie
-                    min_restantes=round(3-diff.total_seconds()/60,1)
-                    flash("Un autre usager utilise présentement la fonctionnalité de facture OCR.", 'warning')
-                    flash(
-                        "Il reste au maximum " + str(min_restantes) + " minutes avant qu'elle ne devienne disponible.",
-                        'warning')
-                    return render_template('OCR_NonDispo_Attente_Facture.html',id_ticket=id_ticket)
-                else:
-                    # on met la dateheure actuelle
-                    # modifier le statut du fichier de paramètres ocr pour le rendre accessible
-                    with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt'), 'w') as f:
-                        f.write(str(datetime.now()))
-            else:
-                # on met la dateheure actuelle
-                # modifier le statut du fichier de paramètres ocr pour le rendre accessible
-                with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt'), 'w') as f:
-                    f.write(str(datetime.now()))
+    if not lock_acquired:
+        flash(
+            "Un autre usager utilise présentement la fonctionnalité de facture OCR.",
+            'warning'
+        )
+        flash(
+            "Il reste au maximum "
+            + str(min_restantes)
+            + " minutes avant qu'elle ne devienne disponible.",
+            'warning'
+        )
+        return render_template(
+            'OCR_NonDispo_Attente_Facture.html',
+            id_ticket=id_ticket
+        )
 
     """Afficher les données du ticket pour l'ajout d'une facture"""
 
-    ticket_list=[]
-    client_ident=profile_list[0]
-    IntervenantNom=str()
+    client_ident = profile_list[0]
+    ticket_list = []
+    intervenant_nom = str()
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
-    liste_ticket=[]
-    cur.execute("SELECT IDTicket, IDIntervenant, Description_travail, DateComplet, HeuresEstimees, HeuresRequises, "
-                      "Nbre_visites,Multitags, IntervenantAutre FROM tickets WHERE IDTicket=%s AND IDClient=%s", (id_ticket,client_ident))
-    for row in cur.fetchall():
-        #vérifier si rubrique 'IntervenantAutre' est remplie
 
-        cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
-                    (row[1], client_ident))
-        for item in cur.fetchall():
-            if item[0]=='Autre':
-                IntervenantNom=row[8]
-            else:
-                IntervenantNom = item[0]
-        row += (IntervenantNom,)
+    try:
+        cur.execute(
+            "SELECT IDTicket, IDIntervenant, Description_travail, DateComplet, "
+            "HeuresEstimees, HeuresRequises, Nbre_visites, Multitags, IntervenantAutre "
+            "FROM tickets "
+            "WHERE IDTicket=%s AND IDClient=%s",
+            (id_ticket, client_ident)
+        )
 
-        ticket_list.append(row)
-        liste_ticket=[list(row) for row in ticket_list]
-        # vérifier si c'est un multitags
-        if row[7]==1:
-            message=Markup("<b>Ce ticket no."+id_ticket+" est de type 'Multitags' car il s'applique à de multiples équipements.</b><br>") \
-                    +Markup("Vous pouvez ainsi partager le montant de la facture avec un ticket dupliqué selon le travail effectué sur chaque équipement.<br>") \
-                    +Markup("Un duplicata de ce ticket s'affichera à la fin de cette table dès que vous cliquerez sur 'Dupliquer'.<br>") \
-                    +Markup("Lors de l'attribution du numéro de tag et des dépenses sur ces tickets, ne pas oublier de: <br>") \
-                    +Markup("- modifier la description <br>") \
-                    +Markup("- ajuster les heures requises <br>") \
-                    +Markup("- décocher 'multi-tags'")
-            flash(message, "warning")
-            return redirect(url_for('bp_factures.attente_facture'))
+        for row in cur.fetchall():
+            cur.execute(
+                "SELECT NomIntervenant "
+                "FROM intervenants "
+                "WHERE IDIntervenant=%s AND IDClient=%s",
+                (row[1], client_ident)
+            )
+
+            for item in cur.fetchall():
+                if item[0] == 'Autre':
+                    intervenant_nom = row[8]
+                else:
+                    intervenant_nom = item[0]
+
+            row += (intervenant_nom,)
+            ticket_list.append(row)
+
+            # vérifier si c'est un multitags
+            if row[7] == 1:
+                message = (
+                    Markup(
+                        "<b>Ce ticket no."
+                        + id_ticket
+                        + " est de type 'Multitags' car il s'applique à de multiples équipements.</b><br>"
+                    )
+                    + Markup(
+                        "Vous pouvez ainsi partager le montant de la facture avec un ticket dupliqué selon le travail effectué sur chaque équipement.<br>"
+                    )
+                    + Markup(
+                        "Un duplicata de ce ticket s'affichera à la fin de cette table dès que vous cliquerez sur 'Dupliquer'.<br>"
+                    )
+                    + Markup(
+                        "Lors de l'attribution du numéro de tag et des dépenses sur ces tickets, ne pas oublier de: <br>"
+                    )
+                    + Markup("- modifier la description <br>")
+                    + Markup("- ajuster les heures requises <br>")
+                    + Markup("- décocher 'multi-tags'")
+                )
+
+                flash(message, "warning")
+                return redirect(url_for('bp_factures.attente_facture'))
+
+    finally:
+        cnx.close()
 
     # selon l'appareil utilisé, on affiche la page de scan appropriée:
     # pour ios: pas de pdf visibles avec dropzone.js alors on utilise l'outil de téléchargement html
     # pour windows: on utilise dropzone.js qui fonctionne avec les pdf
     user_agent = request.headers.get('User-Agent')
+
     if 'Windows' in user_agent:
-        return render_template('facture_ocr_attente_dz.html', mode='dz', id_ticket=id_ticket, bd=profile_list[3])
-    else:
-        return render_template('facture_ocr_attente_dnload.html', mode='dnload', id_ticket=id_ticket, bd=profile_list[3])
+        return render_template(
+            'facture_ocr_attente_dz.html',
+            mode='dz',
+            id_ticket=id_ticket,
+            bd=profile_list[3]
+        )
+
+    return render_template(
+        'facture_ocr_attente_dnload.html',
+        mode='dnload',
+        id_ticket=id_ticket,
+        bd=profile_list[3]
+    )
+# @bp_ocr.route('/lancer_facture_attente_ocr/<id_ticket>', methods=['POST','GET'])
+# def lancer_facture_attente_ocr(id_ticket):
+#
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list = session.get('ProfilUsager')
+#     # vérifier type d'usager si admin ou non
+#     if profile_list[2] > 2:
+#         return redirect(url_for('bp_admin.permission'))
+#     mode_connexion = profile_list[8]
+#
+#     chemin_ocr = chemin_temp_images(mode_connexion)
+#     # vérifier le statut du fichier de paramètres ocr avant de sauvegarder temporairement
+#     # le statut est remis à '0' lors du clic de bouton 'soumettre' ou 'annuler'
+#     with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt')) as m:
+#         contenu_statut = []
+#         for line in m:
+#             # Remove linebreak which is the last character of the string
+#             # curr_place = line[:-1]
+#             # Add item to the list
+#             contenu_statut.append(line)
+#
+#         # vérifier le statut du fichier de paramètres ocr avant de sauvegarder temporairement
+#         # le statut est remis à '0' lors du clic de bouton 'soumettre' ou 'annuler' dans la page de saisie OCR
+#         with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt')) as m:
+#             contenu_statut = []
+#             for line in m:
+#                 # Remove linebreak which is the last character of the string
+#                 # curr_place = line[:-1]
+#                 # Add item to the list
+#                 contenu_statut.append(line)
+#             dateheure = datetime.now()
+#             # dateheure_debut = dateheure - timedelta(minutes=3)
+#             dateheure_debut = dateheure - timedelta(minutes=OCR_LOCK_TIMEOUT_MINUTES)
+#             print('contenu statut:', contenu_statut)
+#             if contenu_statut[0] != '0':
+#                 # fichier en cours d'utilisation CAR '0' signifie 'libre'
+#                 # on vérifie le délai depuis la dernière opération OCR en comparant dateheure actuel et celui inscrit lors de la dernière saisie
+#                 date_format = '%Y-%m-%d %H:%M:%S.%f'
+#                 dateheure_saisie = datetime.strptime(contenu_statut[0], date_format)
+#
+#                 if dateheure_saisie >= dateheure_debut:  # délai de moins de 3 minutes
+#                     diff = dateheure - dateheure_saisie
+#                     # min_restantes=round(3-diff.total_seconds()/60,1)
+#                     min_restantes = round(OCR_LOCK_TIMEOUT_MINUTES - diff.total_seconds() / 60, 1)
+#                     flash("Un autre usager utilise présentement la fonctionnalité de facture OCR.", 'warning')
+#                     flash(
+#                         "Il reste au maximum " + str(min_restantes) + " minutes avant qu'elle ne devienne disponible.",
+#                         'warning')
+#                     return render_template('OCR_NonDispo_Attente_Facture.html',id_ticket=id_ticket)
+#                 else:
+#                     # on met la dateheure actuelle
+#                     # modifier le statut du fichier de paramètres ocr pour le rendre accessible
+#                     with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt'), 'w') as f:
+#                         f.write(str(datetime.now()))
+#             else:
+#                 # on met la dateheure actuelle
+#                 # modifier le statut du fichier de paramètres ocr pour le rendre accessible
+#                 with open(os.path.join(chemin_ocr, 'ocr_en_usage_' + profile_list[7] + '.txt'), 'w') as f:
+#                     f.write(str(datetime.now()))
+#
+#     """Afficher les données du ticket pour l'ajout d'une facture"""
+#
+#     ticket_list=[]
+#     client_ident=profile_list[0]
+#     IntervenantNom=str()
+#     cnx = connect_db(mode_connexion)
+#     cur = cnx.cursor()
+#     liste_ticket=[]
+#     cur.execute("SELECT IDTicket, IDIntervenant, Description_travail, DateComplet, HeuresEstimees, HeuresRequises, "
+#                       "Nbre_visites,Multitags, IntervenantAutre FROM tickets WHERE IDTicket=%s AND IDClient=%s", (id_ticket,client_ident))
+#     for row in cur.fetchall():
+#         #vérifier si rubrique 'IntervenantAutre' est remplie
+#
+#         cur.execute("SELECT NomIntervenant FROM intervenants WHERE IDIntervenant=%s AND IDClient=%s",
+#                     (row[1], client_ident))
+#         for item in cur.fetchall():
+#             if item[0]=='Autre':
+#                 IntervenantNom=row[8]
+#             else:
+#                 IntervenantNom = item[0]
+#         row += (IntervenantNom,)
+#
+#         ticket_list.append(row)
+#         liste_ticket=[list(row) for row in ticket_list]
+#         # vérifier si c'est un multitags
+#         if row[7]==1:
+#             message=Markup("<b>Ce ticket no."+id_ticket+" est de type 'Multitags' car il s'applique à de multiples équipements.</b><br>") \
+#                     +Markup("Vous pouvez ainsi partager le montant de la facture avec un ticket dupliqué selon le travail effectué sur chaque équipement.<br>") \
+#                     +Markup("Un duplicata de ce ticket s'affichera à la fin de cette table dès que vous cliquerez sur 'Dupliquer'.<br>") \
+#                     +Markup("Lors de l'attribution du numéro de tag et des dépenses sur ces tickets, ne pas oublier de: <br>") \
+#                     +Markup("- modifier la description <br>") \
+#                     +Markup("- ajuster les heures requises <br>") \
+#                     +Markup("- décocher 'multi-tags'")
+#             flash(message, "warning")
+#             return redirect(url_for('bp_factures.attente_facture'))
+#
+#     # selon l'appareil utilisé, on affiche la page de scan appropriée:
+#     # pour ios: pas de pdf visibles avec dropzone.js alors on utilise l'outil de téléchargement html
+#     # pour windows: on utilise dropzone.js qui fonctionne avec les pdf
+#     user_agent = request.headers.get('User-Agent')
+#     if 'Windows' in user_agent:
+#         return render_template('facture_ocr_attente_dz.html', mode='dz', id_ticket=id_ticket, bd=profile_list[3])
+#     else:
+#         return render_template('facture_ocr_attente_dnload.html', mode='dnload', id_ticket=id_ticket, bd=profile_list[3])
 
 
 @bp_ocr.route('/afficher_OCR/<mode>',methods=['POST','GET'])
@@ -1006,12 +1228,22 @@ def facture_ocr(mode):
                 date_format = '%Y-%m-%d %H:%M:%S.%f'
                 dateheure_debut = datetime.strptime(contenu_statut[0], date_format)
 
-                if datetime.now()>= dateheure_debut + timedelta(minutes=3):  # délai de moins de 3 minutes toléré
-                    # on refuse la transaction
-                    flash("Vous avez excédé le délai de 3 minutes pour la saisie de facture OCR.", 'warning')
+                if datetime.now() >= dateheure_debut + timedelta(minutes=OCR_LOCK_TIMEOUT_MINUTES):
                     flash(
-                        "Aucun ticket ni aucune facture ont été créés.",'warning')
+                        "Vous avez excédé le délai de "
+                        + str(OCR_LOCK_TIMEOUT_MINUTES)
+                        + " minutes pour la saisie de facture OCR.",
+                        'warning'
+                    )
+                    flash("Aucun ticket ni aucune facture ont été créés.", 'warning')
                     return render_template('OCR_NonDispo.html')
+                #
+                # if datetime.now()>= dateheure_debut + timedelta(minutes=3):  # délai de moins de 3 minutes toléré
+                #     # on refuse la transaction
+                #     flash("Vous avez excédé le délai de 3 minutes pour la saisie de facture OCR.", 'warning')
+                #     flash(
+                #         "Aucun ticket ni aucune facture ont été créés.",'warning')
+                #     return render_template('OCR_NonDispo.html')
 
         if request.form['type_fichier']=='pdf':
             # taille max. 0,4MB pour .pdf. Les fichiers images .jpg ont déjà été réduits.

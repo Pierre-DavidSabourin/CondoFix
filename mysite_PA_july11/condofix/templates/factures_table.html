@@ -1,128 +1,710 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Factures'
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container-fluid factures-page mb-3">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
 
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .factures-page {
+        --fac-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --fac-radius-xl: 20px;
+        --fac-radius-lg: 16px;
+        --fac-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .factures-page .fac-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--fac-radius-xl);
+        box-shadow: var(--fac-shadow);
+        padding: 1.25rem;
+    }
+
+    .factures-page .fac-header {
+        margin-bottom: 1rem;
+    }
+
+    .factures-page .fac-header h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .factures-page .fac-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .factures-page .fac-filter-row,
+    .factures-page .fac-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .factures-page .fac-filter-left,
+    .factures-page .fac-filter-right,
+    .factures-page .fac-toolbar-left,
+    .factures-page .fac-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .factures-page .fac-filter-form {
+        margin: 0;
+    }
+
+    .factures-page .fac-filter-label {
+        margin: 0;
+        color: var(--theme-text);
+        font-weight: 700;
+    }
+
+    .factures-page .fac-date-input {
+        min-height: 42px;
+        padding: 0.55rem 0.85rem;
+        border-radius: var(--fac-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        outline: none;
+        box-shadow: none;
+    }
+
+    .factures-page .fac-date-input:focus {
+        border-color: var(--theme-link-edit);
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10);
+    }
+
+    .factures-page .fac-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--fac-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .factures-page .fac-btn:hover,
+    .factures-page .fac-btn:focus {
+        text-decoration: none;
+        color: var(--theme-text);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .factures-page .fac-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+        border-color: transparent;
+    }
+
+    .factures-page .fac-btn-primary:hover,
+    .factures-page .fac-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+        opacity: 0.96;
+    }
+
+    .factures-page .fac-btn-dark {
+        background: var(--theme-text);
+        color: var(--theme-surface);
+        border-color: transparent;
+    }
+
+    .factures-page .fac-btn-dark:hover,
+    .factures-page .fac-btn-dark:focus {
+        color: var(--theme-surface);
+        opacity: 0.92;
+    }
+
+    .factures-page .fac-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--fac-radius-lg);
+        box-shadow: var(--fac-shadow);
+        overflow: hidden;
+    }
+
+    .factures-page .fac-table-scroll-top,
+    .factures-page .fac-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .factures-page .fac-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .factures-page .fac-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1200px;
+    }
+
+    .factures-page .fac-table-scroll table {
+        min-width: 1200px !important;
+    }
+
+    .factures-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--fac-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .factures-page #fac-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .factures-page #fac-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .factures-page #fac-dt-search .dataTables_filter input,
+    .factures-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .factures-page #fac-dt-search .dataTables_filter input:focus,
+    .factures-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .factures-page .dataTables_wrapper .dataTables_length,
+    .factures-page .dataTables_wrapper .dataTables_filter,
+    .factures-page .dataTables_wrapper .dt-buttons,
+    .factures-page .dataTables_wrapper .dataTables_info,
+    .factures-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .factures-page table.dataTable,
+    .factures-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+    }
+
+    .factures-page table.dataTable thead th,
+    .factures-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+    }
+
+    .factures-page table.dataTable thead th.sorting_disabled,
+    .factures-page table#table_data thead th.sorting_disabled {
+        padding-right: 12px !important;
+    }
+
+    .factures-page table.dataTable tbody td,
+    .factures-page table.dataTable tbody th,
+    .factures-page table#table_data tbody td,
+    .factures-page table#table_data tbody th {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: middle;
+        font-weight: 400;
+    }
+
+    .factures-page table.dataTable tbody tr:nth-child(even) td,
+    .factures-page table.dataTable tbody tr:nth-child(even) th,
+    .factures-page table#table_data tbody tr:nth-child(even) td,
+    .factures-page table#table_data tbody tr:nth-child(even) th {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .factures-page .fac-invoice-cell,
+    .factures-page .fac-ticket-cell {
+        font-weight: 800 !important;
+        white-space: nowrap;
+    }
+
+    .factures-page .fac-money-cell {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .factures-page .fac-status-pill,
+    .factures-page .fac-ticket-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 54px;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .factures-page .fac-status-pill.is-yes,
+    .factures-page .fac-ticket-pill {
+        background: rgba(25, 135, 84, 0.13);
+        color: var(--theme-priority-low);
+    }
+
+    .factures-page .fac-status-pill.is-no {
+        background: rgba(127, 145, 168, 0.13);
+        color: var(--theme-text-muted);
+    }
+
+    .factures-page .fac-actions {
+        min-width: 180px;
+        vertical-align: middle !important;
+    }
+
+    .factures-page .fac-actions-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .factures-page .fac-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0.4rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        text-decoration: none;
+        line-height: 1.1;
+        white-space: nowrap;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .factures-page .fac-action-edit {
+        background: var(--theme-surface-alt);
+        border-color: var(--theme-border);
+        color: var(--theme-link-edit);
+    }
+
+    .factures-page .fac-action-view {
+        background: var(--theme-link-edit);
+        color: #ffffff;
+    }
+
+    .factures-page .fac-action-link:hover,
+    .factures-page .fac-action-link:focus {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .factures-page .fac-action-edit:hover,
+    .factures-page .fac-action-edit:focus {
+        color: var(--theme-link-edit);
+    }
+
+    .factures-page .fac-action-view:hover,
+    .factures-page .fac-action-view:focus {
+        color: #ffffff;
+    }
+
+    .factures-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .factures-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .factures-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .factures-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .factures-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .factures-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .factures-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 768px) {
+        .factures-page {
+            padding-top: 1rem;
+        }
+
+        .factures-page .fac-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .factures-page .fac-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .factures-page #fac-dt-search .dataTables_filter input,
+        .factures-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .factures-page .fac-filter-row,
+        .factures-page .fac-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .factures-page .fac-filter-left,
+        .factures-page .fac-filter-right,
+        .factures-page .fac-toolbar-left,
+        .factures-page .fac-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .factures-page #fac-dt-search .dataTables_filter label,
+        .factures-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .factures-page #fac-dt-search .dataTables_filter input,
+        .factures-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.fac-table-scroll');
+        const $topScroll = $('.fac-table-scroll-top');
+        const $topInner = $('.fac-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncFacturesScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            order: [[1, 'desc']],
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Factures',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    orderable: false,
+                    targets: 9
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
             },
-        ],
-        "pageLength":100,
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#fac-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#fac-dt-search');
+
+                setTimeout(syncFacturesScrollWidth, 0);
             }
         });
-    } );
-    </script>
-</head>
-<body>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div class="alert alert-{{ category }}">
-    {{ message }}
-</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
-<div class="container">
+
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncFacturesScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncFacturesScrollWidth, 0);
+        });
+
+        setTimeout(syncFacturesScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid factures-page">
     <div class="row">
-        <div class="col-md-12 col-xs-12 col-sm-12">
-            <form action="{{ url_for('bp_factures.afficher_de_date') }}" method=post class="form-horizontal" role="form">
-                <div class="form-group form-inline justify-content-between my-1">
-                    <h2>Factures</h2>
+        <div class="col-12">
+            <section class="fac-shell">
+                <div class="fac-header">
+                    <h1>Factures</h1>
+                    <p>Consultez les factures enregistrées, filtrez par date et accédez aux fichiers numérisés.</p>
                 </div>
-                <div class="form-group form-inline justify-content-between">
-                    <div class="form-group form-inline pull-left">
-                        <button type="submit" class="btn btn-sm bg-primary text-white btn-rounded" role="button" name="btn_enreg">Soumettre</button>
-                        <div class="form-group form-inline">
-                            <label>&nbsp&nbspÀ partir de:&nbsp&nbsp</label>
-                            <input class="form-control form-control-sm" type="date" value="{{ date_debut }}"  name="date_debut" autofocus="autofocus">
+
+                <form action="{{ url_for('bp_factures.afficher_de_date') }}"
+                      method="post"
+                      class="fac-filter-form"
+                      role="form">
+                    <div class="fac-filter-row">
+                        <div class="fac-filter-left">
+                            <button type="submit"
+                                    class="fac-btn fac-btn-primary"
+                                    name="btn_enreg">
+                                Soumettre
+                            </button>
+
+                            <label class="fac-filter-label" for="date_debut">
+                                À partir de :
+                            </label>
+
+                            <input id="date_debut"
+                                   class="fac-date-input"
+                                   type="date"
+                                   value="{{ date_debut }}"
+                                   name="date_debut"
+                                   autofocus="autofocus">
+                        </div>
+
+                        <div class="fac-filter-right">
+                            <a class="fac-btn fac-btn-dark"
+                               role="button"
+                               href="{{ url_for('bp_ocr.lancer_OCR') }}">
+                                Scan OCR
+                            </a>
                         </div>
                     </div>
-                    <div>
-                        <a class="btn btn-sm bg-dark text-white btn-rounded" role="button" href="{{ url_for('bp_ocr.lancer_OCR') }}">Scan OCR</a>
+                </form>
+
+                <div class="fac-toolbar">
+                    <div class="fac-toolbar-left">
+                        <div id="fac-dt-buttons"></div>
+                    </div>
+
+                    <div class="fac-toolbar-right">
+                        <div id="fac-dt-search"></div>
                     </div>
                 </div>
-            </form>
+
+                <div class="fac-table-card">
+                    <div class="fac-table-scroll-top">
+                        <div class="fac-table-scroll-top-inner"></div>
+                    </div>
+
+                    <div class="fac-table-scroll">
+                        <table id="table_data" class="table" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>No. facture</th>
+                                    <th>Saisie</th>
+                                    <th>Fournisseur</th>
+                                    <th>Main d’œuvre ($)</th>
+                                    <th>Matériel ($)</th>
+                                    <th>Total ($)</th>
+                                    <th>Compte GL</th>
+                                    <th>Ticket</th>
+                                    <th>Numérisée</th>
+                                    <th style="min-width: 180px;">Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for item in factures_list %}
+                                {% set numerisee = item[10]|string|lower %}
+                                <tr>
+                                    <td class="fac-invoice-cell">{{ item[1] }}</td>
+                                    <td>{{ item[2] }}</td>
+                                    <td>{{ item[3] }}</td>
+                                    <td class="fac-money-cell">{{ item[4] }}</td>
+                                    <td class="fac-money-cell">{{ item[5] }}</td>
+                                    <td class="fac-money-cell">{{ item[6] }}</td>
+                                    <td>{{ item[7] }}</td>
+                                    <td class="fac-ticket-cell">
+                                        {% if item[8] and item[8]|string|lower != 'none' %}
+                                            <span class="fac-ticket-pill">{{ item[8] }}</span>
+                                        {% else %}
+                                            <span class="fac-status-pill is-no">Aucun</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if numerisee == 'oui' or numerisee == 'yes' or numerisee == '1' %}
+                                            <span class="fac-status-pill is-yes">oui</span>
+                                        {% else %}
+                                            <span class="fac-status-pill is-no">non</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="fac-actions">
+                                        <div class="fac-actions-row">
+                                            <a class="fac-action-link fac-action-edit"
+                                               role="button"
+                                               href="{{ url_for('bp_factures.facture_modif', id_facture=item[0]) }}">
+                                                Modifier
+                                            </a>
+
+                                            <a class="fac-action-link fac-action-view"
+                                               role="button"
+                                               target="_blank"
+                                               rel="noopener"
+                                               href="{{ url_for('bp_factures.facture_affiche', id_facture=item[0]) }}">
+                                                Afficher
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
-    <div class="datagrid">
-        <style>
-            table {
-                font-family: arial, sans-serif;
-                font-size: 10px;
-                border-collapse: collapse;
-                width: 100%;
-                z-index: -1;
-            }
-            td, th {
-                border: 1px solid #dddddd;
-                text-align: center;
-                padding: 8px;
-            }
-            tr:nth-child(even) {
-                background-color: #dddddd;
-            }
-        </style>
-        <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-            <thead>
-            <tr>
-                <th width="40px"><strong>#</strong></th>
-                <th width="50px"><strong>Saisie</strong></th>
-                <th width="80px"><strong>Fournisseur</strong></th>
-                <th width="40px"><strong>$ Main d'oeuvre</strong></th>
-                <th width="40px"><strong>$ Matériel</strong></th>
-                <th width="40px"><strong>$ Total</strong></th>
-                <th width="50px"><strong>Compte GL</strong></th>
-                <th width="40px"><strong>Ticket</strong></th>
-                <th width="40px"><strong>Numérisée</strong></th>
-                <th width="120px"><strong>Action</strong></th>
-            </tr>
-            </thead>
-            {% for item in factures_list %}
-            <tr>
-                <td width="40px">{{ item[1] }}</td>
-                <td width="50px">{{ item[2] }}</td>
-                <td width="80px">{{ item[3] }}</td>
-                <td width="40px">{{ item[4] }}</td>
-                <td width="40px">{{ item[5] }}</td>
-                <td width="40px">{{  item[6]  }}</td>
-                <td width="50px">{{  item[7]  }}</td>
-                <td width="40px">{{  item[8]  }}</td>
-                <td width="40px">{{  item[10]  }}</td>
-                <td class="button-group justify-content-between">
-                    <a class="btn bg-steel text-white btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_factures.facture_modif',id_facture=item[0]) }}">Modifier</a>
-                    <a class="btn bg-primary text-white btn-rounded btn-sm mb-2" role="button" href="{{ url_for('bp_factures.facture_affiche',id_facture=item[0]) }}">Afficher</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
 </div>
-</body>
-{% endblock %}
 
+{% endblock content %}

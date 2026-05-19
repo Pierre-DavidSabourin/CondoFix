@@ -1,130 +1,757 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Signalements'
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container-fluid signalements-page mb-3">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
 
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .signalements-page {
+        --sig-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --sig-radius-xl: 20px;
+        --sig-radius-lg: 16px;
+        --sig-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .signalements-page .sig-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--sig-radius-xl);
+        box-shadow: var(--sig-shadow);
+        padding: 1.25rem;
+    }
+
+    .signalements-page .sig-header {
+        margin-bottom: 1rem;
+    }
+
+    .signalements-page .sig-header h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .signalements-page .sig-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .signalements-page .sig-toolbar,
+    .signalements-page .sig-filter-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .signalements-page .sig-toolbar-left,
+    .signalements-page .sig-toolbar-right,
+    .signalements-page .sig-filter-left {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .signalements-page .sig-filter-form {
+        margin: 0;
+    }
+
+    .signalements-page .sig-filter-label {
+        margin: 0;
+        color: var(--theme-text);
+        font-weight: 700;
+    }
+
+    .signalements-page .sig-date-input {
+        min-height: 42px;
+        padding: 0.55rem 0.85rem;
+        border-radius: var(--sig-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        outline: none;
+        box-shadow: none;
+    }
+
+    .signalements-page .sig-date-input:focus {
+        border-color: var(--theme-link-edit);
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10);
+    }
+
+    .signalements-page .sig-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--sig-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .signalements-page .sig-btn:hover,
+    .signalements-page .sig-btn:focus {
+        text-decoration: none;
+        color: var(--theme-text);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .signalements-page .sig-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+        border-color: transparent;
+    }
+
+    .signalements-page .sig-btn-primary:hover,
+    .signalements-page .sig-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+        opacity: 0.96;
+    }
+
+    .signalements-page .sig-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--sig-radius-lg);
+        box-shadow: var(--sig-shadow);
+        overflow: hidden;
+    }
+
+    .signalements-page .sig-table-inner {
+        padding: 0;
+    }
+
+    .signalements-page .sig-table-scroll-top,
+    .signalements-page .sig-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .signalements-page .sig-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .signalements-page .sig-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1200px;
+    }
+
+    .signalements-page .sig-table-scroll table {
+        min-width: 1200px !important;
+    }
+
+    .signalements-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--sig-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .signalements-page .dt-buttons .dt-button:hover,
+    .signalements-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .signalements-page #sig-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .signalements-page #sig-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .signalements-page #sig-dt-search .dataTables_filter input,
+    .signalements-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .signalements-page #sig-dt-search .dataTables_filter input:focus,
+    .signalements-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .signalements-page .dataTables_wrapper .dataTables_length,
+    .signalements-page .dataTables_wrapper .dataTables_filter,
+    .signalements-page .dataTables_wrapper .dt-buttons,
+    .signalements-page .dataTables_wrapper .dataTables_info,
+    .signalements-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .signalements-page table.dataTable,
+    .signalements-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+    }
+
+    .signalements-page table.dataTable thead th,
+    .signalements-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+    }
+
+    .signalements-page table.dataTable thead th.sorting_disabled,
+    .signalements-page table#table_data thead th.sorting_disabled {
+        padding-right: 12px !important;
+    }
+
+    .signalements-page table.dataTable tbody td,
+    .signalements-page table.dataTable tbody th,
+    .signalements-page table#table_data tbody td,
+    .signalements-page table#table_data tbody th {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: top;
+        font-weight: 400;
+    }
+
+    .signalements-page table.dataTable tbody tr:nth-child(even) td,
+    .signalements-page table.dataTable tbody tr:nth-child(even) th,
+    .signalements-page table#table_data tbody tr:nth-child(even) td,
+    .signalements-page table#table_data tbody tr:nth-child(even) th {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .signalements-page .sig-date-cell,
+    .signalements-page .sig-type-cell {
+        font-weight: 700 !important;
+    }
+
+    .signalements-page .sig-ticket-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 54px;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.1;
+        background: rgba(25, 135, 84, 0.13);
+        color: var(--theme-priority-low);
+        white-space: nowrap;
+    }
+
+    .signalements-page .sig-ticket-pill.is-empty {
+        background: rgba(127, 145, 168, 0.13);
+        color: var(--theme-text-muted);
+    }
+
+    .signalements-page .sig-actions {
+        min-width: 210px;
+        vertical-align: middle !important;
+    }
+
+    .signalements-page .sig-actions-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .signalements-page .sig-action-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0.4rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        font-weight: 800;
+        text-decoration: none;
+        line-height: 1.1;
+        white-space: nowrap;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .signalements-page .sig-action-create {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+    }
+
+    .signalements-page .sig-action-archive {
+        background: var(--theme-surface-alt);
+        border-color: var(--theme-border);
+        color: var(--theme-link-edit);
+    }
+
+    .signalements-page .sig-action-button:hover,
+    .signalements-page .sig-action-button:focus {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .signalements-page .sig-action-create:hover,
+    .signalements-page .sig-action-create:focus {
+        color: var(--theme-kpi-hours-text);
+    }
+
+    .signalements-page .sig-action-archive:hover,
+    .signalements-page .sig-action-archive:focus {
+        color: var(--theme-link-edit);
+    }
+
+    .signalements-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .signalements-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .signalements-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .signalements-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .signalements-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .signalements-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .signalements-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 768px) {
+        .signalements-page {
+            padding-top: 1rem;
+        }
+
+        .signalements-page .sig-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .signalements-page .sig-header h1 {
+            font-size: 1.6rem;
+        }
+
+        .signalements-page #sig-dt-search .dataTables_filter input,
+        .signalements-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .signalements-page .sig-toolbar,
+        .signalements-page .sig-filter-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .signalements-page .sig-toolbar-left,
+        .signalements-page .sig-toolbar-right,
+        .signalements-page .sig-filter-left {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .signalements-page #sig-dt-search .dataTables_filter label,
+        .signalements-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .signalements-page #sig-dt-search .dataTables_filter input,
+        .signalements-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.sig-table-scroll');
+        const $topScroll = $('.sig-table-scroll-top');
+        const $topInner = $('.sig-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncSignalementsScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            order: [[0, 'desc']],
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Signalements',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    visible: false,
+                    targets: 7
+                },
+                {
+                    orderable: false,
+                    targets: 8
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
             },
-        ],
-        "order": [[ 0, "desc" ]],
-        columnDefs: [
-            { "visible": false, "targets": [ 7 ], }
-        ],
-        "pageLength":100,
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#sig-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#sig-dt-search');
+
+                setTimeout(syncSignalementsScrollWidth, 0);
             }
         });
-    } );
-    </script>
-</head>
-<body>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div class="alert alert-{{ category }}">
-    {{ message }}
-</div>
-{% endfor %}
-{% endif %}
-{% endwith %}
-<div class="container">
+
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncSignalementsScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncSignalementsScrollWidth, 0);
+        });
+
+        setTimeout(syncSignalementsScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid signalements-page">
     <div class="row">
-        <div class="col-md-12 col-xs-12 col-sm-12">
-            <form action="{{ url_for('bp_signalements.afficher_de_date_2') }}" method=post class="form-horizontal" role="form">
-                <div class="form-group form-inline justify-content-between my-1">
-                    <h2>Signalements</h2>
+        <div class="col-12">
+            <section class="sig-shell">
+                <div class="sig-header">
+                    <h1>Signalements</h1>
+                    <p>Consultez les signalements actifs soumis par les copropriétaires et créez les tickets de suivi requis.</p>
                 </div>
-                <div class="form-group form-inline justify-content-between">
-                    <div class="form-group form-inline pull-left">
-                        <button type="submit" class="btn btn-sm bg-primary text-white btn-rounded" role="button" name="btn_enreg">Soumettre</button>
-                        <div class="form-group form-inline">
-                            <label>&nbsp&nbspÀ partir de:&nbsp&nbsp</label>
-                            <input class="form-control form-control-sm" type="date" value="{{ date_debut }}"  name="date_debut" autofocus="autofocus">
+
+                <form action="{{ url_for('bp_signalements.afficher_de_date_2') }}"
+                      method="post"
+                      class="sig-filter-form"
+                      role="form">
+                    <div class="sig-filter-row">
+                        <div class="sig-filter-left">
+                            <button type="submit"
+                                    class="sig-btn sig-btn-primary"
+                                    name="btn_enreg">
+                                Soumettre
+                            </button>
+
+                            <label class="sig-filter-label" for="date_debut">
+                                À partir de :
+                            </label>
+
+                            <input id="date_debut"
+                                   class="sig-date-input"
+                                   type="date"
+                                   value="{{ date_debut }}"
+                                   name="date_debut"
+                                   autofocus="autofocus">
+                        </div>
+                    </div>
+                </form>
+
+                <div class="sig-toolbar">
+                    <div class="sig-toolbar-left">
+                        <div id="sig-dt-buttons"></div>
+                    </div>
+
+                    <div class="sig-toolbar-right">
+                        <div id="sig-dt-search"></div>
+                    </div>
+                </div>
+
+                <div class="sig-table-card">
+                    <div class="sig-table-inner">
+                        <div class="sig-table-scroll-top">
+                            <div class="sig-table-scroll-top-inner"></div>
+                        </div>
+
+                        <div class="sig-table-scroll">
+                            <table id="table_data" class="table" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Date / heure</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Emplacement</th>
+                                        <th>Unité</th>
+                                        <th>Courriel</th>
+                                        <th>Ticket</th>
+                                        <th>Actif</th>
+                                        <th style="min-width: 220px;">Action</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {% for item in fill_signalements %}
+                                    {% set ticket_value = item[7]|string|lower %}
+                                    <tr>
+                                        <td class="sig-date-cell">{{ item[1] }}</td>
+                                        <td class="sig-type-cell">{{ item[9] }}</td>
+                                        <td>{{ item[6] }}</td>
+                                        <td>{{ item[5] }}</td>
+                                        <td>{{ item[3] }}</td>
+                                        <td>{{ item[4] }}</td>
+                                        <td>
+                                            {% if item[7] and ticket_value != 'none' %}
+                                                <span class="sig-ticket-pill">{{ item[7] }}</span>
+                                            {% else %}
+                                                <span class="sig-ticket-pill is-empty">Aucun</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item[8] }}</td>
+                                        <td class="align-middle sig-actions">
+                                            <div class="sig-actions-row">
+                                                {% if item[7] and ticket_value != 'none' %}
+                                                    <a class="sig-action-button sig-action-create"
+                                                       role="button"
+                                                       href="{{ url_for('bp_tickets.affiche_ticket_en_cours', id_ticket=item[7]) }}">
+                                                        Voir ticket
+                                                    </a>
+                                                {% else %}
+                                                    <a class="sig-action-button sig-action-create"
+                                                       role="button"
+                                                       href=""
+                                                       data-toggle="modal"
+                                                       data-target="#CreerTicket_Modal{{ item[0] }}">
+                                                        Créer ticket
+                                                    </a>
+                                                {% endif %}
+
+                                                <a class="sig-action-button sig-action-archive"
+                                                   role="button"
+                                                   href=""
+                                                   data-toggle="modal"
+                                                   data-target="#Archiver_Modal{{ item[0] }}">
+                                                    Archiver
+                                                </a>
+                                            </div>
+
+                                            {% if not item[7] or ticket_value == 'none' %}
+                                                <div class="form-group">
+                                                    <form action="{{ url_for('bp_signalements.creation_ticket_signalement', id_signalement=item[0]) }}"
+                                                          method="post"
+                                                          class="form-horizontal"
+                                                          role="form">
+                                                        <div class="modal fade"
+                                                             id="CreerTicket_Modal{{ item[0] }}"
+                                                             tabindex="-1"
+                                                             role="dialog"
+                                                             aria-labelledby="CreerTicketModalLabel{{ item[0] }}"
+                                                             aria-hidden="true">
+                                                            <div class="modal-dialog" role="document">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-body">
+                                                                        <h5>Voulez-vous créer un ticket à partir de ce signalement?</h5>
+                                                                        <p class="mb-0">
+                                                                            Le ticket sera créé immédiatement, puis ouvert pour modification.
+                                                                        </p>
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <button type="submit" class="btn btn-primary">Oui</button>
+                                                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            {% endif %}
+
+                                            <div class="form-group">
+                                                <form action="{{ url_for('bp_signalements.archiver_signalement', id_signalement=item[0]) }}"
+                                                      method="post"
+                                                      class="form-horizontal"
+                                                      role="form">
+                                                    <div class="modal fade"
+                                                         id="Archiver_Modal{{ item[0] }}"
+                                                         tabindex="-1"
+                                                         role="dialog"
+                                                         aria-labelledby="ArchiverModalLabel{{ item[0] }}"
+                                                         aria-hidden="true">
+                                                        <div class="modal-dialog" role="document">
+                                                            <div class="modal-content">
+                                                                <div class="modal-body">
+                                                                    <h5>Voulez-vous vraiment ARCHIVER ce signalement?</h5>
+                                                                    <p class="mb-0">
+                                                                        Le signalement ne sera plus affiché dans la liste des signalements actifs.
+                                                                    </p>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="submit" class="btn btn-primary">Oui</button>
+                                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-            </form>
+            </section>
         </div>
     </div>
-    <div class="datagrid">
-        <style>
-        table {
-            font-family: arial, sans-serif;
-            font-size: 10px;
-            border-collapse: collapse;
-            width: 100%;
-            z-index: -1;
-        }
-        td, th {
-            border: 1px solid #dddddd;
-            text-align: left;
-            font-weight: normal;
-            padding: 2px;
-        }
-        tr:nth-child(even) {
-            background-color: #dddddd;
-        }
-        </style>
-        <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-            <thead>
-                <tr>
-                    <th width="60px"><strong>DateHeure</strong></th>
-                    <th width="60px"><strong>Type</strong></th>
-                    <th width="130px"><strong>Description</strong></th>
-                    <th width="80px"><strong>Emplacement</strong></th>
-                    <th width="40px"><strong>Unite</strong></th>
-                    <th width="110px"><strong>Courriel</strong></th>
-                    <th width="40px"><strong>Ticket</strong></th>
-                    <th width="40px"><strong>Actif</strong></th>
-                    <th width="120px"><strong>Action</strong></th>
-                </tr>
-            </thead>
-                {% for item in fill_signalements %}
-                <tr>
-                    <th width="60px">{{ item[1] }}</th>
-                    <th width="60px">{{ item[9] }}</th>
-                    <th width="130px">{{ item[6] }}</th>
-                    <th width="80px">{{ item[5] }}</th>
-                    <th width="40px">{{ item[3] }}</th>
-                    <th width="110px">{{ item[4] }}</th>
-                    <th width="40px">{{ item[7] }}</th>
-                    <th width="40px">{{ item[8] }}</th>
-                    <td class="text-center align-middle py-0">
-                        <a class="btn bg-steel text-white btn-rounded btn-sm my-1" role="button"
-                           href="{{ url_for('bp_signalements.creation_ticket_signalement',id_signalement=item[0]) }}">Créer ticket</a>
-                        <a class="btn btn-primary btn-rounded btn-sm my-1" role="button"
-                           href="{{ url_for('bp_signalements.archiver_signalement',id_signalement=item[0]) }}">Archiver</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-    </div>
 </div>
-</body>
-{% endblock %}
 
+{% endblock content %}

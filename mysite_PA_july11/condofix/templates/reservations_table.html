@@ -1,157 +1,912 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Réservations'
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
 
+<!-- Bootstrap dropdowns / modals -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet">
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet">
+
+<style>
+    .reservations-page {
+        --reservations-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --reservations-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --reservations-radius-xl: 20px;
+        --reservations-radius-lg: 16px;
+        --reservations-radius-md: 14px;
+        --reservations-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.5rem 0 2rem;
+    }
+
+    .reservations-page .reservations-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--reservations-radius-xl);
+        box-shadow: var(--reservations-shadow);
+        padding: 1.5rem;
+    }
+
+    .reservations-page .reservations-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .reservations-page .reservations-header-copy h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .reservations-page .reservations-header-copy p {
+        margin: 0.4rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .reservations-page .reservations-summary-card {
+        min-width: 220px;
+        padding: 0.95rem 1rem;
+        border: 1px solid var(--theme-border);
+        border-radius: var(--reservations-radius-md);
+        background: var(--theme-surface-alt);
+        box-shadow: var(--reservations-shadow-soft);
+    }
+
+    .reservations-page .reservations-summary-label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--theme-text-muted);
+    }
+
+    .reservations-page .reservations-summary-value {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: 1.5rem;
+        font-weight: 900;
+        line-height: 1;
+        color: var(--theme-text);
+    }
+
+    .reservations-page .reservations-toolbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .reservations-page .reservations-toolbar-left,
+    .reservations-page .reservations-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .reservations-page .reservations-date-filter {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .reservations-page .reservations-date-filter label {
+        margin: 0;
+        font-weight: 800;
+        color: var(--theme-text);
+    }
+
+    .reservations-page .reservations-date-filter input {
+        min-height: 44px;
+        min-width: 170px;
+        border-radius: var(--reservations-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        padding: 0.55rem 0.8rem;
+        outline: none;
+        box-shadow: none;
+    }
+
+    .reservations-page .reservations-date-filter input:focus {
+        border-color: var(--theme-link-edit);
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10);
+    }
+
+    .reservations-page .reservations-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0.62rem 1rem;
+        border: 1px solid transparent;
+        border-radius: var(--reservations-radius-sm);
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: transform 0.12s ease, opacity 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .reservations-page .reservations-btn:hover,
+    .reservations-page .reservations-btn:focus {
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .reservations-page .reservations-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+    }
+
+    .reservations-page .reservations-btn-primary:hover,
+    .reservations-page .reservations-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+    }
+
+    .reservations-page .reservations-btn-dark {
+        background: var(--theme-text);
+        color: var(--theme-surface);
+    }
+
+    .reservations-page .reservations-btn-dark:hover,
+    .reservations-page .reservations-btn-dark:focus {
+        color: var(--theme-surface);
+        opacity: 0.94;
+    }
+
+    .reservations-page .reservations-btn-warning {
+        background: var(--theme-priority-high);
+        color: var(--theme-priority-high-text);
+    }
+
+    .reservations-page .reservations-btn-warning:hover,
+    .reservations-page .reservations-btn-warning:focus {
+        color: var(--theme-priority-high-text);
+    }
+
+    .reservations-page .reservations-btn-blue {
+        background: var(--theme-priority-medium);
+        color: var(--theme-priority-medium-text);
+    }
+
+    .reservations-page .reservations-btn-blue:hover,
+    .reservations-page .reservations-btn-blue:focus {
+        color: var(--theme-priority-medium-text);
+    }
+
+    .reservations-page .reservations-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--reservations-radius-lg);
+        box-shadow: var(--reservations-shadow);
+        overflow: hidden;
+    }
+
+    .reservations-page .reservations-table-inner {
+        padding: 0;
+    }
+
+    .reservations-page .reservations-table-scroll-top,
+    .reservations-page .reservations-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .reservations-page .reservations-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .reservations-page .reservations-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1280px;
+    }
+
+    .reservations-page .reservations-table-scroll table {
+        min-width: 1280px !important;
+    }
+
+    .reservations-page .dataTables_wrapper {
+        color: var(--theme-text-muted);
+    }
+
+    .reservations-page .dataTables_wrapper .dt-buttons {
+        float: none;
+        display: inline-flex;
+        margin-bottom: 1rem;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_length {
+        float: left;
+        padding: 1rem 0.5rem 0.75rem;
+        color: var(--theme-text-muted) !important;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_filter {
+        float: right;
+        padding: 1rem 0.5rem 0.75rem;
+        color: var(--theme-text-muted) !important;
+        font-weight: 800;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_filter input {
+        width: 280px;
+        min-height: 44px;
+        margin-left: 0 !important;
+        padding: 0.65rem 0.95rem;
+        border-radius: var(--reservations-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        outline: none;
+        box-shadow: none;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit);
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10);
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem;
+        color: var(--theme-text-muted) !important;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem;
+        color: var(--theme-text-muted) !important;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .reservations-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .reservations-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .reservations-page .dt-buttons .dt-button,
+    .reservations-page button.dt-button,
+    .reservations-page div.dt-button,
+    .reservations-page a.dt-button,
+    .reservations-page input.dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem !important;
+        border-radius: var(--reservations-radius-sm) !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 800 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .reservations-page .dt-buttons .dt-button:hover,
+    .reservations-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .reservations-page table.dataTable,
+    .reservations-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.96rem;
+        border: 0 !important;
+        color: var(--theme-text);
+    }
+
+    .reservations-page table.dataTable thead th,
+    .reservations-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 28px 14px 12px !important;
+        font-size: 0.92rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .reservations-page table.dataTable tbody td,
+    .reservations-page table#table_data tbody td {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: middle;
+    }
+
+    .reservations-page table.dataTable tbody tr:nth-child(even) td,
+    .reservations-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .reservations-page .reservation-date {
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .reservations-page .reservation-time {
+        white-space: nowrap;
+    }
+
+    .reservations-page .reservation-time-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--theme-kpi-hours) 45%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-kpi-hours) 14%, var(--theme-surface));
+        color: var(--theme-text);
+        font-size: 0.86rem;
+        font-weight: 900;
+        line-height: 1.2;
+        padding: 0.32rem 0.72rem;
+        white-space: nowrap;
+    }
+
+    html[data-theme^="dark-"] .reservations-page .reservation-time-pill {
+        border-color: color-mix(in srgb, var(--theme-kpi-hours) 55%, var(--theme-border));
+        background: color-mix(in srgb, var(--theme-kpi-hours) 22%, var(--theme-surface));
+        color: var(--theme-text);
+    }
+    .reservations-page .reservation-resource-pill,
+    .reservations-page .reservation-payment-pill {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        border-radius: 999px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.2;
+        padding: 0.32rem 0.75rem;
+    }
+
+    .reservations-page .reservation-payment-pill {
+        border-radius: 0.65rem;
+        white-space: normal;
+    }
+
+    .reservations-page .reservation-empty {
+        color: var(--theme-text-muted);
+    }
+
+    .reservations-page .reservation-action-stack {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .reservations-page .reservation-delete-button {
+        border: 0;
+        border-radius: 0.7rem;
+        background: rgba(220, 53, 69, 0.13);
+        color: var(--theme-link-delete);
+        font-weight: 800;
+        padding: 0.55rem 0.9rem;
+        cursor: pointer;
+        transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+
+    .reservations-page .reservation-delete-button:hover,
+    .reservations-page .reservation-delete-button:focus {
+        transform: translateY(-1px);
+        opacity: 0.94;
+    }
+
+    .reservations-page .modal-content {
+        border-radius: var(--reservations-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+        color: var(--theme-text);
+    }
+
+    .reservations-page .modal-body h5 {
+        margin: 0;
+        color: var(--theme-text);
+        font-weight: 800;
+    }
+
+    html[data-theme^="dark-"] .reservations-page .reservations-shell {
+        background: linear-gradient(180deg, rgba(13, 26, 48, 0.96), rgba(10, 21, 40, 0.96));
+        border-color: rgba(126, 149, 176, 0.22);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
+    }
+
+    html[data-theme^="dark-"] .reservations-page .reservations-summary-card,
+    html[data-theme^="dark-"] .reservations-page .reservations-table-card {
+        background: rgba(26, 41, 66, 0.88);
+        border-color: rgba(126, 149, 176, 0.18);
+    }
+
+    html[data-theme^="dark-"] .reservations-page table.dataTable thead th,
+    html[data-theme^="dark-"] .reservations-page table#table_data thead th {
+        background: rgba(33, 49, 78, 0.94);
+    }
+
+    html[data-theme^="dark-"] .reservations-page table.dataTable tbody td,
+    html[data-theme^="dark-"] .reservations-page table#table_data tbody td {
+        background: rgba(10, 27, 51, 0.9);
+    }
+
+    html[data-theme^="dark-"] .reservations-page table.dataTable tbody tr:nth-child(even) td,
+    html[data-theme^="dark-"] .reservations-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(16, 35, 62, 0.92);
+    }
+
+    html[data-theme^="dark-"] .reservations-page .dataTables_filter input,
+    html[data-theme^="dark-"] .reservations-page .reservations-date-filter input {
+        background: rgba(26, 41, 66, 0.95);
+        border-color: rgba(126, 149, 176, 0.25);
+        color: var(--theme-text);
+    }
+
+    html[data-theme^="dark-"] .reservations-page .reservation-resource-pill,
+    html[data-theme^="dark-"] .reservations-page .reservation-payment-pill,
+    html[data-theme^="dark-"] .reservations-page .reservation-time-pill,
+    html[data-theme^="dark-"] .reservations-page .dt-buttons .dt-button {
+        background: rgba(26, 41, 66, 0.95) !important;
+        border-color: rgba(126, 149, 176, 0.25) !important;
+    }
+
+    html[data-theme^="dark-"] .reservations-page .reservation-delete-button {
+        background: rgba(220, 53, 69, 0.18);
+    }
+
+    @media (max-width: 992px) {
+        .reservations-page .reservations-header {
+            flex-direction: column;
+        }
+
+        .reservations-page .reservations-summary-card {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .reservations-page .reservations-toolbar {
+            align-items: stretch;
+        }
+
+        .reservations-page .reservations-toolbar-left,
+        .reservations-page .reservations-toolbar-right,
+        .reservations-page .reservations-date-filter {
+            width: 100%;
+        }
+
+        .reservations-page .reservations-toolbar-right {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .reservations-page {
+            padding: 1rem 0.75rem 2rem;
+        }
+
+        .reservations-page .reservations-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .reservations-page .reservations-header-copy h1 {
+            font-size: 1.65rem;
+        }
+
+        .reservations-page .reservations-date-filter {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .reservations-page .reservations-btn,
+        .reservations-page .reservations-date-filter input {
+            width: 100%;
+            text-align: center;
+        }
+
+        .reservations-page .dataTables_wrapper .dataTables_length,
+        .reservations-page .dataTables_wrapper .dataTables_filter {
+            float: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .reservations-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .reservations-page .dataTables_wrapper .dataTables_filter input {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .reservations-page .reservations-table-scroll table {
+            min-width: 1180px !important;
+        }
+
+        .reservations-page .reservations-table-scroll-top-inner {
+            min-width: 1180px;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .reservations-page .reservations-actions-row {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.55rem;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.reservations-table-scroll');
+        const $topScroll = $('.reservations-table-scroll-top');
+        const $topInner = $('.reservations-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        function syncReservationScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            order: [[0, 'desc'], [1, 'desc']],
+            pageLength: 25,
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Réservations',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    targets: [3, 4],
+                    className: 'text-center'
+                },
+                {
+                    targets: [9],
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center'
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ éléments',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche :',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
             },
-        ],
-        columnDefs: [
-            { "visible": false, "targets": [ ], }
-        ],
-        "order": [[ 0, "desc" ]],
-        "pageLength":100,
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            initComplete: function () {
+                $('.dataTables_filter input').attr('placeholder', 'Rechercher une réservation');
+                setTimeout(syncReservationScrollWidth, 0);
             }
         });
-    } );
-    </script>
 
-</head>
-<body>
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-<div class="container">
-    <div class="row">
-        <div class="col-md-12 col-xs-12 col-sm-12">
-            <form action="{{ url_for('bp_reservations.afficher_de_date_1') }}" method=post class="form-horizontal" role="form">
-                <div class="form-group form-inline justify-content-between my-1">
-                    <h2>Réservations</h2>
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
+
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
+
+        $(window).on('resize', function () {
+            syncReservationScrollWidth();
+        });
+
+        table.on('draw', function () {
+            setTimeout(syncReservationScrollWidth, 0);
+        });
+
+        setTimeout(syncReservationScrollWidth, 150);
+    });
+</script>
+
+<div class="container-fluid reservations-page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
                 </div>
-                <div class="form-group form-inline justify-content-between">
-                    <div class="form-group form-inline pull-left">
-                        <button type="submit" class="btn btn-sm bg-primary text-white btn-rounded" role="button" name="btn_enreg">Soumettre</button>
-                        <div class="form-group form-inline">
-                            <label>&nbsp&nbspÀ partir de:&nbsp&nbsp</label>
-                            <input class="form-control form-control-sm" type="date" value="{{ date_debut }}"  name="date_debut" autofocus="autofocus">
-                        </div>
-                    </div>
-                    <div>
-                        <a class="btn btn-sm bg-dark text-white btn-rounded mb-2 mr-5" role="button" href="{{ url_for('bp_reservations.supprime_bloc_affiche') }}">Supprimer en bloc</a>
-                        <a class="btn btn-sm bg-steel text-white btn-rounded mb-2 mr-2" role="button" href="{{ url_for('bp_reservations.reservation_affiche_admin') }}">Ajouter</a>
-                        <a class="btn btn-sm btn-warning text-dark btn-rounded mb-2 text-white mr-2" role="button" href="{{ url_for('bp_ressources.ressources_table') }}">Ressources</a>
-                        <a class="btn btn-sm btn-primary btn-rounded mb-2" role="button" href="{{ url_for('bp_reservations.calendrier_rez',usager='admin') }}">Calendrier</a>
-                    </div>
-                </div>
-            </form>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="reservations-shell">
+        <div class="reservations-header">
+            <div class="reservations-header-copy">
+                <h1>Réservations</h1>
+                <p>Consultez, filtrez et administrez les réservations des ressources communes.</p>
+            </div>
+
+            <div class="reservations-summary-card">
+                <span class="reservations-summary-label">Réservations affichées</span>
+                <span class="reservations-summary-value">{{ fill_reservations|length }}</span>
+            </div>
         </div>
-    </div>
-    <div class="datagrid">
-        <style>
-            table {
-                font-family: arial, sans-serif;
-                font-size: 10px;
-                border-collapse: collapse;
-                width: 100%;
-                z-index: -1;
-            }
-            td, th {
-                border: 1px solid #dddddd;
-                text-align: left;
-                padding: 8px;
-            }
-            tr:nth-child(even) {
-                background-color: #dddddd;
-            }
-        </style>
-        <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-            <thead>
-            <tr>
-                <th width="40px"><strong>Date</strong></th>
-                <th width="30px"><strong>Heure</strong></th>
-                <th width="50px"><strong>Ressource</strong></th>
-                <th width="40px"><strong>Durée(h)</strong></th>
-                <th width="20px"><strong>Unité</strong></th>
-                <th width="50px"><strong>Création</strong></th>
-                <th width="60px"><strong>Note</strong></th>
-                <th width="50px"><strong>Courriel</strong></th>
-                <th width="50px"><strong>Paiement</strong></th>
-                <th width="60px"><strong>Action</strong></th>
-            </tr>
-            </thead>
-            {% for item in fill_reservations %}
-            <tr>
-                <td width="40px">{{ item[2] }}</td>
-                <td width="30px">{{ item[3] }}</td>
-                <td width="50px">{{ item[10] }}</td>
-                <td width="40px">{{ item[4] }}</td>
-                <td width="20px">{{ item[5] }}</td>
-                <td width="50px">{{ item[6] }}</td>
-                <td width="60px">{{ item[7] }}</td>
-                <td width="50px">{{ item[8] }}</td>
-                <td width="50px">{{ item[11] }}</td>
-                <td class="text-center align-middle">
-                    <div class="btn-group">
-                        <a class="btn bg-steel text-white btn-rounded btn-sm mb-2" role="button" data-toggle="modal" data-target="#Supprimer_Modal{{ item[0] }}" href="">Supprimer</a>
-                        <div class="form-group">
-                            <form action="{{ url_for('bp_reservations.reservation_supprimer',id_rez=item[0]) }}" method=post class="form-horizontal" role="form">
-                                <!-- Modal -->
-                                <div class="modal fade" id="Supprimer_Modal{{ item[0] }}" tabindex="-1" role="dialog" aria-labelledby="SupprimerModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-body">
-                                                <h5>Voulez-vous vraiment SUPPRIMER cette réservation?</h5><br>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="submit" class="btn btn-primary">Oui</button>
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Non</button>
+
+        <form action="{{ url_for('bp_reservations.afficher_de_date_1') }}"
+              method="post"
+              class="reservations-toolbar"
+              role="form">
+            <div class="reservations-toolbar-left">
+                <div class="reservations-date-filter">
+                    <button type="submit"
+                            class="reservations-btn reservations-btn-primary"
+                            name="btn_enreg">
+                        Soumettre
+                    </button>
+
+                    <label for="date_debut">À partir de :</label>
+
+                    <input id="date_debut"
+                           type="date"
+                           value="{{ date_debut }}"
+                           name="date_debut"
+                           autofocus="autofocus">
+                </div>
+            </div>
+
+            <div class="reservations-toolbar-right reservations-actions-row">
+                <a class="reservations-btn reservations-btn-dark"
+                   href="{{ url_for('bp_reservations.supprime_bloc_affiche') }}">
+                    Supprimer en bloc
+                </a>
+
+                <a class="reservations-btn reservations-btn-primary"
+                   href="{{ url_for('bp_reservations.reservation_affiche_admin') }}">
+                    Ajouter
+                </a>
+
+                <a class="reservations-btn reservations-btn-warning"
+                   href="{{ url_for('bp_ressources.ressources_table') }}">
+                    Ressources
+                </a>
+
+                <a class="reservations-btn reservations-btn-blue"
+                   href="{{ url_for('bp_reservations.calendrier_rez', usager='admin') }}">
+                    Calendrier
+                </a>
+            </div>
+        </form>
+
+        <div class="reservations-table-card">
+            <div class="reservations-table-inner">
+                <div class="reservations-table-scroll-top">
+                    <div class="reservations-table-scroll-top-inner"></div>
+                </div>
+
+                <div class="reservations-table-scroll">
+                    <table id="table_data" class="table" style="width:100%">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Ressource</th>
+                            <th>Durée (h)</th>
+                            <th>Unité</th>
+                            <th>Création</th>
+                            <th>Note</th>
+                            <th>Courriel</th>
+                            <th>Paiement</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        {% for item in fill_reservations %}
+                            <tr>
+                                <td class="reservation-date">{{ item[2] }}</td>
+                                <td class="reservation-time">
+                                    <span class="reservation-time-pill">{{ item[3] }}</span>
+                                </td>
+
+                                <td>
+                                    {% if item[10] %}
+                                        <span class="reservation-resource-pill">{{ item[10] }}</span>
+                                    {% else %}
+                                        <span class="reservation-empty">—</span>
+                                    {% endif %}
+                                </td>
+
+                                {% set duration_minutes = (item[4]|float * 60)|round|int %}
+                                {% set duration_hours = duration_minutes // 60 %}
+                                {% set duration_remaining_minutes = duration_minutes % 60 %}
+                                <td class="text-center" data-order="{{ item[4] }}">
+                                    {% if duration_hours > 0 and duration_remaining_minutes > 0 %}
+                                        {{ duration_hours }} h {{ duration_remaining_minutes }}
+                                    {% elif duration_hours > 0 %}
+                                        {{ duration_hours }} h
+                                    {% else %}
+                                        {{ duration_remaining_minutes }} min
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ item[5] }}</td>
+                                <td>{{ item[6] }}</td>
+
+                                <td>
+                                    {% if item[7] %}
+                                        {{ item[7] }}
+                                    {% else %}
+                                        <span class="reservation-empty">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item[8] %}
+                                        {{ item[8] }}
+                                    {% else %}
+                                        <span class="reservation-empty">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item[11] %}
+                                        <span class="reservation-payment-pill">{{ item[11] }}</span>
+                                    {% else %}
+                                        <span class="reservation-empty">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <div class="reservation-action-stack">
+                                        <button type="button"
+                                                class="reservation-delete-button"
+                                                data-toggle="modal"
+                                                data-target="#Supprimer_Modal{{ item[0] }}">
+                                            Supprimer
+                                        </button>
+                                    </div>
+
+                                    <form action="{{ url_for('bp_reservations.reservation_supprimer', id_rez=item[0]) }}"
+                                          method="post"
+                                          class="form-horizontal"
+                                          role="form">
+                                        <div class="modal fade"
+                                             id="Supprimer_Modal{{ item[0] }}"
+                                             tabindex="-1"
+                                             role="dialog"
+                                             aria-labelledby="SupprimerModalLabel{{ item[0] }}"
+                                             aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-body">
+                                                        <h5 id="SupprimerModalLabel{{ item[0] }}">
+                                                            Voulez-vous vraiment SUPPRIMER cette réservation?
+                                                        </h5>
+                                                    </div>
+
+                                                    <div class="modal-footer">
+                                                        <button type="submit" class="btn btn-primary">Oui</button>
+                                                        <button type="button"
+                                                                class="btn btn-secondary"
+                                                                data-dismiss="modal">
+                                                            Non
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
+    </section>
 </div>
-</body>
-{% endblock %}
 
+{% endblock content %}

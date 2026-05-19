@@ -15,6 +15,108 @@ from email.mime.text import MIMEText
 import traceback
 from utils import connect_db
 
+# Helper function for reservation validation
+from datetime import datetime, date, time, timedelta
+from decimal import Decimal, InvalidOperation
+
+
+def _as_date(value):
+    """Convert MySQL date/string value to datetime.date."""
+    if isinstance(value, datetime):
+        return value.date()
+
+    if isinstance(value, date):
+        return value
+
+    return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+
+
+def _as_time(value):
+    """Convert MySQL time/timedelta/string value to datetime.time."""
+    if isinstance(value, timedelta):
+        return (datetime.min + value).time()
+
+    if isinstance(value, time):
+        return value
+
+    value_as_text = str(value)
+
+    if len(value_as_text) == 5:
+        return datetime.strptime(value_as_text, "%H:%M").time()
+
+    return datetime.strptime(value_as_text[:8], "%H:%M:%S").time()
+
+
+def _hours_to_minutes(value):
+    """Convert decimal hours to minutes."""
+    if value is None:
+        return 0
+
+    return int(round(float(value) * 60))
+
+
+def _build_reservation_window(reservation_date, start_time, duration_hours):
+    """Return reservation start/end datetimes."""
+    start_datetime = datetime.combine(
+        _as_date(reservation_date),
+        _as_time(start_time)
+    )
+
+    end_datetime = start_datetime + timedelta(
+        minutes=_hours_to_minutes(duration_hours)
+    )
+
+    return start_datetime, end_datetime
+
+
+def _find_reservation_conflicts(cur, client_ident, resource_id, requested_windows, interval_hours):
+    """
+    Detect conflicts for a resource.
+
+    A conflict exists when the requested window overlaps an existing reservation,
+    including the mandatory buffer interval before and after existing reservations.
+    """
+
+    interval_minutes = _hours_to_minutes(interval_hours)
+
+    cur.execute("""
+        SELECT IDReservation, Date, HeureDebut, DureeHres, NoUnite
+        FROM reservations
+        WHERE IDClient = %s
+          AND IDRessource = %s
+    """, (client_ident, resource_id))
+
+    conflicts = []
+
+    for existing in cur.fetchall():
+        existing_id = existing[0]
+        existing_date = existing[1]
+        existing_time = existing[2]
+        existing_duration = existing[3]
+        existing_unit = existing[4]
+
+        existing_start, existing_end = _build_reservation_window(
+            existing_date,
+            existing_time,
+            existing_duration
+        )
+
+        protected_start = existing_start - timedelta(minutes=interval_minutes)
+        protected_end = existing_end + timedelta(minutes=interval_minutes)
+
+        for requested_start, requested_end in requested_windows:
+            if requested_start < protected_end and requested_end > protected_start:
+                conflicts.append({
+                    "id": existing_id,
+                    "date": existing_start.strftime("%Y-%m-%d"),
+                    "start": existing_start.strftime("%H:%M"),
+                    "end": existing_end.strftime("%H:%M"),
+                    "unit": existing_unit
+                })
+
+    return conflicts
+# ********************************************
+
 
 
 bp_reservations = Blueprint('bp_reservations', __name__)
@@ -55,12 +157,21 @@ def reservations_table():
     return render_template('reservations_table.html', date_debut='', fill_reservations=fill_reservations,bd=profile_list[3])
 
 
-#page du calendrier de reservations avec fonction ajout
+# page du calendrier de reservations avec fonction ajout
 @bp_reservations.route("/calendrier_rez/<usager>")
 def calendrier_rez(usager):
-    """Afficher les réservations des copropriétaires à l'aide du calendrier javascript. Affiche
-    seulement les enregistrements à partir de la date actuelle et permet d'ajouter une réservation.
-    Application d'un code de couleur selon la ressource spécifiée"""
+    """Afficher les réservations à l'aide du calendrier JavaScript.
+
+    Cette route prépare le modèle d'événements pour FullCalendar.
+
+    Améliorations ajoutées:
+    - ID de réservation exposé dans chaque événement.
+    - Date/heure de fin calculée selon la durée.
+    - Libellé de durée plus lisible pour l'interface.
+    - Liste de légende propre, non rembourrée, pour la future refonte UI.
+    - Conservation de fill_ressources rembourrée à 10 éléments pour compatibilité
+      avec les anciens templates/CSS.
+    """
 
     if session.get('ProfilUsager') is None:
         # probablement délai de session atteint
@@ -75,133 +186,482 @@ def calendrier_rez(usager):
     client_ident = profile_list[0]
     mode = profile_list[8]
 
+    # ---------------------------------------------------------------------
+    # Helpers locaux à cette route
+    # ---------------------------------------------------------------------
+
+    def time_to_python_time(value):
+        """Convertit une heure MySQL en datetime.time.
+
+        MySQL peut retourner une heure sous forme de:
+        - datetime.time
+        - datetime.timedelta
+        - string: "HH:MM:SS" ou "H:MM:SS"
+        """
+
+        if isinstance(value, timedelta):
+            return (datetime.min + value).time()
+
+        if hasattr(value, "hour") and hasattr(value, "minute"):
+            return value
+
+        value_s = str(value or '').strip()
+
+        for fmt in ("%H:%M:%S", "%H:%M"):
+            try:
+                return datetime.strptime(value_s[:8], fmt).time()
+            except ValueError:
+                pass
+
+        # Fallback défensif: minuit.
+        return datetime.strptime("00:00:00", "%H:%M:%S").time()
+
+    def hours_to_minutes(value):
+        """Convertit une durée en heures décimales vers minutes."""
+        if value is None:
+            return 0
+
+        return int(round(float(value) * 60))
+
+    def format_duration_label(value):
+        """Retourne un libellé lisible: 30 min, 1 h, 1 h 30, 4 h, etc."""
+        minutes_total = hours_to_minutes(value)
+
+        if minutes_total <= 0:
+            return "0 min"
+
+        hours = minutes_total // 60
+        minutes = minutes_total % 60
+
+        if hours == 0:
+            return str(minutes) + " min"
+
+        if minutes == 0:
+            return str(hours) + " h"
+
+        return str(hours) + " h " + str(minutes).zfill(2)
+
+    def format_time_label(value):
+        """Retourne HH:MM pour affichage."""
+        return time_to_python_time(value).strftime("%H:%M")
+
+    # ---------------------------------------------------------------------
+    # Connexion DB
+    # ---------------------------------------------------------------------
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
 
     # ---------------------------------------------------------------------
-    # 1) Ressources actives + padding à 10 (on garde pour compat CSS .ressource_1..10)
+    # 1) Ressources actives
     # ---------------------------------------------------------------------
-    liste_ress_actives = []
-    cur.execute(
-        "SELECT IDRessource, Description FROM ressources WHERE Actif=1 AND IDClient=%s",
-        (client_ident,)
-    )
+    # ressources_actives:
+    # - liste réelle, non rembourrée
+    # - utilisée pour la légende moderne et les KPIs
+    #
+    # liste_ress_actives:
+    # - version rembourrée à 10 éléments
+    # - conservée pour compatibilité avec les templates existants
+
+    ressources_actives = []
+
+    cur.execute("""
+        SELECT IDRessource, Description
+        FROM ressources
+        WHERE Actif = 1
+          AND IDClient = %s
+        ORDER BY IDRessource
+    """, (client_ident,))
+
     for item in cur.fetchall():
-        liste_ress_actives.append(item)
+        ressources_actives.append(item)
+
+    liste_ress_actives = list(ressources_actives)
 
     while len(liste_ress_actives) < 10:
         liste_ress_actives.append((0, ''))
 
     # ---------------------------------------------------------------------
-    # 2) Map IDRessource -> couleur (basé sur l'ordre de liste_ress_actives)
-    #    (ignore les placeholders (0,''))
+    # 2) Couleurs par ressource
     # ---------------------------------------------------------------------
+    # On conserve les couleurs historiques pour les 10 premières ressources.
+    # Si un client a plus de 10 ressources actives, on réutilise la palette
+    # en boucle au lieu d'ignorer les réservations.
+
     colors = [
         'black', 'lawngreen', 'blue', 'red', 'orange',
         'pink', 'lightslategrey', 'magenta', 'peru', 'purple'
     ]
-    color_by_ressource = {}
-    for idx, (res_id, desc) in enumerate(liste_ress_actives):
-        if res_id and desc:
-            if idx < len(colors):
-                color_by_ressource[res_id] = colors[idx]
 
-    # Also keep description by resource id (for tooltips)
+    color_by_ressource = {}
     desc_by_ressource = {}
-    for res_id, desc in liste_ress_actives:
+    legend_ressources = []
+
+    for idx, (res_id, desc) in enumerate(ressources_actives):
         if res_id and desc:
+            color = colors[idx % len(colors)]
+
+            color_by_ressource[res_id] = color
             desc_by_ressource[res_id] = desc
+
+            legend_ressources.append({
+                "id": res_id,
+                "description": desc,
+                "couleur": color
+            })
 
     # ---------------------------------------------------------------------
     # 3) Réservations à partir d'aujourd'hui -> events_list
-    #    - dict neuf par event (pas de "stale values")
-    #    - start en ISO string (FullCalendar friendly)
-    #    - skip si ressource inactive / non mappée
     # ---------------------------------------------------------------------
-    cur.execute(
-        "SELECT IDReservation, IDRessource, Date, HeureDebut, DureeHres, NoUnite, Note "
-        "FROM reservations "
-        "WHERE Date >= %s AND IDClient = %s",
-        (datetime.now().strftime('%Y-%m-%d'), client_ident)
-    )
+    # Pour les vues semaine/jour, FullCalendar a besoin de start ET end.
+    # On conserve aussi date_heure pour compatibilité avec le JS actuel.
+
+    today_montreal = datetime.now(
+        pytz.timezone('America/Montreal')
+    ).strftime('%Y-%m-%d')
+
+    cur.execute("""
+        SELECT
+            IDReservation,
+            IDRessource,
+            Date,
+            HeureDebut,
+            DureeHres,
+            NoUnite,
+            Note
+        FROM reservations
+        WHERE Date >= %s
+          AND IDClient = %s
+        ORDER BY Date, HeureDebut
+    """, (today_montreal, client_ident))
 
     events_list = []
-    for row in cur.fetchall():
-        res_id = row[1]
 
-        # ignorer réservations dont la ressource n'est pas active / pas mappée
+    for row in cur.fetchall():
+        reservation_id = row[0]
+        res_id = row[1]
+        date_rez = row[2]
+        heure_debut = row[3]
+        duree_hres = row[4]
+        no_unite = row[5]
+        note = row[6] or ""
+
+        # ignorer les réservations dont la ressource est inactive ou inconnue
         if res_id not in color_by_ressource:
             continue
 
-        date_s = str(row[2])          # YYYY-MM-DD
-        time_s = str(row[3])          # H:MM:SS ou HH:MM:SS
-
-        # parsing robuste HH/MM/SS
-        parts = time_s.split(':')
-        hh = int(parts[0])
-        mm = int(parts[1]) if len(parts) > 1 else 0
-        ss = int(parts[2]) if len(parts) > 2 else 0
+        date_s = str(date_rez)[:10]
+        heure_obj = time_to_python_time(heure_debut)
 
         start_dt = datetime(
             int(date_s[0:4]),
             int(date_s[5:7]),
             int(date_s[8:10]),
-            hh, mm, ss
+            heure_obj.hour,
+            heure_obj.minute,
+            heure_obj.second
         )
 
+        end_dt = start_dt + timedelta(
+            minutes=hours_to_minutes(duree_hres)
+        )
+
+        duree_label = format_duration_label(duree_hres)
+        heure_label = format_time_label(heure_debut)
+        ressource_desc = desc_by_ressource.get(res_id, "")
+
+        tooltip = (
+            ressource_desc
+            + " — Unité "
+            + str(no_unite)
+            + " — "
+            + duree_label
+        )
+
+        if note:
+            tooltip = tooltip + " — " + str(note).replace("\n", " ")
+
         events_list.append({
-            "no_unite": row[5],
+            # Nouveau modèle FullCalendar
+            "id": reservation_id,
+            "title": heure_label + " h " + str(no_unite) + " (" + duree_label + ")",
+            "start": start_dt.isoformat(),
+            "end": end_dt.isoformat(),
+
+            # Compatibilité avec le template actuel
             "date_heure": start_dt.isoformat(),
+            "date_heure_fin": end_dt.isoformat(),
+
+            # Données métier
+            "no_unite": no_unite,
             "ressource": res_id,
-            "duree": row[4],
+            "ressource_desc": ressource_desc,
+            "duree": duree_hres,
+            "duree_label": duree_label,
+            "heure_label": heure_label,
+            "note": note,
             "couleur": color_by_ressource[res_id],
-            "note": row[6],
-            "ressource_desc": desc_by_ressource.get(res_id, "")
+            "tooltip": tooltip
         })
 
     cnx.close()
+
+    # ---------------------------------------------------------------------
+    # 4) KPIs simples pour la future refonte du calendrier admin
+    # ---------------------------------------------------------------------
+
+    total_reservations_futures = len(events_list)
+    total_ressources_actives = len(ressources_actives)
+
+    prochaine_reservation = None
+    if events_list:
+        prochaine_reservation = (
+            events_list[0]["date_heure"][0:10]
+            + " "
+            + events_list[0]["heure_label"]
+            + " — "
+            + events_list[0]["ressource_desc"]
+        )
+
+    # ---------------------------------------------------------------------
+    # 5) Rendu admin / copropriétaire
+    # ---------------------------------------------------------------------
 
     if usager == 'admin':
         return render_template(
             'calendrier_rez_admin.html',
             events_list=events_list,
             fill_ressources=liste_ress_actives,
+            legend_ressources=legend_ressources,
+            total_reservations_futures=total_reservations_futures,
+            total_ressources_actives=total_ressources_actives,
+            prochaine_reservation=prochaine_reservation,
             bd=profile_list[3]
         )
-    else:  # proprio
-        return render_template(
-            'calendrier_rez.html',
-            events_list=events_list,
-            fill_ressources=liste_ress_actives,
-            bd=profile_list[3]
-        )
+
+    # proprio
+    return render_template(
+        'calendrier_rez.html',
+        events_list=events_list,
+        fill_ressources=liste_ress_actives,
+        legend_ressources=legend_ressources,
+        total_reservations_futures=total_reservations_futures,
+        total_ressources_actives=total_ressources_actives,
+        prochaine_reservation=prochaine_reservation,
+        bd=profile_list[3]
+    )
+
+# @bp_reservations.route("/calendrier_rez/<usager>")
+# def calendrier_rez(usager):
+#     """Afficher les réservations des copropriétaires à l'aide du calendrier javascript. Affiche
+#     seulement les enregistrements à partir de la date actuelle et permet d'ajouter une réservation.
+#     Application d'un code de couleur selon la ressource spécifiée"""
+#
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#
+#     profile_list = session.get('ProfilUsager')
+#
+#     # vérifier si le client a acheté le module réservations
+#     if profile_list[5] == 0:
+#         return redirect(url_for('bp_admin.permission'))
+#
+#     client_ident = profile_list[0]
+#     mode = profile_list[8]
+#
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#
+#     # ---------------------------------------------------------------------
+#     # 1) Ressources actives + padding à 10 (on garde pour compat CSS .ressource_1..10)
+#     # ---------------------------------------------------------------------
+#     liste_ress_actives = []
+#     cur.execute(
+#         "SELECT IDRessource, Description FROM ressources WHERE Actif=1 AND IDClient=%s",
+#         (client_ident,)
+#     )
+#     for item in cur.fetchall():
+#         liste_ress_actives.append(item)
+#
+#     while len(liste_ress_actives) < 10:
+#         liste_ress_actives.append((0, ''))
+#
+#     # ---------------------------------------------------------------------
+#     # 2) Map IDRessource -> couleur (basé sur l'ordre de liste_ress_actives)
+#     #    (ignore les placeholders (0,''))
+#     # ---------------------------------------------------------------------
+#     colors = [
+#         'black', 'lawngreen', 'blue', 'red', 'orange',
+#         'pink', 'lightslategrey', 'magenta', 'peru', 'purple'
+#     ]
+#     color_by_ressource = {}
+#     for idx, (res_id, desc) in enumerate(liste_ress_actives):
+#         if res_id and desc:
+#             if idx < len(colors):
+#                 color_by_ressource[res_id] = colors[idx]
+#
+#     # Also keep description by resource id (for tooltips)
+#     desc_by_ressource = {}
+#     for res_id, desc in liste_ress_actives:
+#         if res_id and desc:
+#             desc_by_ressource[res_id] = desc
+#
+#     # ---------------------------------------------------------------------
+#     # 3) Réservations à partir d'aujourd'hui -> events_list
+#     #    - dict neuf par event (pas de "stale values")
+#     #    - start en ISO string (FullCalendar friendly)
+#     #    - skip si ressource inactive / non mappée
+#     # ---------------------------------------------------------------------
+#     cur.execute(
+#         "SELECT IDReservation, IDRessource, Date, HeureDebut, DureeHres, NoUnite, Note "
+#         "FROM reservations "
+#         "WHERE Date >= %s AND IDClient = %s",
+#         (datetime.now().strftime('%Y-%m-%d'), client_ident)
+#     )
+#
+#     events_list = []
+#     for row in cur.fetchall():
+#         res_id = row[1]
+#
+#         # ignorer réservations dont la ressource n'est pas active / pas mappée
+#         if res_id not in color_by_ressource:
+#             continue
+#
+#         date_s = str(row[2])          # YYYY-MM-DD
+#         time_s = str(row[3])          # H:MM:SS ou HH:MM:SS
+#
+#         # parsing robuste HH/MM/SS
+#         parts = time_s.split(':')
+#         hh = int(parts[0])
+#         mm = int(parts[1]) if len(parts) > 1 else 0
+#         ss = int(parts[2]) if len(parts) > 2 else 0
+#
+#         start_dt = datetime(
+#             int(date_s[0:4]),
+#             int(date_s[5:7]),
+#             int(date_s[8:10]),
+#             hh, mm, ss
+#         )
+#
+#         events_list.append({
+#             "no_unite": row[5],
+#             "date_heure": start_dt.isoformat(),
+#             "ressource": res_id,
+#             "duree": row[4],
+#             "couleur": color_by_ressource[res_id],
+#             "note": row[6],
+#             "ressource_desc": desc_by_ressource.get(res_id, "")
+#         })
+#
+#     cnx.close()
+#
+#     if usager == 'admin':
+#         return render_template(
+#             'calendrier_rez_admin.html',
+#             events_list=events_list,
+#             fill_ressources=liste_ress_actives,
+#             bd=profile_list[3]
+#         )
+#     else:  # proprio
+#         return render_template(
+#             'calendrier_rez.html',
+#             events_list=events_list,
+#             fill_ressources=liste_ress_actives,
+#             bd=profile_list[3]
+#         )
 
 
 #fonctions pour afficher page d'ajout de rez
-@bp_reservations.route("/reservation_affiche_admin", methods=['GET','POST'])
+@bp_reservations.route("/reservation_affiche_admin", methods=['GET', 'POST'])
 def reservation_affiche_admin():
-    """Afficher l'écran pour effectuer une réservation pour l'admin"""
+    """Afficher l'écran pour effectuer une réservation pour l'admin."""
+
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    # vérifier type d'usager si  admin condofix
+
+    profile_list = session.get('ProfilUsager')
+
+    # Admin CondoFix seulement.
     if profile_list[2] > 2:
         return redirect(url_for('bp_admin.permission'))
-    client_ident=profile_list[0]
+
+    client_ident = profile_list[0]
     mode = profile_list[8]
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
-    fill_ressources=[]
-    fill_modes_paiement=[]
-    cur.execute("SELECT IDRessource,Description FROM ressources WHERE Actif=1 AND IDClient=%s", (client_ident,))
+
+    fill_ressources = []
+    fill_modes_paiement = []
+
+    # Important:
+    # La page utilise ces colonnes dans les attributs data-* du <option>.
+    cur.execute("""
+        SELECT
+            IDRessource,
+            Description,
+            DureeMaxHres,
+            DelaiMinHres,
+            DelaiMaxJrs,
+            JoursConsecutifsPermis,
+            DateDebutNonDispo,
+            DureeNonDispoHres,
+            IntervalleRezHres,
+            HreDebutPermise,
+            HreFinPermise,
+            Facturable
+        FROM ressources
+        WHERE Actif = 1
+          AND IDClient = %s
+        ORDER BY Description
+    """, (client_ident,))
+
     for item in cur.fetchall():
         fill_ressources.append(item)
-    cur.execute("SELECT IDPaiement,Description FROM modepaiement WHERE IDClient=%s", (client_ident,))
+
+    cur.execute("""
+        SELECT IDPaiement, Description
+        FROM modepaiement
+        WHERE IDClient = %s
+        ORDER BY Description
+    """, (client_ident,))
+
     for item in cur.fetchall():
         fill_modes_paiement.append(item)
+
     cnx.close()
-    return render_template('reservation_ajout_admin.html',fill_ressources=fill_ressources, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
+
+    return render_template(
+        'reservation_ajout_admin.html',
+        fill_ressources=fill_ressources,
+        fill_modes_paiement=fill_modes_paiement,
+        bd=profile_list[3]
+    )
+# @bp_reservations.route("/reservation_affiche_admin", methods=['GET','POST'])
+# def reservation_affiche_admin():
+#     """Afficher l'écran pour effectuer une réservation pour l'admin"""
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     # vérifier type d'usager si  admin condofix
+#     if profile_list[2] > 2:
+#         return redirect(url_for('bp_admin.permission'))
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#     fill_ressources=[]
+#     fill_modes_paiement=[]
+#     cur.execute("SELECT IDRessource,Description FROM ressources WHERE Actif=1 AND IDClient=%s", (client_ident,))
+#     for item in cur.fetchall():
+#         fill_ressources.append(item)
+#     cur.execute("SELECT IDPaiement,Description FROM modepaiement WHERE IDClient=%s", (client_ident,))
+#     for item in cur.fetchall():
+#         fill_modes_paiement.append(item)
+#     cnx.close()
+#     return render_template('reservation_ajout_admin.html',fill_ressources=fill_ressources, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
 
 #fonctions pour afficher page d'ajout de rez
 @bp_reservations.route("/reservation_affiche_proprio", methods=['GET','POST'])
@@ -405,86 +865,627 @@ def reservation_affiche_proprio():
 
 
 #fonctions pour ajouter une réservations
+# fonctions pour ajouter une réservation
+# fonctions pour ajouter une réservation
 @bp_reservations.route("/reservation_ajout_admin", methods=['POST'])
 def reservation_ajout_admin():
-    """Ajout d'une réservation à la table de la bd par l'admin. Si la réservation est facturable, un courriel
-    est expédié aux destinataires spécifiés dans les paramètres."""
+    """Ajout d'une réservation à la table reservations par l'admin.
+
+    Champs reservations utilisés:
+    - DateHeureCreation
+    - IDRessource
+    - IDClient
+    - Date
+    - HeureDebut
+    - DureeHres
+    - NoUnite
+    - Note
+    - Courriel
+    - ModePaiement
+
+    Champs ressources utilisés:
+    - IDRessource
+    - IDClient
+    - Description
+    - DureeMaxHres
+    - DelaiMinHres
+    - DelaiMaxJrs
+    - DateDebutNonDispo
+    - DureeNonDispoHres
+    - JoursConsecutifsPermis
+    - IntervalleRezHres
+    - HreDebutPermise
+    - HreFinPermise
+    - Facturable
+    - Actif
+    """
+
     if session.get('ProfilUsager') is None:
         # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    # vérifier type d'usager si  admin condofix
+
+    profile_list = session.get('ProfilUsager')
+
+    # Admin CondoFix seulement.
     if profile_list[2] > 2:
         return redirect(url_for('bp_admin.permission'))
-    client_ident=profile_list[0]
+
+    client_ident = profile_list[0]
     mode = profile_list[8]
+
+    # ---------------------------------------------------------------------
+    # Helpers locaux
+    # ---------------------------------------------------------------------
+
+    def parse_positive_integer(value):
+        """Retourne int si entier positif, sinon None."""
+        value = str(value or '').strip()
+        if value.isdigit() and int(value) > 0:
+            return int(value)
+        return None
+
+    def parse_optional_integer(value):
+        """Retourne int si entier >= 0, sinon None."""
+        value = str(value or '').strip()
+        if value.isdigit() and int(value) >= 0:
+            return int(value)
+        return None
+
+    def parse_float(value):
+        """Retourne float; accepte virgule ou point décimal."""
+        try:
+            return float(str(value or '').strip().replace(',', '.'))
+        except (TypeError, ValueError):
+            return None
+
+    def parse_date(value):
+        """Accepte YYYY-MM-DD."""
+        try:
+            return datetime.strptime(str(value or '').strip(), "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+    def parse_time(value):
+        """Accepte HH:MM ou HH:MM:SS."""
+        value = str(value or '').strip()
+
+        for fmt in ("%H:%M", "%H:%M:%S"):
+            try:
+                return datetime.strptime(value, fmt).time()
+            except ValueError:
+                pass
+
+        return None
+
+    def db_date_to_date(value):
+        """Convertit date/datetime/string MySQL en date Python."""
+        if isinstance(value, datetime):
+            return value.date()
+
+        if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
+            return value
+
+        return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+
+    def db_time_to_time(value):
+        """Convertit time/timedelta/string MySQL en time Python."""
+        if isinstance(value, timedelta):
+            return (datetime.min + value).time()
+
+        if hasattr(value, "hour") and hasattr(value, "minute"):
+            return value
+
+        value_as_text = str(value or '').strip()
+
+        for fmt in ("%H:%M:%S", "%H:%M"):
+            try:
+                return datetime.strptime(value_as_text[:8], fmt).time()
+            except ValueError:
+                pass
+
+        return None
+
+    def hours_to_minutes(value):
+        """Convertit des heures décimales en minutes."""
+        return int(round(float(value or 0) * 60))
+
+    def is_half_hour_increment(value):
+        """Valide les blocs de 30 minutes: 0.5, 1, 1.5, 2, etc."""
+        return value is not None and round(value * 2, 8).is_integer()
+
+    def is_midnight(value):
+        """Vrai si l'heure est 00:00:00."""
+        return (
+            value is not None
+            and value.hour == 0
+            and value.minute == 0
+            and value.second == 0
+        )
+
+    def windows_overlap(start_a, end_a, start_b, end_b):
+        """Chevauchement strict: permet les limites qui se touchent exactement."""
+        return start_a < end_b and end_a > start_b
+
+    def flash_and_return(errors, cur, cnx_to_close=None):
+        """Affiche les erreurs et retourne au formulaire en conservant les valeurs saisies."""
+
+        form_data = {
+            "ress_select": ress_select_raw,
+            "no_unite": no_unite_raw,
+            "date_rez": date_rez_raw,
+            "heure_rez": heure_rez_raw,
+            "duree_rez": duree_rez_raw,
+            "jrs_consecutifs": jrs_consecutifs_raw,
+            "note": note,
+            "courriel": courriel,
+            "mode_paiement": mode_paiement_raw
+        }
+
+        fill_ressources = []
+        fill_modes_paiement = []
+
+        cur.execute("""
+            SELECT
+                IDRessource,
+                Description,
+                DureeMaxHres,
+                DelaiMinHres,
+                DelaiMaxJrs,
+                JoursConsecutifsPermis,
+                DateDebutNonDispo,
+                DureeNonDispoHres,
+                IntervalleRezHres,
+                HreDebutPermise,
+                HreFinPermise,
+                Facturable
+            FROM ressources
+            WHERE Actif = 1
+              AND IDClient = %s
+            ORDER BY Description
+        """, (client_ident,))
+
+        for item in cur.fetchall():
+            fill_ressources.append(item)
+
+        cur.execute("""
+            SELECT IDPaiement, Description
+            FROM modepaiement
+            WHERE IDClient = %s
+            ORDER BY Description
+        """, (client_ident,))
+
+        for item in cur.fetchall():
+            fill_modes_paiement.append(item)
+
+        if cnx_to_close is not None:
+            cnx_to_close.close()
+
+        flash(Markup("<br>".join(errors)), "warning")
+
+        return render_template(
+            'reservation_ajout_admin.html',
+            fill_ressources=fill_ressources,
+            fill_modes_paiement=fill_modes_paiement,
+            form_data=form_data,
+            bd=profile_list[3]
+        )
+
+    # ---------------------------------------------------------------------
+    # Lecture du formulaire
+    # ---------------------------------------------------------------------
+
+    errors = []
+
+    ress_select_raw = request.form.get('ress_select', '').strip()
+    no_unite_raw = request.form.get('no_unite', '').strip()
+    date_rez_raw = request.form.get('date_rez', '').strip()
+    heure_rez_raw = request.form.get('heure_rez', '').strip()
+    duree_rez_raw = request.form.get('duree_rez', '').strip()
+    jrs_consecutifs_raw = request.form.get('jrs_consecutifs', '').strip()
+    note = request.form.get('note', '').strip()
+    courriel = request.form.get('courriel', '').strip()
+    mode_paiement_raw = request.form.get('mode_paiement', '').strip()
+
+    resource_id = parse_positive_integer(ress_select_raw)
+    no_unite = parse_positive_integer(no_unite_raw)
+    date_rez_obj = parse_date(date_rez_raw)
+    heure_rez_obj = parse_time(heure_rez_raw)
+    duree_rez = parse_float(duree_rez_raw)
+    jrs_consecutifs = parse_positive_integer(jrs_consecutifs_raw)
+
+    if resource_id is None:
+        errors.append("Veuillez sélectionner une ressource valide.")
+
+    if no_unite is None:
+        errors.append("Le numéro d'unité doit être un nombre entier positif.")
+
+    if date_rez_obj is None:
+        errors.append("La date de réservation est invalide.")
+
+    if heure_rez_obj is None:
+        errors.append("L'heure de début est invalide.")
+
+    if duree_rez is None or duree_rez <= 0:
+        errors.append("La durée doit être supérieure à 0.")
+    elif not is_half_hour_increment(duree_rez):
+        errors.append("La durée doit être saisie en blocs de 30 minutes : 0.5, 1, 1.5, 2, etc.")
+
+    if jrs_consecutifs is None:
+        errors.append("Les jours consécutifs doivent être un nombre entier positif.")
+
+    if len(note) > 200:
+        errors.append("La note ne peut pas dépasser 200 caractères.")
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
-    # convertir l'heure du serveur PythonAnywhere à l'heure locale en type timezone aware
+
+    # ---------------------------------------------------------------------
+    # Lecture de la ressource sélectionnée
+    # ---------------------------------------------------------------------
+
+    desc_ress = ''
+    facturable = 0
+    duree_max = 0
+    delai_min_hres = 0
+    delai_max_jrs = 0
+    date_debut_non_dispo = None
+    duree_non_dispo_hres = 0
+    jrs_consecutifs_permis = 0
+    intervalle_rez_hres = 0
+    hre_debut_permise = None
+    hre_fin_permise = None
+
+    if resource_id is not None:
+        cur.execute("""
+            SELECT
+                Description,
+                Facturable,
+                DureeMaxHres,
+                DelaiMinHres,
+                DelaiMaxJrs,
+                DateDebutNonDispo,
+                DureeNonDispoHres,
+                JoursConsecutifsPermis,
+                IntervalleRezHres,
+                HreDebutPermise,
+                HreFinPermise
+            FROM ressources
+            WHERE IDRessource = %s
+              AND IDClient = %s
+              AND Actif = 1
+        """, (resource_id, client_ident))
+
+        ressource = cur.fetchone()
+
+        if ressource is None:
+            errors.append("La ressource sélectionnée est invalide ou inactive.")
+        else:
+            desc_ress = ressource[0]
+            facturable = int(ressource[1] or 0)
+            duree_max = parse_float(ressource[2]) or 0
+            delai_min_hres = parse_float(ressource[3]) or 0
+            delai_max_jrs = parse_float(ressource[4]) or 0
+            date_debut_non_dispo = ressource[5]
+            duree_non_dispo_hres = parse_float(ressource[6]) or 0
+            jrs_consecutifs_permis = parse_optional_integer(ressource[7]) or 0
+            intervalle_rez_hres = parse_float(ressource[8]) or 0
+            hre_debut_permise = db_time_to_time(ressource[9])
+            hre_fin_permise = db_time_to_time(ressource[10])
+
+    # ---------------------------------------------------------------------
+    # Validation du mode de paiement
+    # ---------------------------------------------------------------------
+
+    if mode_paiement_raw == '':
+        mode_de_paiement = 0
+    else:
+        mode_de_paiement = parse_positive_integer(mode_paiement_raw)
+
+        if mode_de_paiement is None:
+            errors.append("Le mode de paiement est invalide.")
+            mode_de_paiement = 0
+        else:
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM modepaiement
+                WHERE IDPaiement = %s
+                  AND IDClient = %s
+            """, (mode_de_paiement, client_ident))
+
+            if cur.fetchone()[0] == 0:
+                errors.append("Le mode de paiement sélectionné est invalide.")
+
+    if facturable == 1:
+        if not courriel:
+            errors.append("Le courriel est obligatoire pour une ressource facturable.")
+
+        if mode_de_paiement == 0:
+            errors.append("Le mode de paiement est obligatoire pour une ressource facturable.")
+
+    # Si les champs essentiels sont invalides, on arrête ici.
+    if errors:
+        return flash_and_return(errors, cur, cnx)
+
+    # ---------------------------------------------------------------------
+    # Validation des contraintes de la ressource
+    # ---------------------------------------------------------------------
+
+    now_montreal = datetime.now(pytz.timezone('America/Montreal')).replace(tzinfo=None)
+
+    requested_windows = []
+
+    for day_index in range(jrs_consecutifs):
+        requested_start = datetime.combine(
+            date_rez_obj + timedelta(days=day_index),
+            heure_rez_obj
+        )
+
+        requested_end = requested_start + timedelta(
+            minutes=hours_to_minutes(duree_rez)
+        )
+
+        requested_windows.append((requested_start, requested_end))
+
+    first_requested_start = requested_windows[0][0]
+    last_requested_start = requested_windows[-1][0]
+
+    # 1) Durée maximale permise pour une réservation.
+    if duree_max > 0 and duree_rez > duree_max:
+        errors.append(
+            "La durée demandée dépasse la durée maximale permise pour cette ressource "
+            + "(" + str(duree_max) + " h)."
+        )
+
+    # 2) Nombre maximal de jours consécutifs permis.
+    if jrs_consecutifs_permis > 0 and jrs_consecutifs > jrs_consecutifs_permis:
+        errors.append(
+            "Le nombre de jours consécutifs dépasse la limite permise pour cette ressource "
+            + "(" + str(jrs_consecutifs_permis) + " jour(s))."
+        )
+
+    # 3) Délai minimal avant la réservation.
+    delai_rez_hres = (first_requested_start - now_montreal).total_seconds() / 3600
+
+    if delai_rez_hres < 0:
+        errors.append("La réservation ne peut pas être créée dans le passé.")
+    elif delai_min_hres > 0 and delai_rez_hres < delai_min_hres:
+        errors.append(
+            "La réservation ne respecte pas le délai minimal configuré pour cette ressource "
+            + "(" + str(delai_min_hres) + " h)."
+        )
+
+    # 4) Délai maximal en jours.
+    delai_rez_jrs = (last_requested_start - now_montreal).total_seconds() / 86400
+
+    if delai_max_jrs > 0 and delai_rez_jrs > delai_max_jrs:
+        errors.append(
+            "La réservation dépasse le délai maximal configuré pour cette ressource "
+            + "(" + str(delai_max_jrs) + " jour(s))."
+        )
+
+    # 5) Plage horaire permise.
+    # Convention CondoFix:
+    # - 00:00 à 00:00 = disponible 24 h/24.
+    # - Si l'heure de fin est plus petite ou égale à l'heure de début, on considère
+    #   que la plage se termine le lendemain. Exemple: 14:00 à 00:00.
+    is_24h_available = is_midnight(hre_debut_permise) and is_midnight(hre_fin_permise)
+
+    if not is_24h_available and hre_debut_permise is not None and hre_fin_permise is not None:
+        for requested_start, requested_end in requested_windows:
+            allowed_start = datetime.combine(requested_start.date(), hre_debut_permise)
+            allowed_end = datetime.combine(requested_start.date(), hre_fin_permise)
+
+            if allowed_end <= allowed_start:
+                allowed_end = allowed_end + timedelta(days=1)
+
+            if requested_start < allowed_start or requested_end > allowed_end:
+                errors.append(
+                    "La réservation doit respecter la plage horaire permise pour cette ressource "
+                    + "("
+                    + hre_debut_permise.strftime("%H:%M")
+                    + " à "
+                    + hre_fin_permise.strftime("%H:%M")
+                    + ")."
+                )
+                break
+
+    # 6) Période temporaire de non-disponibilité.
+    if date_debut_non_dispo not in (None, '', 'None') and duree_non_dispo_hres > 0:
+        try:
+            non_dispo_date = db_date_to_date(date_debut_non_dispo)
+
+            non_dispo_start = datetime(
+                non_dispo_date.year,
+                non_dispo_date.month,
+                non_dispo_date.day
+            )
+
+            non_dispo_end = non_dispo_start + timedelta(
+                minutes=hours_to_minutes(duree_non_dispo_hres)
+            )
+
+            for requested_start, requested_end in requested_windows:
+                if windows_overlap(requested_start, requested_end, non_dispo_start, non_dispo_end):
+                    errors.append(
+                        "Cette ressource est temporairement non disponible à partir du "
+                        + str(non_dispo_date)
+                        + " pour "
+                        + str(duree_non_dispo_hres)
+                        + " h."
+                    )
+                    break
+
+        except (TypeError, ValueError):
+            errors.append("La période de non-disponibilité configurée pour cette ressource est invalide.")
+
+    # ---------------------------------------------------------------------
+    # Validation des conflits avec réservations existantes
+    # ---------------------------------------------------------------------
+
+    if not errors:
+        intervalle_minutes = hours_to_minutes(intervalle_rez_hres)
+
+        cur.execute("""
+            SELECT
+                IDReservation,
+                Date,
+                HeureDebut,
+                DureeHres,
+                NoUnite
+            FROM reservations
+            WHERE IDClient = %s
+              AND IDRessource = %s
+        """, (client_ident, resource_id))
+
+        conflicts = []
+
+        for existing in cur.fetchall():
+            existing_id = existing[0]
+            existing_date = existing[1]
+            existing_time = existing[2]
+            existing_duration = existing[3]
+            existing_unit = existing[4]
+
+            existing_start = datetime.combine(
+                db_date_to_date(existing_date),
+                db_time_to_time(existing_time)
+            )
+
+            existing_end = existing_start + timedelta(
+                minutes=hours_to_minutes(existing_duration)
+            )
+
+            protected_start = existing_start - timedelta(minutes=intervalle_minutes)
+            protected_end = existing_end + timedelta(minutes=intervalle_minutes)
+
+            for requested_start, requested_end in requested_windows:
+                if windows_overlap(requested_start, requested_end, protected_start, protected_end):
+                    conflicts.append({
+                        "id": existing_id,
+                        "date": existing_start.strftime("%Y-%m-%d"),
+                        "start": existing_start.strftime("%H:%M"),
+                        "end": existing_end.strftime("%H:%M"),
+                        "unit": existing_unit
+                    })
+                    break
+
+            if conflicts:
+                break
+
+        if conflicts:
+            first_conflict = conflicts[0]
+
+            errors.append(
+                "Cette ressource est déjà réservée ou trop près d’une autre réservation."
+            )
+
+            errors.append(
+                "Conflit détecté le "
+                + first_conflict["date"]
+                + " de "
+                + first_conflict["start"]
+                + " à "
+                + first_conflict["end"]
+                + " pour l'unité "
+                + str(first_conflict["unit"])
+                + "."
+            )
+
+            if intervalle_rez_hres > 0:
+                errors.append(
+                    "Intervalle obligatoire entre réservations : "
+                    + str(intervalle_rez_hres)
+                    + " h."
+                )
+
+    if errors:
+        return flash_and_return(errors, cur, cnx)
+
+    # ---------------------------------------------------------------------
+    # Insertion des réservations consécutives
+    # ---------------------------------------------------------------------
+
     utc_time = datetime.utcnow()
     tz = pytz.timezone('America/Montreal')
-    utc_time_1 =utc_time.replace(tzinfo=pytz.UTC) #replace method
-    local_time=utc_time_1.astimezone(tz)
+    local_time = utc_time.replace(tzinfo=pytz.UTC).astimezone(tz)
 
-    # assembler les deux valeurs date et heure selon le bon format 'datetime'
-    date_rez=request.form['date_rez']
-    time_rez=request.form['heure_rez']
-    rez_time = datetime(int(date_rez[0:4]),int(date_rez[5:7]),int(date_rez[8:10]),int(time_rez[0:2]),int(time_rez[3:5]))
+    for day_index in range(jrs_consecutifs):
+        date_rez_courante = date_rez_obj + timedelta(days=day_index)
 
-    # savoir si facturable  pour cette ressource...aucune autre contrainte de réservation pour l'administrateur
-    facturable=int()
-    desc_ress=str()
-    cur.execute("SELECT Facturable, Description FROM ressources WHERE IDRessource=%s AND IDClient=%s", (request.form['ress_select'],client_ident))
+        cur.execute("""
+            INSERT INTO reservations
+                (
+                    DateHeureCreation,
+                    IDRessource,
+                    IDClient,
+                    Date,
+                    HeureDebut,
+                    DureeHres,
+                    NoUnite,
+                    Note,
+                    Courriel,
+                    ModePaiement
+                )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, [
+            local_time,
+            resource_id,
+            client_ident,
+            date_rez_courante,
+            heure_rez_obj,
+            duree_rez,
+            no_unite,
+            note,
+            courriel,
+            mode_de_paiement
+        ])
+
+    cnx.commit()
+
+    # ---------------------------------------------------------------------
+    # Courriel pour réservation facturable
+    # ---------------------------------------------------------------------
+
+    email_list = []
+
+    cur.execute("""
+        SELECT EmailRezFacturable
+        FROM parametres
+        WHERE IDClient = %s
+    """, (client_ident,))
+
     for item in cur.fetchall():
-        facturable=item[0]
-        desc_ress=item[1]
-    email_list=[]
+        email_a = item[0]
+        if email_a:
+            email_list = [email.strip() for email in email_a.split(',') if email.strip()]
 
-    if request.form['mode_paiement']== '':
-        mode_de_paiement=0
-    else:
-        mode_de_paiement=request.form['mode_paiement']
+    mode_text = ''
 
-    # b) pour toute réservation (boucle): aucune vérification de chevauchement
-    compteur_jrs=0
-    while compteur_jrs<float(request.form['jrs_consecutifs']):
-        date_rez_courante=rez_time+timedelta(days=compteur_jrs)
-        heure_rez_courante=request.form['heure_rez']
-        # ajout de la réservation
-        cur.execute('INSERT INTO reservations (DateHeureCreation,IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite, '
-                    'Note, Courriel, ModePaiement) '
-                    'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-                    [local_time, request.form['ress_select'], client_ident, date_rez_courante, heure_rez_courante,
-                     request.form['duree_rez'],request.form['no_unite'],request.form['note'],request.form['courriel'], mode_de_paiement])
-        cnx.commit()
-        compteur_jrs+=1
+    if mode_de_paiement != 0:
+        cur.execute("""
+            SELECT Description
+            FROM modepaiement
+            WHERE IDPaiement = %s
+              AND IDClient = %s
+        """, (mode_de_paiement, client_ident))
 
-    #envoi de courriel d'alerte à l'adresse dans les paramètres
-    cur.execute("SELECT EmailRezFacturable FROM parametres WHERE IDClient=%s",(client_ident,))
-    for item in cur.fetchall():
-        email_a=item[0]
-        email_list=email_a.split(',')
-    mode_text=str()
-    cur.execute("SELECT Description FROM modepaiement WHERE IDPaiement=%s AND IDClient=%s", (mode_de_paiement,client_ident))
-    for item in cur.fetchall():
-        mode_text = item[0]
+        mode_row = cur.fetchone()
+        if mode_row is not None:
+            mode_text = mode_row[0]
+
     cnx.close()
-    if facturable==1:
-        yahoo_mail_user = 'condofix.ca@yahoo.com'
-        yahoo_mail_password = 'spyvlumgfwscqfkc'
 
-        no_unite=request.form['no_unite']
-        date=request.form['date_rez']
-        heure=request.form['heure_rez']
-        duree=request.form['duree_rez']
-        jours=request.form['jrs_consecutifs']
-        courriel=request.form['courriel']
-        note=request.form['note']
-        mode_de_paiement=mode_text
+    if facturable == 1 and email_list:
+        yahoo_mail_user = 'condofix.ca@yahoo.com'
+
+        # TODO PBI sécurité:
+        # déplacer ce mot de passe dans une variable d'environnement.
+        yahoo_mail_password = 'spyvlumgfwscqfkc'
 
         msg = MIMEMultipart("related")
         msg['Subject'] = "Réservation facturable"
         msg['From'] = yahoo_mail_user
+
         html = """
             <html><body>
             <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
@@ -497,29 +1498,151 @@ def reservation_ajout_admin():
             <b>Mode de paiement:</b>&nbsp;{mode_de_paiement}<br/>
             <b>Note:</b>&nbsp;{note}</p>
             </body></html>
-            """
+        """
 
-        html = html.format(desc_ress=desc_ress,no_unite=no_unite,date=date,heure=heure,duree=duree,jours=jours,courriel=courriel,
-                           mode_de_paiement=mode_de_paiement,note=note)
+        html = html.format(
+            desc_ress=desc_ress,
+            no_unite=no_unite,
+            date=date_rez_raw,
+            heure=heure_rez_raw,
+            duree=str(duree_rez),
+            jours=str(jrs_consecutifs),
+            courriel=courriel,
+            mode_de_paiement=mode_text,
+            note=note
+        )
 
-        # enregistrer le MIME pour l'HTML
-        contenu = MIMEText(html, 'html')
-        # attacher le contenu au 'container' du message
-        msg.attach(contenu)
+        msg.attach(MIMEText(html, 'html'))
+
         try:
             server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
             server.ehlo()
             server.login(yahoo_mail_user, yahoo_mail_password)
-            # sendmail function takes 3 arguments: sender's address, recipient's address
-            # and message to send - here it is sent as one string.
-            for i in range(len(email_list)):
-                server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
+
+            for email in email_list:
+                server.sendmail(yahoo_mail_user, email, msg.as_string())
+
             server.quit()
 
         except:
             print(traceback.format_exc())
 
     return redirect(url_for('bp_reservations.reservations_table'))
+# @bp_reservations.route("/reservation_ajout_admin", methods=['POST'])
+# def reservation_ajout_admin():
+#     """Ajout d'une réservation à la table de la bd par l'admin. Si la réservation est facturable, un courriel
+#     est expédié aux destinataires spécifiés dans les paramètres."""
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     # vérifier type d'usager si  admin condofix
+#     if profile_list[2] > 2:
+#         return redirect(url_for('bp_admin.permission'))
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#     # convertir l'heure du serveur PythonAnywhere à l'heure locale en type timezone aware
+#     utc_time = datetime.utcnow()
+#     tz = pytz.timezone('America/Montreal')
+#     utc_time_1 =utc_time.replace(tzinfo=pytz.UTC) #replace method
+#     local_time=utc_time_1.astimezone(tz)
+#
+#     # assembler les deux valeurs date et heure selon le bon format 'datetime'
+#     date_rez=request.form['date_rez']
+#     time_rez=request.form['heure_rez']
+#     rez_time = datetime(int(date_rez[0:4]),int(date_rez[5:7]),int(date_rez[8:10]),int(time_rez[0:2]),int(time_rez[3:5]))
+#
+#     # savoir si facturable  pour cette ressource...aucune autre contrainte de réservation pour l'administrateur
+#     facturable=int()
+#     desc_ress=str()
+#     cur.execute("SELECT Facturable, Description FROM ressources WHERE IDRessource=%s AND IDClient=%s", (request.form['ress_select'],client_ident))
+#     for item in cur.fetchall():
+#         facturable=item[0]
+#         desc_ress=item[1]
+#     email_list=[]
+#
+#     if request.form['mode_paiement']== '':
+#         mode_de_paiement=0
+#     else:
+#         mode_de_paiement=request.form['mode_paiement']
+#
+#     # b) pour toute réservation (boucle): aucune vérification de chevauchement
+#     compteur_jrs=0
+#     while compteur_jrs<float(request.form['jrs_consecutifs']):
+#         date_rez_courante=rez_time+timedelta(days=compteur_jrs)
+#         heure_rez_courante=request.form['heure_rez']
+#         # ajout de la réservation
+#         cur.execute('INSERT INTO reservations (DateHeureCreation,IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite, '
+#                     'Note, Courriel, ModePaiement) '
+#                     'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+#                     [local_time, request.form['ress_select'], client_ident, date_rez_courante, heure_rez_courante,
+#                      request.form['duree_rez'],request.form['no_unite'],request.form['note'],request.form['courriel'], mode_de_paiement])
+#         cnx.commit()
+#         compteur_jrs+=1
+#
+#     #envoi de courriel d'alerte à l'adresse dans les paramètres
+#     cur.execute("SELECT EmailRezFacturable FROM parametres WHERE IDClient=%s",(client_ident,))
+#     for item in cur.fetchall():
+#         email_a=item[0]
+#         email_list=email_a.split(',')
+#     mode_text=str()
+#     cur.execute("SELECT Description FROM modepaiement WHERE IDPaiement=%s AND IDClient=%s", (mode_de_paiement,client_ident))
+#     for item in cur.fetchall():
+#         mode_text = item[0]
+#     cnx.close()
+#     if facturable==1:
+#         yahoo_mail_user = 'condofix.ca@yahoo.com'
+#         yahoo_mail_password = 'spyvlumgfwscqfkc'
+#
+#         no_unite=request.form['no_unite']
+#         date=request.form['date_rez']
+#         heure=request.form['heure_rez']
+#         duree=request.form['duree_rez']
+#         jours=request.form['jrs_consecutifs']
+#         courriel=request.form['courriel']
+#         note=request.form['note']
+#         mode_de_paiement=mode_text
+#
+#         msg = MIMEMultipart("related")
+#         msg['Subject'] = "Réservation facturable"
+#         msg['From'] = yahoo_mail_user
+#         html = """
+#             <html><body>
+#             <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
+#             <b>Soumis par unité:</b>&nbsp;{no_unite}<br/>
+#             <b>Date:</b>&nbsp;{date}<br/>
+#             <b>Heure:</b>&nbsp;{heure}<br/>
+#             <b>Durée (h.):</b>&nbsp;{duree}<br/>
+#             <b>Jours:</b>&nbsp;{jours}<br/>
+#             <b>Courriel:</b>&nbsp;{courriel}<br/>
+#             <b>Mode de paiement:</b>&nbsp;{mode_de_paiement}<br/>
+#             <b>Note:</b>&nbsp;{note}</p>
+#             </body></html>
+#             """
+#
+#         html = html.format(desc_ress=desc_ress,no_unite=no_unite,date=date,heure=heure,duree=duree,jours=jours,courriel=courriel,
+#                            mode_de_paiement=mode_de_paiement,note=note)
+#
+#         # enregistrer le MIME pour l'HTML
+#         contenu = MIMEText(html, 'html')
+#         # attacher le contenu au 'container' du message
+#         msg.attach(contenu)
+#         try:
+#             server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
+#             server.ehlo()
+#             server.login(yahoo_mail_user, yahoo_mail_password)
+#             # sendmail function takes 3 arguments: sender's address, recipient's address
+#             # and message to send - here it is sent as one string.
+#             for i in range(len(email_list)):
+#                 server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
+#             server.quit()
+#
+#         except:
+#             print(traceback.format_exc())
+#
+#     return redirect(url_for('bp_reservations.reservations_table'))
 
 #fonctions pour ajouter une réservations
 # fonctions pour ajouter une réservation

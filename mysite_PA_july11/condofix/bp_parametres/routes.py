@@ -439,72 +439,178 @@ def fds_prevoyance_modif():
 
 @bp_parametres.route('/achalandage', methods=['POST', 'GET'])
 def achalandage():
-    """Graphiques sur l'achalandage du site par les usagers (logins)
-    1- Histogramme pour derniers 12 mois
-    2- Pie chart pour le cumulatif dès le début
+    """Graphiques sur l'achalandage du site par les usagers (logins).
+
+    1. Histogramme des logins par mois et par type d'usager.
+    2. Graphique en anneau du cumulatif des logins depuis la date de début.
     """
 
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
+        # Probablement délai de session atteint.
         return render_template('session_ferme.html')
+
     profile_list = session.get('ProfilUsager')
-    # vérifier type d'usager (pas permis aux employés)
+
+    # Vérifier type d'usager : pas permis aux employés.
     if profile_list[2] == 3:
         return redirect(url_for('bp_admin.permission'))
+
     client_ident = profile_list[0]
-    # trouver le mode de connexion (Dev ou sur serveur PA)
-    profile_list = session.get('ProfilUsager')
     mode_connexion = profile_list[8]
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
+
     list_logins = []
-    type_usager=str()
-    liste_etiq_cum = []
-    liste_valeurs_cum = []
-
-    total_logins=0
-    date_debut=str()
-    logins_type_2 = 0
-    logins_type_3 = 0
-    logins_type_4 = 0
-    logins_type_5 = 0
-
     cur.execute("SELECT * FROM achalandage WHERE IDClient = %s", (client_ident,))
     for row in cur.fetchall():
         list_logins.append(row)
+
     cnx.close()
 
-    # pie chart du cum des logins depuis début
-    for item in list_logins:
-        if item[2]==2:
-            type_usager='Admin CondoFix'
-            date_debut=str(item[15])
-        elif item[2]==3:
-            type_usager='Employés'
-        elif item[2]==4:
-            type_usager='Membres du CA'
-        elif item[2]==5:
-            type_usager='Copropriétaires'
+    # Correspondance entre TypeUsager et libellé affiché dans les graphiques.
+    # Important : TypeUsager = 1 existait en base, mais n'était pas traité auparavant.
+    # Cela causait la répétition accidentelle du libellé précédent dans le graphique cumulatif.
+    type_usager_labels = {
+        1: 'Administrateur',
+        2: 'Admin CondoFix',
+        3: 'Employés',
+        4: 'Membres du CA',
+        5: 'Copropriétaires'
+    }
 
+    liste_etiq_cum = []
+    liste_valeurs_cum = []
+    total_logins = 0
+    date_debut = str()
+
+    # Initialiser chaque série mensuelle avec 12 mois à zéro.
+    # Cela évite d'envoyer un entier si un type d'usager est absent pour un client donné.
+    logins_type_1 = [0] * 12
+    logins_type_2 = [0] * 12
+    logins_type_3 = [0] * 12
+    logins_type_4 = [0] * 12
+    logins_type_5 = [0] * 12
+
+    # Libellés des mois affichés dans l'histogramme.
+    labels_mois = ['Jan', 'Fev', 'Mars', 'Avril', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Dec']
+
+    # Préparation des données cumulatives et mensuelles.
+    for item in list_logins:
+        type_usager_id = item[2]
+        type_usager = type_usager_labels.get(type_usager_id, 'Autre')
+
+        # Date de début : on conserve la première date disponible.
+        # Anciennement, elle était prise seulement sur TypeUsager = 2.
+        if not date_debut and item[15] is not None:
+            date_debut = str(item[15])
+
+        # Données du graphique cumulatif.
         liste_etiq_cum.append(type_usager)
         liste_valeurs_cum.append(item[16])
-        total_logins+=item[16]
+        total_logins += item[16]
 
-    # histogramme des logins par mois par type
-    labels_mois=['Jan','Fev','Mars','Avril','Mai','Juin','Juil','Août','Sept','Oct','Nov','Dec']
-    for item in list_logins:
-        if item[2]==2:
-            logins_type_2=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
-        elif item[2]==3:
-            logins_type_3=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
-        elif item[2]==4:
-            logins_type_4=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
-        elif item[2]==5:
-            logins_type_5=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
+        # Données mensuelles.
+        logins_mensuels = [
+            item[3], item[4], item[5], item[6],
+            item[7], item[8], item[9], item[10],
+            item[11], item[12], item[13], item[14]
+        ]
 
-    return render_template('achalandage.html', liste_etiq_cum=liste_etiq_cum, liste_valeurs_cum=liste_valeurs_cum, total_logins=total_logins,
-                           date_debut=date_debut, labels_mois=labels_mois, logins_type_5=logins_type_5, logins_type_4=logins_type_4,
-                           logins_type_3=logins_type_3, logins_type_2=logins_type_2, bd=profile_list[3])
+        if type_usager_id == 1:
+            logins_type_1 = logins_mensuels
+        elif type_usager_id == 2:
+            logins_type_2 = logins_mensuels
+        elif type_usager_id == 3:
+            logins_type_3 = logins_mensuels
+        elif type_usager_id == 4:
+            logins_type_4 = logins_mensuels
+        elif type_usager_id == 5:
+            logins_type_5 = logins_mensuels
+
+    return render_template(
+        'achalandage.html',
+        liste_etiq_cum=liste_etiq_cum,
+        liste_valeurs_cum=liste_valeurs_cum,
+        total_logins=total_logins,
+        date_debut=date_debut,
+        labels_mois=labels_mois,
+        logins_type_1=logins_type_1,
+        logins_type_2=logins_type_2,
+        logins_type_3=logins_type_3,
+        logins_type_4=logins_type_4,
+        logins_type_5=logins_type_5,
+        bd=profile_list[3]
+    )
+
+# @bp_parametres.route('/achalandage', methods=['POST', 'GET'])
+# def achalandage():
+#     """Graphiques sur l'achalandage du site par les usagers (logins)
+#     1- Histogramme pour derniers 12 mois
+#     2- Pie chart pour le cumulatif dès le début
+#     """
+#
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list = session.get('ProfilUsager')
+#     # vérifier type d'usager (pas permis aux employés)
+#     if profile_list[2] == 3:
+#         return redirect(url_for('bp_admin.permission'))
+#     client_ident = profile_list[0]
+#     # trouver le mode de connexion (Dev ou sur serveur PA)
+#     profile_list = session.get('ProfilUsager')
+#     mode_connexion = profile_list[8]
+#     cnx = connect_db(mode_connexion)
+#     cur = cnx.cursor()
+#     list_logins = []
+#     type_usager=str()
+#     liste_etiq_cum = []
+#     liste_valeurs_cum = []
+#
+#     total_logins=0
+#     date_debut=str()
+#     logins_type_2 = 0
+#     logins_type_3 = 0
+#     logins_type_4 = 0
+#     logins_type_5 = 0
+#
+#     cur.execute("SELECT * FROM achalandage WHERE IDClient = %s", (client_ident,))
+#     for row in cur.fetchall():
+#         list_logins.append(row)
+#     cnx.close()
+#
+#     # pie chart du cum des logins depuis début
+#     for item in list_logins:
+#         if item[2]==2:
+#             type_usager='Admin CondoFix'
+#             date_debut=str(item[15])
+#         elif item[2]==3:
+#             type_usager='Employés'
+#         elif item[2]==4:
+#             type_usager='Membres du CA'
+#         elif item[2]==5:
+#             type_usager='Copropriétaires'
+#
+#         liste_etiq_cum.append(type_usager)
+#         liste_valeurs_cum.append(item[16])
+#         total_logins+=item[16]
+#
+#     # histogramme des logins par mois par type
+#     labels_mois=['Jan','Fev','Mars','Avril','Mai','Juin','Juil','Août','Sept','Oct','Nov','Dec']
+#     for item in list_logins:
+#         if item[2]==2:
+#             logins_type_2=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
+#         elif item[2]==3:
+#             logins_type_3=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
+#         elif item[2]==4:
+#             logins_type_4=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
+#         elif item[2]==5:
+#             logins_type_5=[item[3],item[4],item[5],item[6],item[7],item[8],item[9],item[10],item[11],item[12],item[13],item[14]]
+#
+#     return render_template('achalandage.html', liste_etiq_cum=liste_etiq_cum, liste_valeurs_cum=liste_valeurs_cum, total_logins=total_logins,
+#                            date_debut=date_debut, labels_mois=labels_mois, logins_type_5=logins_type_5, logins_type_4=logins_type_4,
+#                            logins_type_3=logins_type_3, logins_type_2=logins_type_2, bd=profile_list[3])
 
 @bp_parametres.route('/factures_OCR_modif', methods=['POST'])
 def factures_OCR_modif():

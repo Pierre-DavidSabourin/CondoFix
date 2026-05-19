@@ -1,112 +1,533 @@
 {% extends "layout_admin.html" %}
 {% block content %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>CondoFix</title>
-    <link rel="icon" href="../static/ToolsIcon.png">
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+<script src="../static/Chart.min.js"></script>
 
-    <link rel="stylesheet" href="../static/styles_1.css">
-    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire de datatables : -->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <script src="../static/Chart.min.js"></script>
-</head>
-<body>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-sm-8">
-            <div class="wrapper">
-                <div class="form-group form-inline justify-content-between">
+<style>
+    .achalandage-page {
+        --ach-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --ach-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --ach-radius-xl: 20px;
+        --ach-radius-lg: 16px;
+        --ach-radius-md: 14px;
+        --ach-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .achalandage-page .ach-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--ach-radius-xl);
+        box-shadow: var(--ach-shadow);
+        padding: 1.25rem;
+    }
+
+    .achalandage-page .ach-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .achalandage-page .ach-header h1 {
+        margin: 0;
+        font-size: 1.95rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .achalandage-page .ach-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .achalandage-page .ach-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(140px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .achalandage-page .ach-kpi-card {
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--ach-radius-md);
+        box-shadow: var(--ach-shadow-soft);
+        padding: 0.85rem 0.95rem;
+        min-height: 86px;
+    }
+
+    .achalandage-page .ach-kpi-label {
+        color: var(--theme-text-muted);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        line-height: 1.1;
+        text-transform: uppercase;
+        margin-bottom: 0.4rem;
+    }
+
+    .achalandage-page .ach-kpi-value {
+        color: var(--theme-text);
+        font-size: 1.55rem;
+        font-weight: 850;
+        line-height: 1;
+    }
+
+    .achalandage-page .ach-kpi-note {
+        color: var(--theme-text-muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-top: 0.35rem;
+    }
+
+    .achalandage-page .ach-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.75fr);
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .achalandage-page .ach-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--ach-radius-lg);
+        box-shadow: var(--ach-shadow-soft);
+        padding: 1rem;
+        min-width: 0;
+    }
+
+    .achalandage-page .ach-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .achalandage-page .ach-card-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--theme-text);
+    }
+
+    .achalandage-page .ach-card-subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.92rem;
+    }
+
+    .achalandage-page .ach-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 390px;
+    }
+
+    .achalandage-page .ach-chart-wrap--donut {
+        height: 330px;
+    }
+
+    .achalandage-page .ach-chart-wrap > canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .achalandage-page .ach-summary {
+        margin-top: 1rem;
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--ach-radius-md);
+        overflow: hidden;
+    }
+
+    .achalandage-page .ach-summary-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        padding: 0.75rem 0.85rem;
+        border-bottom: 1px solid var(--theme-border);
+    }
+
+    .achalandage-page .ach-summary-row:last-child {
+        border-bottom: 0;
+    }
+
+    .achalandage-page .ach-summary-label {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-width: 0;
+        color: var(--theme-text);
+        font-weight: 750;
+    }
+
+    .achalandage-page .ach-dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+        flex: 0 0 auto;
+        background: var(--theme-kpi-hours);
+    }
+
+    .achalandage-page .ach-dot--1 {
+        background: var(--theme-priority-medium);
+    }
+
+    .achalandage-page .ach-dot--2 {
+        background: var(--theme-chart-preventive-employee, var(--theme-priority-low));
+    }
+
+    .achalandage-page .ach-dot--3 {
+        background: var(--theme-priority-high);
+    }
+
+    .achalandage-page .ach-dot--4 {
+        background: var(--theme-kpi-hours);
+    }
+
+    .achalandage-page .ach-summary-value {
+        color: var(--theme-text);
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+    .achalandage-page .ach-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 30px;
+        padding: 0.25rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-size: 0.82rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 1199px) {
+        .achalandage-page .ach-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .achalandage-page .ach-kpi-grid {
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
+        }
+
+        .achalandage-page .ach-chart-wrap--donut {
+            height: 360px;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .achalandage-page {
+            padding-top: 1rem;
+        }
+
+        .achalandage-page .ach-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .achalandage-page .ach-header h1 {
+            font-size: 1.65rem;
+        }
+
+        .achalandage-page .ach-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .achalandage-page .ach-chart-wrap {
+            height: 340px;
+        }
+
+        .achalandage-page .ach-chart-wrap--donut {
+            height: 320px;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .achalandage-page .ach-card-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .achalandage-page .ach-chart-wrap {
+            height: 310px;
+        }
+
+        .achalandage-page .ach-chart-wrap--donut {
+            height: 300px;
+        }
+    }
+</style>
+
+<div class="container-fluid achalandage-page">
+    <section class="ach-shell">
+        <header class="ach-header">
+            <div>
+                <h1>Achalandage</h1>
+                <p>Consultez l’activité de connexion par type d’usager.</p>
+            </div>
+
+            <span class="ach-pill">Depuis {{ date_debut }}</span>
+        </header>
+
+        <section class="ach-kpi-grid" aria-label="Indicateurs d'achalandage">
+            <article class="ach-kpi-card">
+                <div class="ach-kpi-label">Cumulatif des logins</div>
+                <div class="ach-kpi-value">{{ total_logins }}</div>
+                <div class="ach-kpi-note">Depuis {{ date_debut }}</div>
+            </article>
+
+            <article class="ach-kpi-card">
+                <div class="ach-kpi-label">Types d’usagers suivis</div>
+                <div class="ach-kpi-value">{{ liste_etiq_cum|length }}</div>
+                <div class="ach-kpi-note">Profils inclus dans les graphiques</div>
+            </article>
+
+            <article class="ach-kpi-card">
+                <div class="ach-kpi-label">Logins mensuels visibles</div>
+                <div class="ach-kpi-value" id="ach-period-total">—</div>
+                <div class="ach-kpi-note">Somme des mois affichés</div>
+            </article>
+
+            <article class="ach-kpi-card">
+                <div class="ach-kpi-label">Mois le plus actif</div>
+                <div class="ach-kpi-value" id="ach-best-month">—</div>
+                <div class="ach-kpi-note" id="ach-best-month-note">Selon les données affichées</div>
+            </article>
+        </section>
+
+        <div class="ach-grid">
+            <section class="ach-card">
+                <div class="ach-card-header">
                     <div>
-                    <h4>Achalandage par type d'usager</h4>
-                    <p><small>Pour les 11 derniers mois.</small></p>
+                        <h2 class="ach-card-title">Achalandage mensuel par type d’usager</h2>
+                        <p class="ach-card-subtitle">Répartition des logins par mois, empilée selon le profil.</p>
                     </div>
                 </div>
-                <canvas id="bar-chart" width="750" height="350"></canvas>
-            </div>
-            <script>
-              //console.log({{labels_mois|tojson}});
-              //console.log({{logins_type_5|tojson}});
-              new Chart(document.getElementById("bar-chart"), {
-                  type: 'bar',
-                  data: {
-                    labels: {{labels_mois|tojson}},
-                    datasets: [
-                      {
-                      label: 'Copropriétaires',
-                      backgroundColor: "#808080",
-                      data: {{ logins_type_5|tojson }},
-                      type: 'bar',
 
-                    }, {
-                      label: 'Membres de CA',
-                      backgroundColor: "#caf270",
-                      data: {{ logins_type_4|tojson }},
+                <div class="ach-chart-wrap">
+                    <canvas id="achalandage-bar-chart"></canvas>
+                </div>
+            </section>
 
-                    }, {
-                      label: 'Employés',
-                      backgroundColor: "#45c490",
-                      data: {{ logins_type_3|tojson }},
+            <section class="ach-card">
+                <div class="ach-card-header">
+                    <div>
+                        <h2 class="ach-card-title">Répartition cumulative</h2>
+                        <p class="ach-card-subtitle">Volume total de logins par type d’usager.</p>
+                    </div>
+                </div>
 
-                    }, {
-                      label: 'Admin CondoFix',
-                      backgroundColor: "#008d93",
-                      data: {{ logins_type_2|tojson }},
-                    }
-                    ]
-                  },
-                  options: {
-                    hover: true,
-                    legend: {
-                      display: false,
+                <div class="ach-chart-wrap ach-chart-wrap--donut">
+                    <canvas id="achalandage-donut-chart"></canvas>
+                </div>
 
-                 },
-                    title: {
-                      display: false,
-                      text: 'blabla'
-                    },
-                    scales: {
-                    xAxes: [{ stacked: true }],
-                    yAxes: [{ stacked: true }]
-                    },
-                    responsive: false
-                  }
-                  });
-            </script>
+                <div class="ach-summary">
+                    {% for etiquette in liste_etiq_cum %}
+                    <div class="ach-summary-row">
+                        <div class="ach-summary-label">
+                            <span class="ach-dot ach-dot--{{ loop.index }}"></span>
+                            <span>{{ etiquette }}</span>
+                        </div>
+                        <div class="ach-summary-value">
+                            {{ liste_valeurs_cum[loop.index0] }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
         </div>
-        <div class="col-sm-4">
-            <div class="wrapper">
-                <h4>Cumulatif des logins: {{total_logins}}</h4>
-                <p><small>Depuis {{date_debut}}.</small></p>
-                <canvas id="pie-chart" width="200" height="175"></canvas>
-            </div>
-            <script>
-              //console.log({{liste_etiq_cum|tojson}});
-              //console.log({{liste_valeurs_cum|tojson}});
-              new Chart(document.getElementById("pie-chart"), {
-                  type: 'pie',
-                  data: {
-                    labels: {{liste_etiq_cum|tojson}},
-                    datasets: [
-                      {
-                      label: 'Cumulatif des logins par type',
-                      backgroundColor: ["#008d93","#45c490","#caf270","#808080"],
-                      data: {{ liste_valeurs_cum|tojson }},
-                    }
-                  ]
-                  },
-                  options: {
-                      legend: { display: false },
-                      title: {
-                        display: false,
-                        text: 'Titre ici'
-                      }
-                  },
-                  });
-            </script>
-        </div>
-    </div>
+    </section>
 </div>
-</body>
+
+<script>
+    function getThemeVar(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
+
+    function formatNumber(value) {
+        return Number(value || 0).toLocaleString('fr-CA', {
+            maximumFractionDigits: 0
+        });
+    }
+
+    const chartText = getThemeVar('--theme-text', '#243447');
+    const chartMuted = getThemeVar('--theme-text-muted', '#66778a');
+    const chartBorder = getThemeVar('--theme-border', '#d6dde6');
+
+    const colorAdmin = getThemeVar('--theme-priority-medium', '#2563eb');
+    const colorEmployees = getThemeVar('--theme-chart-preventive-employee', getThemeVar('--theme-priority-low', '#16a34a'));
+    const colorCouncil = getThemeVar('--theme-priority-high', '#f59e0b');
+    const colorCoowners = getThemeVar('--theme-kpi-hours', '#64748b');
+
+    const labelsMois = {{ labels_mois|tojson }};
+    const loginsType2 = {{ logins_type_2|tojson }};
+    const loginsType3 = {{ logins_type_3|tojson }};
+    const loginsType4 = {{ logins_type_4|tojson }};
+    const loginsType5 = {{ logins_type_5|tojson }};
+
+    const cumulativeLabels = {{ liste_etiq_cum|tojson }};
+    const cumulativeValues = {{ liste_valeurs_cum|tojson }};
+
+    Chart.defaults.global.defaultFontColor = chartText;
+
+    function safeMonthlyArray(value) {
+        return Array.isArray(value) ? value.map(Number) : Array(12).fill(0);
+    }
+
+    const monthlyDatasets = [
+        {
+            label: 'Copropriétaires',
+            backgroundColor: colorCoowners,
+            data: safeMonthlyArray(loginsType5),
+            borderWidth: 0
+        },
+        {
+            label: 'Membres du CA',
+            backgroundColor: colorCouncil,
+            data: safeMonthlyArray(loginsType4),
+            borderWidth: 0
+        },
+        {
+            label: 'Employés',
+            backgroundColor: colorEmployees,
+            data: safeMonthlyArray(loginsType3),
+            borderWidth: 0
+        },
+        {
+            label: 'Admin CondoFix',
+            backgroundColor: colorAdmin,
+            data: safeMonthlyArray(loginsType2),
+            borderWidth: 0
+        }
+    ];
+
+    function updateAchalandageKpis() {
+        const monthlyTotals = labelsMois.map((_, index) => {
+            return monthlyDatasets.reduce((sum, dataset) => {
+                return sum + Number(dataset.data[index] || 0);
+            }, 0);
+        });
+
+        const periodTotal = monthlyTotals.reduce((sum, value) => sum + value, 0);
+        const bestValue = Math.max.apply(null, monthlyTotals);
+        const bestIndex = monthlyTotals.indexOf(bestValue);
+        const bestMonth = bestIndex >= 0 ? labelsMois[bestIndex] : '—';
+
+        document.getElementById('ach-period-total').textContent = formatNumber(periodTotal);
+        document.getElementById('ach-best-month').textContent = bestMonth;
+        document.getElementById('ach-best-month-note').textContent = formatNumber(bestValue) + ' login(s)';
+    }
+
+    updateAchalandageKpis();
+
+    new Chart(document.getElementById('achalandage-bar-chart'), {
+        type: 'bar',
+        data: {
+            labels: labelsMois,
+            datasets: monthlyDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    fontColor: chartMuted,
+                    boxWidth: 14
+                }
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        const label = data.datasets[tooltipItem.datasetIndex].label || '';
+                        const value = tooltipItem.yLabel || 0;
+                        return label + ' : ' + formatNumber(value);
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        precision: 0,
+                        fontColor: chartMuted
+                    }
+                }]
+            }
+        }
+    });
+
+    new Chart(document.getElementById('achalandage-donut-chart'), {
+        type: 'doughnut',
+        data: {
+            labels: cumulativeLabels,
+            datasets: [{
+                label: 'Cumulatif des logins',
+                backgroundColor: [
+                    colorAdmin,
+                    colorEmployees,
+                    colorCouncil,
+                    colorCoowners
+                ],
+                borderColor: getThemeVar('--theme-surface', '#ffffff'),
+                borderWidth: 2,
+                data: cumulativeValues.map(Number)
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutoutPercentage: 58,
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    fontColor: chartMuted,
+                    boxWidth: 14
+                }
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        const label = data.labels[tooltipItem.index] || '';
+                        const value = data.datasets[0].data[tooltipItem.index] || 0;
+                        return label + ' : ' + formatNumber(value);
+                    }
+                }
+            }
+        }
+    });
+</script>
+
 {% endblock content %}

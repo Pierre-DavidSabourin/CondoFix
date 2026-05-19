@@ -16,49 +16,116 @@ def preventif():
     """Afficher la table contenant toutes les activités d'entretien régulier et préventif via le
     calendrier d'entretien.
 
-    |Ces enregistrements permettent de générer automatiquement un ticket à la date 'prochain' spécifiée."""
+    Ces enregistrements permettent de générer automatiquement un ticket à la date 'prochain' spécifiée.
+    """
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    # vérifier type d'usager
-    if profile_list[2]==3 or profile_list[2]==5 :# pas accessible par l'employé ou le proprio
+
+    profile_list = session.get('ProfilUsager')
+
+    # Pas accessible par l'employé ou le proprio
+    if profile_list[2] == 3 or profile_list[2] == 5:
         return redirect(url_for('bp_admin.permission'))
 
-    client_ident=profile_list[0]
-    version_client=profile_list[6]
+    client_ident = profile_list[0]
+    version_client = profile_list[6]
     mode_connexion = profile_list[8]
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
 
     cur.execute(
-        "SELECT IDPreventif, Description, Emplacement, HresEstimees, IDIntervenant, IDEquipement, IDCategorie, FreqAns, DateProchain,ReferenceCarnet, IDTypeTravail,"
-        "Janv, Fev, Mars, Avril, Mai, Juin, Juil, Aout, Sept, Oct, Nov, `Dec`  FROM preventif WHERE IDClient=%s",
-        (client_ident,))
+        "SELECT IDPreventif, Description, Emplacement, HresEstimees, IDIntervenant, "
+        "IDEquipement, IDCategorie, FreqAns, DateProchain, ReferenceCarnet, IDTypeTravail, "
+        "Janv, Fev, Mars, Avril, Mai, Juin, Juil, Aout, Sept, Oct, Nov, `Dec` "
+        "FROM preventif "
+        "WHERE IDClient=%s",
+        (client_ident,)
+    )
+
     liste_preventif = []
+
     for row in cur.fetchall():
-        # si pas de IDEquipement
-        if row[5] == None or row[5] == 0:
-            row += ('',)
-        else:
-            cur.execute("SELECT NumTag, Nom FROM equipements WHERE IDEquipement=%s AND IDClient=%s", (row[5], client_ident))
-            for item in cur.fetchall():
-                row += (str(item[0])+', '+item[1],)  # 23
-        cur.execute("SELECT NomIntervenant From intervenants WHERE IDIntervenant=%s AND IDClient=%s",
-                    (row[4], client_ident))
-        for item_1 in cur.fetchall():
-            row += (item_1[0],)  # 24
-        cur.execute("SELECT Description From categories WHERE IDCategorie=%s AND IDClient=%s", (row[6], client_ident))
-        for item_2 in cur.fetchall():
-            row += (item_2[0],)  # 25
-        cur.execute("SELECT Description From typetravail WHERE IDTypeTravail=%s", (row[10],))
-        for item_3 in cur.fetchall():
-            row += (item_3[0],)  # 26
+        # 23 - Équipement
+        equipement_desc = ''
+
+        if row[5] is not None and row[5] != 0:
+            cur.execute(
+                "SELECT NumTag, Nom "
+                "FROM equipements "
+                "WHERE IDEquipement=%s AND IDClient=%s",
+                (row[5], client_ident)
+            )
+            equipement = cur.fetchone()
+
+            if equipement is not None:
+                equipement_desc = str(equipement[0]) + ', ' + equipement[1]
+
+        # 24 - Intervenant
+        intervenant_desc = 'Non défini'
+
+        if row[4] is not None and row[4] != 0:
+            cur.execute(
+                "SELECT NomIntervenant "
+                "FROM intervenants "
+                "WHERE IDIntervenant=%s AND IDClient=%s",
+                (row[4], client_ident)
+            )
+            intervenant = cur.fetchone()
+
+            if intervenant is not None:
+                intervenant_desc = intervenant[0]
+
+        # 25 - Catégorie
+        categorie_desc = 'Non définie'
+
+        if row[6] is not None and row[6] != 0:
+            cur.execute(
+                "SELECT Description "
+                "FROM categories "
+                "WHERE IDCategorie=%s AND IDClient=%s",
+                (row[6], client_ident)
+            )
+            categorie = cur.fetchone()
+
+            if categorie is not None:
+                categorie_desc = categorie[0]
+
+        # 26 - Type de travail
+        type_travail_desc = 'Non défini'
+
+        if row[10] is not None and row[10] != 0:
+            cur.execute(
+                "SELECT Description "
+                "FROM typetravail "
+                "WHERE IDTypeTravail=%s",
+                (row[10],)
+            )
+            type_travail = cur.fetchone()
+
+            if type_travail is not None:
+                type_travail_desc = type_travail[0]
+
+        row += (
+            equipement_desc,
+            intervenant_desc,
+            categorie_desc,
+            type_travail_desc
+        )
+
         liste_preventif.append(row)
+
     cnx.close()
+
     liste_preventif.sort(key=lambda x: x[0], reverse=False)
 
-    return render_template('preventif_table.html', version=version_client, fill_preventif=liste_preventif,bd=profile_list[3])
+    return render_template(
+        'preventif_table.html',
+        version=version_client,
+        fill_preventif=liste_preventif,
+        bd=profile_list[3]
+    )
+
 
 #fonctions pour ajouter ou modifier un entretien préventif
 @bp_preventif.route('/preventif_enreg/<parametre>')
