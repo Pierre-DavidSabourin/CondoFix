@@ -126,29 +126,76 @@ def docs_table():
 
 
 #affichage de la table de documentation pour proprios
-@bp_documentation.route('/docs_table_proprios', methods=['POST','GET'])
+# affichage de la table de documentation pour proprios
+@bp_documentation.route('/docs_table_proprios', methods=['POST', 'GET'])
 def docs_table_proprios():
-    """afficher la page de la table d'enregistrements SANS fonction ajout et modif pour copropriétaires
-"""
+    """Afficher la table de documentation en consultation seulement pour copropriétaires."""
+
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    fill_documents=[]
-    client_ident=profile_list[0]
+
+    profile_list = session.get('ProfilUsager')
+    client_ident = profile_list[0]
     mode = profile_list[8]
+
+    fill_documents = []
     cnx = connect_db(mode)
 
-    cur = cnx.cursor()
-    cur.execute("SELECT IDDoc,IDTypeDoc,Description,Fournisseur,Montant$HT FROM documentation WHERE IDClient=%s",(client_ident,))
-    for row in cur.fetchall():
-        cur.execute("SELECT Description FROM typesdocs WHERE IDTypeDoc=%s", (row[1],))
-        for item_1 in cur.fetchall():
-            typedoc=item_1[0]
-            row+=(typedoc,)
-        fill_documents.append(row)
-    cnx.close()
-    return render_template('documentation_proprios.html',fill_documents=fill_documents,bd=profile_list[3])
+    try:
+        cur = cnx.cursor()
+        cur.execute(
+            """
+            SELECT
+                d.IDDoc,
+                d.IDTypeDoc,
+                d.Description,
+                d.FrequenceAns,
+                d.Fournisseur,
+                d.Montant$HT,
+                d.DateProchain,
+                td.Description AS TypeDescription
+            FROM documentation d
+            LEFT JOIN typesdocs td
+                ON td.IDTypeDoc = d.IDTypeDoc
+            WHERE d.IDClient = %s
+            ORDER BY d.Description
+            """,
+            (client_ident,)
+        )
+
+        fill_documents = cur.fetchall()
+
+    finally:
+        cnx.close()
+
+    return render_template(
+        'documentation_proprios.html',
+        fill_documents=fill_documents,
+        bd=profile_list[3]
+    )
+# @bp_documentation.route('/docs_table_proprios', methods=['POST','GET'])
+# def docs_table_proprios():
+#     """afficher la page de la table d'enregistrements SANS fonction ajout et modif pour copropriétaires
+# """
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     fill_documents=[]
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#
+#     cur = cnx.cursor()
+#     cur.execute("SELECT IDDoc,IDTypeDoc,Description,Fournisseur,Montant$HT FROM documentation WHERE IDClient=%s",(client_ident,))
+#     for row in cur.fetchall():
+#         cur.execute("SELECT Description FROM typesdocs WHERE IDTypeDoc=%s", (row[1],))
+#         for item_1 in cur.fetchall():
+#             typedoc=item_1[0]
+#             row+=(typedoc,)
+#         fill_documents.append(row)
+#     cnx.close()
+#     return render_template('documentation_proprios.html',fill_documents=fill_documents,bd=profile_list[3])
 
 @bp_documentation.route('/doc_enreg/<parametre>")', methods=['POST','GET'])
 def doc_enreg(parametre):
@@ -500,30 +547,89 @@ def doc_affiche_admin(id_doc):
 #     return send_file(chemin_doc,attachment_filename=titre,cache_timeout=0)
 
 
-@bp_documentation.route('/doc_affiche_proprios/<id_doc>")', methods=['POST','GET'])
-def doc_affiche_proprios(id_doc):
-    """Afficher le document pdf sélectionné dans la table des copropriétaires"""
-    if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
-        return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    client_ident=profile_list[0]
-    mode = profile_list[8]
-    cnx = connect_db(mode)
-    cur = cnx.cursor()
-    chemin_doc=str()
-    titre=str()
-    cur.execute("SELECT CheminPath FROM documentation WHERE IDDoc=%s AND IDClient=%s",(id_doc,client_ident))
-    for item in cur.fetchall():
-        if item[0]==None:
-            return redirect(url_for('bp_documentation.docs_table_proprios'))
+# @bp_documentation.route('/doc_affiche_proprios/<id_doc>")', methods=['POST','GET'])
+# def doc_affiche_proprios(id_doc):
+#     """Afficher le document pdf sélectionné dans la table des copropriétaires"""
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#     chemin_doc=str()
+#     titre=str()
+#     cur.execute("SELECT CheminPath FROM documentation WHERE IDDoc=%s AND IDClient=%s",(id_doc,client_ident))
+#     for item in cur.fetchall():
+#         if item[0]==None:
+#             return redirect(url_for('bp_documentation.docs_table_proprios'))
+#
+#         chemin_doc=chemin_rep(mode)+item[0]
+#         #pour obtenir le titre du doc seulement
+#         titre=item[0].split("docs/",1)[1]
+#         print('titre:',titre)
+#         cnx.close()
+#     return send_file(chemin_doc,attachment_filename=titre)
 
-        chemin_doc=chemin_rep(mode)+item[0]
-        #pour obtenir le titre du doc seulement
-        titre=item[0].split("docs/",1)[1]
-        print('titre:',titre)
+@bp_documentation.route('/doc_affiche_proprios/<int:id_doc>', methods=['GET'])
+def doc_affiche_proprios(id_doc):
+    """Afficher le document PDF sélectionné dans la table des copropriétaires."""
+
+    if session.get('ProfilUsager') is None:
+        return render_template('session_ferme.html')
+
+    profile_list = session.get('ProfilUsager')
+    client_ident = profile_list[0]
+    mode = profile_list[8]
+
+    cnx = connect_db(mode)
+
+    try:
+        cur = cnx.cursor()
+        cur.execute(
+            "SELECT CheminPath FROM documentation WHERE IDDoc=%s AND IDClient=%s",
+            (id_doc, client_ident)
+        )
+        row = cur.fetchone()
+
+    finally:
         cnx.close()
-    return send_file(chemin_doc,attachment_filename=titre)
+
+    if not row or not row[0]:
+        return redirect(url_for('bp_documentation.docs_table_proprios'))
+
+    stored_path = row[0]
+    base_folder = chemin_rep(mode)
+
+    if os.path.isabs(stored_path):
+        chemin_doc = stored_path
+    else:
+        chemin_doc = os.path.normpath(os.path.join(base_folder, stored_path))
+
+    if not os.path.isfile(chemin_doc):
+        print("Document introuvable:", chemin_doc)
+        return redirect(url_for('bp_documentation.docs_table_proprios'))
+
+    titre = os.path.basename(chemin_doc)
+    send_file_params = inspect.signature(send_file).parameters
+
+    if 'download_name' in send_file_params:
+        return send_file(
+            chemin_doc,
+            mimetype='application/pdf',
+            as_attachment=False,
+            download_name=titre,
+            max_age=0
+        )
+
+    return send_file(
+        chemin_doc,
+        mimetype='application/pdf',
+        as_attachment=False,
+        attachment_filename=titre,
+        cache_timeout=0
+    )
 
 @bp_documentation.route('/chemin_doc_supprime/<id_doc>', methods=['POST','GET'])
 def chemin_doc_supprime(id_doc):

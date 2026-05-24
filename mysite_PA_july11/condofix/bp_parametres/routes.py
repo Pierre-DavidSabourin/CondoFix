@@ -686,16 +686,33 @@ def reservations_modif():
 
 @bp_parametres.route('/themes', methods=['POST', 'GET'])
 def themes():
-    """Affichage et sauvegarde du thème visuel CondoFix via cookie."""
+    """Affichage et sauvegarde du thème visuel CondoFix via cookie.
+
+    Accès autorisé pour l'instant :
+    - 1 : Administrateur
+    - 2 : Admin CondoFix
+    - 5 : Copropriétaires
+
+    Les profils 3 et 4 restent exclus pour éviter d'ouvrir la page à des rôles
+    dont les accès fonctionnels ne sont pas encore clarifiés.
+    """
 
     if session.get('ProfilUsager') is None:
         return render_template('session_ferme.html')
 
     profile_list = session.get('ProfilUsager')
+    type_usager = profile_list[2]
 
-    # pour l'instant, on conserve la même restriction d'accès que la page paramètres
-    if profile_list[2] > 2:
+    # Sécurité : on ouvre la page seulement aux rôles confirmés.
+    if type_usager not in (1, 2, 5):
         return redirect(url_for('bp_admin.permission'))
+
+    # Layout selon le type d'usager.
+    # Les admins gardent le menu admin complet; les copropriétaires gardent le menu proprio.
+    if type_usager == 5:
+        layout_template = 'proprios_layout_tables.html'
+    else:
+        layout_template = 'layout_admin.html'
 
     default_theme = 'normal-condofix-classic'
     theme_ui = request.cookies.get('condofix_theme_ui', default_theme)
@@ -714,11 +731,52 @@ def themes():
             httponly=False,
             samesite='Lax'
         )
+
         flash("Le thème visuel a été enregistré pour ce navigateur.", "success")
         return response
 
     return render_template(
         'themes.html',
         theme_ui=theme_ui,
+        layout_template=layout_template,
         bd=profile_list[3]
     )
+
+# @bp_parametres.route('/themes', methods=['POST', 'GET'])
+# def themes():
+#     """Affichage et sauvegarde du thème visuel CondoFix via cookie."""
+#
+#     if session.get('ProfilUsager') is None:
+#         return render_template('session_ferme.html')
+#
+#     profile_list = session.get('ProfilUsager')
+#
+#     # pour l'instant, on conserve la même restriction d'accès que la page paramètres
+#     # if profile_list[2] > 2:
+#     #     return redirect(url_for('bp_admin.permission'))
+#
+#     default_theme = 'normal-condofix-classic'
+#     theme_ui = request.cookies.get('condofix_theme_ui', default_theme)
+#
+#     if request.method == 'POST':
+#         selected_theme = request.form.get('theme_ui', '').strip()
+#
+#         if selected_theme == '':
+#             selected_theme = default_theme
+#
+#         response = make_response(redirect(url_for('bp_parametres.themes')))
+#         response.set_cookie(
+#             'condofix_theme_ui',
+#             selected_theme,
+#             max_age=60 * 60 * 24 * 365,   # 1 an
+#             httponly=False,
+#             samesite='Lax'
+#         )
+#         flash("Le thème visuel a été enregistré pour ce navigateur.", "success")
+#         return response
+#
+#     return render_template(
+#         'themes.html',
+#         theme_ui=theme_ui,
+#         bd=profile_list[3]
+#     )
