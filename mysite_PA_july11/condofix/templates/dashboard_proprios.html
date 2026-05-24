@@ -1,133 +1,516 @@
 {% extends "proprios_layout.html" %}
+
+{% block head_extra %}
+<style>
+    /*
+      Owner budget dashboard
+      ------------------------------------------------------------
+      Purpose:
+      - Present the owner-facing budget dashboard in the new CondoFix UX language.
+      - Keep the original business logic:
+          1) Budget vs actual by category.
+          2) Cumulative maintenance expenses for the current budget year.
+      - Use the same theme tokens as the admin dashboard.
+      - Keep additional dashboard ideas out of scope for this PBI.
+    */
+
+    .owner-budget-page {
+        --owner-budget-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --owner-budget-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --owner-budget-radius-xl: 20px;
+        --owner-budget-radius-lg: 16px;
+        --owner-budget-radius-md: 14px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .owner-budget-page .owner-budget-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--owner-budget-radius-xl);
+        box-shadow: var(--owner-budget-shadow);
+        padding: 1.25rem;
+    }
+
+    .owner-budget-page .owner-budget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .owner-budget-page .owner-budget-header h1 {
+        margin: 0;
+        font-size: 1.95rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .owner-budget-page .owner-budget-header p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .owner-budget-page .owner-budget-period {
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--owner-budget-radius-md);
+        padding: 0.85rem 1rem;
+        min-width: 220px;
+        text-align: left;
+    }
+
+    .owner-budget-page .owner-budget-period-label {
+        color: var(--theme-text-muted);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+
+    .owner-budget-page .owner-budget-period-value {
+        color: var(--theme-text);
+        font-size: 1.55rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .owner-budget-page .owner-budget-grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .owner-budget-page .owner-budget-kpis {
+        grid-column: span 12;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(140px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .owner-budget-page .owner-kpi-card {
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--owner-budget-radius-md);
+        box-shadow: var(--owner-budget-shadow-soft);
+        padding: 0.9rem 1rem;
+        min-height: 86px;
+    }
+
+    .owner-budget-page .owner-kpi-label {
+        color: var(--theme-text-muted);
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        line-height: 1.1;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+
+    .owner-budget-page .owner-kpi-value {
+        color: var(--theme-text);
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .owner-budget-page .owner-kpi-note {
+        color: var(--theme-text-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-top: 0.3rem;
+    }
+
+    .owner-budget-page .owner-budget-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--owner-budget-radius-lg);
+        box-shadow: var(--owner-budget-shadow-soft);
+        padding: 1rem;
+        min-width: 0;
+    }
+
+    .owner-budget-page .owner-budget-card--half {
+        grid-column: span 6;
+    }
+
+    .owner-budget-page .owner-card-title {
+        color: var(--theme-text);
+        font-size: 1.1rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+    }
+
+    .owner-budget-page .owner-card-subtitle {
+        color: var(--theme-text-muted);
+        font-size: 0.95rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .owner-budget-page .owner-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 390px;
+    }
+
+    .owner-budget-page .owner-chart-wrap > canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .owner-budget-page .owner-budget-notes {
+        grid-column: span 12;
+        background: var(--theme-surface-alt);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--owner-budget-radius-md);
+        padding: 0.9rem 1rem;
+        color: var(--theme-text-muted);
+        font-size: 0.9rem;
+    }
+
+    .owner-budget-page .owner-budget-notes p {
+        margin: 0 0 0.35rem;
+    }
+
+    .owner-budget-page .owner-budget-notes p:last-child {
+        margin-bottom: 0;
+    }
+
+    @media (max-width: 1199.98px) {
+        .owner-budget-page .owner-budget-kpis {
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
+        }
+
+        .owner-budget-page .owner-budget-card--half {
+            grid-column: span 12;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .owner-budget-page {
+            padding: 1rem 0 1.5rem;
+        }
+
+        .owner-budget-page .owner-budget-shell {
+            padding: 1rem;
+        }
+
+        .owner-budget-page .owner-budget-header {
+            flex-direction: column;
+        }
+
+        .owner-budget-page .owner-budget-header h1 {
+            font-size: 1.65rem;
+        }
+
+        .owner-budget-page .owner-budget-period {
+            width: 100%;
+        }
+
+        .owner-budget-page .owner-budget-kpis {
+            grid-template-columns: 1fr;
+        }
+
+        .owner-budget-page .owner-chart-wrap {
+            height: 340px;
+        }
+    }
+</style>
+{% endblock head_extra %}
+
 {% block content %}
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>CondoFix</title>
-    <link rel="icon" href="../static/ToolsIcon.png">
-
-    <link rel="stylesheet" href="../static/styles_1.css">
-    <!-- Permettre affichage des sous menus du header (contrecarre effet du code 'boite noire de datatables : -->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <script src="../static/Chart.min.js"></script>
-</head>
-<body>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-sm-6">
-            <div class="row justify-content-center">
-                    <div class="wrapper">
-                        <h6 class="text-center">Dépenses par catégorie** (tickets):</h6>
-                        <p class="text-center">{{ ytd_pourcent }} Année à Date</p>
-                    </div>
-                    <canvas id="bar-chart_1" width="500" height="400"></canvas>
-
-                    <script>
-
-                      new Chart(document.getElementById("bar-chart_1"), {
-                      type: 'horizontalBar',
-                      data: {
-                        labels: {{labels_10|tojson}},
-                        datasets: [
-                          {
-                          label: 'Budget*',
-                          backgroundColor: "#FFA500",
-                          data: {{ budget_10|tojson }},
-
-                        }, {
-                          label: 'Actuel***',
-                          backgroundColor: "#0000FF",
-                          data: {{ records_10|tojson }},
-
-                        }
-                        ]
-                      },
-                      options: {
-                        hover: true,
-                        indexAxis: 'y',
-                        legend: {
-                          display: true,
-
-                     },
-                        title: {
-                          display: false,
-                          text: 'blabla'
-                        },
-                        scales: {
-                        xAxes: [{ stacked: false}],
-                        yAxes: [{ stacked: false }]
-                        },
-                        responsive: false
-                      }
-                      });
-                    </script>
+<div class="container-fluid owner-budget-page">
+    <section class="owner-budget-shell">
+        <header class="owner-budget-header">
+            <div>
+                <h1>Budget</h1>
+                <p>Vue synthèse des dépenses de maintenance et du suivi budgétaire du syndicat.</p>
             </div>
-        </div>
-        <div class="col-sm-6">
-            <div class="row justify-content-center">
-                    <div class="wrapper">
-                        <h6>Cumulatif des dépenses d'entretien***</h6>
-                        <p class="text-center">Année courante du budget</p>
-                    </div>
-                    <canvas class="text-center" id="bar-chart_2" width="500" height="400"></canvas>
 
-                    <script>
-                      new Chart(document.getElementById("bar-chart_2"), {
-                          type: 'bar',
-                          data: {
-                            labels: {{labels_mois|tojson}},
-                            datasets: [
-                              {
-                              label: 'Budget*',
-                              borderColor: "#FFA500",
-                              data: {{ budgets_mois|tojson }},
-                              type: 'line',
+            <aside class="owner-budget-period" aria-label="Avancement de l’année budgétaire">
+                <div class="owner-budget-period-label">Année à date</div>
+                <div class="owner-budget-period-value">{{ ytd_pourcent }}</div>
+            </aside>
+        </header>
 
-                            }, {
-                              label: 'Entretien et réparations',
-                              backgroundColor: "#e81123",
-                              data: {{ reparations|tojson }},
-                              type: 'bar',
+        <div class="owner-budget-grid">
+            <section class="owner-budget-kpis" aria-label="Indicateurs budgétaires">
+                <article class="owner-kpi-card">
+                    <div class="owner-kpi-label">Budget affiché</div>
+                    <div class="owner-kpi-value" id="kpi-budget-total">—</div>
+                    <div class="owner-kpi-note">Top 10 catégories</div>
+                </article>
 
-                            },
-                            {
-                              label: 'Préventif',
-                              backgroundColor: "#7CFC00",
-                              data: {{ preventif|tojson }},
+                <article class="owner-kpi-card">
+                    <div class="owner-kpi-label">Dépenses réelles</div>
+                    <div class="owner-kpi-value" id="kpi-actual-total">—</div>
+                    <div class="owner-kpi-note">Top 10 catégories</div>
+                </article>
 
-                            }
-                            ]
-                          },
-                          options: {
-                            hover: true,
-                            legend: {
-                              display: true,
-                              position: 'bottom',
+                <article class="owner-kpi-card">
+                    <div class="owner-kpi-label">Écart disponible</div>
+                    <div class="owner-kpi-value" id="kpi-variance-total">—</div>
+                    <div class="owner-kpi-note">Budget moins réel</div>
+                </article>
 
-                         },
-                            title: {
-                              display: false,
-                              text: 'blabla'
-                            },
-                            scales: {
-                            xAxes: [{ stacked: true }],
-                            yAxes: [{ stacked: true }]
-                            },
-                            responsive: false
-                          }
-                          });
-                    </script>
+                <article class="owner-kpi-card">
+                    <div class="owner-kpi-label">Dépenses cumulées</div>
+                    <div class="owner-kpi-value" id="kpi-monthly-total">—</div>
+                    <div class="owner-kpi-note">Entretien + préventif</div>
+                </article>
+            </section>
+
+            <section class="owner-budget-card owner-budget-card--half">
+                <div class="owner-card-title">Dépenses par catégorie</div>
+                <div class="owner-card-subtitle">
+                    Comparaison entre le budget prévu et les dépenses réelles pour les principales catégories.
                 </div>
-            </div>
+
+                <div class="owner-chart-wrap">
+                    <canvas id="budget-category-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="owner-budget-card owner-budget-card--half">
+                <div class="owner-card-title">Cumulatif des dépenses d’entretien</div>
+                <div class="owner-card-subtitle">
+                    Suivi mensuel des dépenses d’entretien et de prévention pour l’année courante du budget.
+                </div>
+
+                <div class="owner-chart-wrap">
+                    <canvas id="maintenance-cumulative-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="owner-budget-notes">
+                <p><strong>*</strong> Le budget du syndicat est provisoire jusqu’à sa présentation lors de l’assemblée générale annuelle.</p>
+                <p><strong>**</strong> Affichage des 10 catégories ayant le plus de dépenses.</p>
+                <p><strong>***</strong> Inclut les factures attribuées aux tickets et les salaires/honoraires.</p>
+            </section>
         </div>
-    <br>
-    <p class="mb-0"><small>* Le budget du syndicat est provisoire jusqu'à sa présentation lors de l'assemblée générale annuelle.</small></p>
-    <p class="mb-0"><small>** Affichage des 10 catégories ayant le plus de dépenses.</small></p>
-    <p><small>*** Inclut les factures attribuées aux tickets et les salaires/honoraires.</small></p>
-    </div>
-
+    </section>
 </div>
-
-</body>
 {% endblock content %}
+
+{% block scripts %}
+<script src="../static/Chart.min.js"></script>
+
+<script>
+    function getThemeVar(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
+
+    function sumValues(values) {
+        return values.reduce(function(total, value) {
+            return total + Number(value || 0);
+        }, 0);
+    }
+
+    function formatMoney(value) {
+        return Number(value || 0).toLocaleString('fr-CA', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }) + ' $';
+    }
+
+    function formatMoneyCompact(value) {
+        const amount = Number(value || 0);
+
+        if (Math.abs(amount) >= 1000) {
+            return (amount / 1000).toLocaleString('fr-CA', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 1
+            }) + 'k $';
+        }
+
+        return amount.toLocaleString('fr-CA', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }) + ' $';
+    }
+
+    const chartText = getThemeVar('--theme-text', '#243447');
+    const chartMuted = getThemeVar('--theme-text-muted', '#66778a');
+    const chartBorder = getThemeVar('--theme-border', '#d6dde6');
+
+    const colorBudget = getThemeVar('--theme-priority-high', '#f4b400');
+    const colorActual = getThemeVar('--theme-priority-medium', '#0d6efd');
+    const colorRepairs = getThemeVar('--theme-priority-critical', '#dc3545');
+    const colorPreventive = getThemeVar('--theme-priority-low', '#198754');
+
+    Chart.defaults.global.defaultFontColor = chartText;
+
+    const categoryLabels = {{ labels_10|tojson }};
+    const categoryBudget = {{ budget_10|tojson }};
+    const categoryActual = {{ records_10|tojson }};
+
+    const monthLabels = {{ labels_mois|tojson }};
+    const monthlyBudget = {{ budgets_mois|tojson }};
+    const monthlyRepairs = {{ reparations|tojson }};
+    const monthlyPreventive = {{ preventif|tojson }};
+
+    const budgetTotal = sumValues(categoryBudget);
+    const actualTotal = sumValues(categoryActual);
+    const varianceTotal = budgetTotal - actualTotal;
+    const monthlyTotal = sumValues(monthlyRepairs) + sumValues(monthlyPreventive);
+
+    document.getElementById('kpi-budget-total').textContent = formatMoney(budgetTotal);
+    document.getElementById('kpi-actual-total').textContent = formatMoney(actualTotal);
+    document.getElementById('kpi-variance-total').textContent = formatMoney(varianceTotal);
+    document.getElementById('kpi-monthly-total').textContent = formatMoney(monthlyTotal);
+
+    new Chart(document.getElementById('budget-category-chart'), {
+        type: 'horizontalBar',
+        data: {
+            labels: categoryLabels,
+            datasets: [
+                {
+                    label: 'Budget*',
+                    backgroundColor: colorBudget,
+                    data: categoryBudget,
+                    borderWidth: 0
+                },
+                {
+                    label: 'Actuel***',
+                    backgroundColor: colorActual,
+                    data: categoryActual,
+                    borderWidth: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    fontColor: chartMuted,
+                    boxWidth: 14
+                }
+            },
+            tooltips: {
+                callbacks: {
+                    title: function(tooltipItems, data) {
+                        return data.labels[tooltipItems[0].index];
+                    },
+                    label: function(tooltipItem, data) {
+                        const label = data.datasets[tooltipItem.datasetIndex].label || '';
+                        return label + ' : ' + formatMoney(tooltipItem.xLabel);
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted,
+                        callback: function(value) {
+                            return formatMoneyCompact(value);
+                        }
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        display: false
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }]
+            }
+        }
+    });
+
+    new Chart(document.getElementById('maintenance-cumulative-chart'), {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: 'Budget*',
+                    borderColor: colorBudget,
+                    backgroundColor: 'rgba(0, 0, 0, 0)',
+                    pointBackgroundColor: colorBudget,
+                    pointBorderColor: colorBudget,
+                    data: monthlyBudget,
+                    type: 'line',
+                    fill: false,
+                    borderWidth: 3,
+                    pointRadius: 3
+                },
+                {
+                    label: 'Entretien et réparations',
+                    backgroundColor: colorRepairs,
+                    data: monthlyRepairs,
+                    type: 'bar',
+                    borderWidth: 0
+                },
+                {
+                    label: 'Préventif',
+                    backgroundColor: colorPreventive,
+                    data: monthlyPreventive,
+                    type: 'bar',
+                    borderWidth: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    fontColor: chartMuted,
+                    boxWidth: 14
+                }
+            },
+            tooltips: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        const label = data.datasets[tooltipItem.datasetIndex].label || '';
+                        return label + ' : ' + formatMoney(tooltipItem.yLabel);
+                    }
+                }
+            },
+            scales: {
+                xAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        fontColor: chartMuted
+                    }
+                }],
+                yAxes: [{
+                    stacked: true,
+                    gridLines: {
+                        color: chartBorder
+                    },
+                    ticks: {
+                        beginAtZero: true,
+                        fontColor: chartMuted,
+                        callback: function(value) {
+                            return formatMoneyCompact(value);
+                        }
+                    }
+                }]
+            }
+        }
+    });
+</script>
+{% endblock scripts %}

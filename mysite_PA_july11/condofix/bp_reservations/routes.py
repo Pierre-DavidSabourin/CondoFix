@@ -9,6 +9,7 @@ from io import StringIO
 import unicodedata
 import csv
 from werkzeug.wrappers import Response
+import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -664,200 +665,355 @@ def reservation_affiche_admin():
 #     return render_template('reservation_ajout_admin.html',fill_ressources=fill_ressources, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
 
 #fonctions pour afficher page d'ajout de rez
-@bp_reservations.route("/reservation_affiche_proprio", methods=['GET','POST'])
+@bp_reservations.route("/reservation_affiche_proprio", methods=['GET', 'POST'])
 def reservation_affiche_proprio():
     """Afficher l'écran pour effectuer une réservation pour les copropriétaires.
-    Les champs sont remplis selon les paramètres fixés pour la ressource sélectionnée dans le calendrier de réservations."""
+
+    La ressource peut être présélectionnée depuis le calendrier, mais demeure
+    modifiable dans le formulaire.
+    """
+
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    client_ident=profile_list[0]
+
+    profile_list = session.get('ProfilUsager')
+
+    # Vérifier si le client a acheté le module réservations.
+    if profile_list[5] == 0:
+        return redirect(url_for('bp_admin.permission'))
+
+    client_ident = profile_list[0]
     mode = profile_list[8]
+
+    selected_resource_id = (
+        request.values.get('ress_select')
+        or request.values.get('ident_ress')
+        or ''
+    ).strip()
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
-    fill_ressource=[]
-    fill_modes_paiement=[]
-    ident_ress=request.form.get('ress_select')
-    desc_ressource=str()
-    cur.execute("SELECT Description FROM ressources WHERE IDRessource=%s AND IDClient=%s", (ident_ress,client_ident))
-    row = cur.fetchone()
-    if row == None:  # pas d'enregistrement trouvé: on retourne au calendrier de réservation
-        return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
-    else:
-        desc_ressource=row[0]
 
-    # pour remplir combo de mode de paiement
-    cur.execute("SELECT IDPaiement,Description FROM modepaiement WHERE IDClient=%s", (client_ident,))
+    fill_ressources = []
+    fill_modes_paiement = []
+
+    cur.execute("""
+        SELECT
+            IDRessource,
+            Description,
+            DureeMaxHres,
+            DelaiMinHres,
+            DelaiMaxJrs,
+            JoursConsecutifsPermis,
+            DateDebutNonDispo,
+            DureeNonDispoHres,
+            IntervalleRezHres,
+            HreDebutPermise,
+            HreFinPermise,
+            Facturable
+        FROM ressources
+        WHERE Actif = 1
+          AND IDClient = %s
+        ORDER BY Description
+    """, (client_ident,))
+
+    for item in cur.fetchall():
+        fill_ressources.append(item)
+
+    valid_resource_ids = {str(item[0]) for item in fill_ressources}
+
+    if selected_resource_id not in valid_resource_ids:
+        selected_resource_id = ''
+
+    cur.execute("""
+        SELECT IDPaiement, Description
+        FROM modepaiement
+        WHERE IDClient = %s
+        ORDER BY Description
+    """, (client_ident,))
+
     for item in cur.fetchall():
         fill_modes_paiement.append(item)
 
-    # pour afficher un message avant de permettre la réservation
-    message_affiche=0
-    message_rez=str()
-    cur.execute("SELECT AfficheMessageRez, MessageRez FROM parametres WHERE IDClient=%s", (client_ident,))
-    for item in cur.fetchall():
-        if item[0]==1:
-            message_affiche=1
-            message_rez=item[1]
+    message_affiche = 0
+    message_rez = ''
 
-    # pour remplir les champs de date, heure et durée (déclarer variables globales)
-    date_debut=datetime
-    delai=int()
-    hre_debut=datetime
-    rez_duree=float()
-    delai_min_hres=float()
-    delai_max_jrs=0
-    interv_rez_hres=float()
-    hre_debut_permise = datetime
-    # aller chercher la valeur des paramètres pour cette ressource
-    cur.execute("SELECT  DureeMaxHres, DelaiMinHres, HreDebutPermise, HreFinPermise, DelaiMaxJrs, IntervalleRezHres FROM ressources WHERE Actif=1 "
-                "AND IDRessource=%s AND IDClient=%s", (ident_ress, client_ident))
-    for item in cur.fetchall():
-        rez_duree=item[0]
-        delai_min_hres=item[1]
-        hre_debut_permise=item[2]
-        hre_fin_permise=item[3]
-        delai_max_jrs=item[4]
-        interv_rez_hres=item[5]
+    cur.execute("""
+        SELECT AfficheMessageRez, MessageRez
+        FROM parametres
+        WHERE IDClient = %s
+    """, (client_ident,))
 
-    # 1- Pour la prod, convertir l'heure du serveur PythonAnywhere à l'heure locale en type timezone aware
-    # donne aussi l'heure locale sur l'environnement dev
-    utc_time = datetime.utcnow()
-    tz = pytz.timezone('America/Montreal')
-    utc_time_1 =utc_time.replace(tzinfo=pytz.UTC) #replace method
-    local_time=utc_time_1.astimezone(tz)
-    dateheure=datetime.now()
-    # 2- Ajouter le délai min en h. à l’heure actuelle de la demande = heure_act_delai
-    heure_act_delai=local_time+timedelta(hours=delai_min_hres)
-    #return 'delai:'+str(delai_min_hres)+'dateheure avec delai:'+str(heure_act_delai)
+    row = cur.fetchone()
 
-    # 3- Vérifier si heure act_delai de demande >paramètre heure début permise.
-    # transformer hre_debut_permise dans paramètres en format datetime.time
-    # par ex. selon que l'heure de début permise (dans bd) se lit '8:00'  ou '18:00'
+    if row is not None:
+        message_affiche = int(row[0] or 0)
+        message_rez = row[1] or ''
 
-    if len(str(hre_debut_permise).split(':')[0])==1:
-        dateheure = datetime.strptime(str(hre_debut_permise),"%H:%M:%S")
-    if len(str(hre_debut_permise).split(':')[0])==2:
-        dateheure = datetime.strptime(str(hre_debut_permise),"%H:%M:%S")
-    #heure_debut=dateheure.time()
-    heure_debut = datetime.time(dateheure)
-    #print('Dateheure:',dateheure)
-    #print('heure début en datetime:', heure_debut)
+    form_data = {
+        "ress_select": selected_resource_id,
+        "no_unite": '',
+        "date_rez": '',
+        "heure_rez": '12:00',
+        "duree_rez": '',
+        "jrs_consecutifs": '1',
+        "note": '',
+        "courriel": '',
+        "mode_paiement": ''
+    }
 
-    if heure_act_delai.time()>heure_debut:
-        dateheure_act=heure_act_delai+timedelta(days=1)
-        dateheure_dem=datetime.strptime(str(dateheure_act.date())+' '+str(heure_debut),"%Y-%m-%d %H:%M:%S")
-    else:
-        dateheure_dem=datetime.strptime(str(heure_act_delai.date())+' '+str(heure_debut),"%Y-%m-%d %H:%M:%S")
+    if selected_resource_id:
+        selected_resource = next(
+            (item for item in fill_ressources if str(item[0]) == selected_resource_id),
+            None
+        )
 
-    # vérifier si conflit avec réservations actuelles (boucle):
-    # requête des enregistrements de réservation pour cette ressource avec date >= date demandée
-    liste_enreg=[]
-    cur.execute("SELECT IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite FROM reservations WHERE IDRessource=%s AND Date>=%s AND IDClient=%s",
-                (ident_ress, dateheure_dem.date(), client_ident))
-    for row in cur.fetchall():
-        date_1=row[2]
-        time_delta=row[3]
-        date=str(date_1)
-        time=str(time_delta)
-        enreg_time=datetime.strptime(date+' '+time,"%Y-%m-%d %H:%M:%S")
-        de= enreg_time
-        secondes_debut_enreg= float(de.timestamp())
-        plage=float(row[4]*3600)
-        secondes_fin_enreg=float(secondes_debut_enreg)+plage
-        enreg=(secondes_debut_enreg,secondes_fin_enreg)
-        liste_enreg.append(enreg)
+        if selected_resource is not None:
+            duree_max = selected_resource[2]
+            delai_min_hres = float(selected_resource[3] or 0)
+            heure_debut_permise = selected_resource[9]
+            heure_fin_permise = selected_resource[10]
 
-    # si liste est vide, on va directement à l'affichage de la page de nouvelle réservation
-    if len(liste_enreg)==0:
-        # prévoir date avec délai minimum
-        date_today=datetime.now().date()
-        date_debut=date_today+timedelta(days=round(delai_min_hres/24))
-        if message_affiche==0:
-            return render_template('reservation_ajout_proprio.html', id_ress=ident_ress, desc_ressource=desc_ressource,
-                               date=dateheure_dem.date(), heure=dateheure_dem.time(), duree=rez_duree, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
-        else:
-            return render_template('reservation_ajout_proprio_message.html', id_ress=ident_ress, desc_ressource=desc_ressource,
-                                   date=dateheure_dem.date(), heure=dateheure_dem.time(), duree=rez_duree,
-                                   fill_modes_paiement=fill_modes_paiement, message_rez=message_rez, bd=profile_list[3])
+            now_montreal = datetime.now(
+                pytz.timezone('America/Montreal')
+            ).replace(tzinfo=None)
 
-    # la liste contient des réservations: trier la liste des enregistrements à partir d'aujourd'hui
-    liste_enreg.sort( key=lambda tup: tup[0])
-    cnx.close()
-    compteur_jrs=0
-    conflit=False
+            suggested_start_base = now_montreal + timedelta(hours=delai_min_hres)
 
-    # heure de réservation selon les jours consécutifs débutant à 0
-    #rez_time = rez_time+timedelta(days=round(delai_min_hres/24,0))
-    # secondes depuis 1970-01-01
+            try:
+                allowed_start = _as_time(heure_debut_permise)
+                allowed_end = _as_time(heure_fin_permise)
+            except Exception:
+                allowed_start = time(12, 0)
+                allowed_end = time(0, 0)
 
-    # pour vérifier si l'intervalle entre les rez est respecté selon l'heure demandée:
-    # on retranche/ajoute l'intervalle exigé entre chaque réservation
-    # et on ajoute et on retranche des secondes pour éviter que les limites des heures se touchent (si interval=0)
-    secondes_rez_debut = dateheure_dem.timestamp()-(float(interv_rez_hres)*3600)+1
-    secondes_rez_fin = dateheure_dem.timestamp()+float(rez_duree*3600)+(float(interv_rez_hres)*3600)-2
-    nbr_enreg=len(liste_enreg)
-    # voir s'il y a chevauchement avec une réservation actuelle
-    while compteur_jrs<delai_max_jrs:
-        enreg_courant=0
-        for item in liste_enreg:
-            secondes_debut_enreg= item[0]
-            secondes_fin_enreg=item[1]
-            # ne pas traiter les enregistrements précédant la date rajustée avec compteurs jours
-            if secondes_rez_debut>secondes_fin_enreg:
-                enreg_courant+=1
-                if enreg_courant==nbr_enreg: # pas d'enregistrement applicable à la demande, on sort de la boucle et on affiche la page de nouvelle rez
-                    date_debut=dateheure_dem+timedelta(days=compteur_jrs)
-                    if message_affiche == 0:
-                        return render_template('reservation_ajout_proprio.html', id_ress=ident_ress, desc_ressource=desc_ressource, date=date_debut.date(),
-                                       heure=date_debut.time(), duree=rez_duree, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
-                    else:
-                        return render_template('reservation_ajout_proprio_message.html', id_ress=ident_ress,
-                                        desc_ressource=desc_ressource, date=date_debut.date(),
-                                        heure=date_debut.time(), duree=rez_duree,
-                                        fill_modes_paiement=fill_modes_paiement, message_rez=message_rez, bd=profile_list[3])
-
-                else:
-                    continue
-
-
-            # print('enreg:',secondes_debut_enreg, secondes_fin_enreg)
-            # print('enreg:',datetime.fromtimestamp(secondes_debut_enreg),datetime.fromtimestamp(secondes_fin_enreg))
-            # print('rez:',secondes_rez_debut, secondes_rez_fin)
-            # print('rez:',datetime.fromtimestamp(secondes_rez_debut),datetime.fromtimestamp(secondes_rez_fin))
-            # print('compteur:',compteur_jrs)
-
-            if secondes_rez_debut<=secondes_debut_enreg<=secondes_rez_fin:
-                conflit=True
-            elif secondes_debut_enreg<=secondes_rez_debut<=secondes_fin_enreg:
-                conflit=True
-
-            if conflit==True:
-                conflit=False
-                compteur_jrs+=1
-                # supprimer enregistrement de la liste pour éviter erreur de comparaison multiple
-
-                #liste_enreg.remove(item)
-                dr = dateheure_dem+timedelta(days=compteur_jrs)
-
-                # secondes depuis 1970-01-01
-                # pour vérifier si l'intervalle entre les rez est respecté selon l'heure demandée:
-                # on retranche/ajoute l'intervalle exigé entre chaque réservation
-                # et on ajoute et on retranche des secondes pour éviter que les limites des heures se touchent (si interval=0)
-                secondes_rez_debut = dr.timestamp()-(float(interv_rez_hres)*3600)+1
-                secondes_rez_fin=dr.timestamp()+float(rez_duree*3600)+(float(interv_rez_hres)*3600)-2
-                break
+            # Convention CondoFix:
+            # 00:00 à 00:00 = disponible 24 h/24.
+            if allowed_start == time(0, 0) and allowed_end == time(0, 0):
+                suggested_time = time(12, 0)
             else:
-                date_debut=dateheure_dem+timedelta(days=compteur_jrs)
-                if message_affiche == 0:
-                    return render_template('reservation_ajout_proprio.html', id_ress=ident_ress, desc_ressource=desc_ressource, date=date_debut.date(),
-                                       heure=date_debut.time(), duree=rez_duree, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
-                else:
-                    return render_template('reservation_ajout_proprio_message.html', id_ress=ident_ress,
-                                           desc_ressource=desc_ressource, date=date_debut.date(),
-                                           heure=date_debut.time(), duree=rez_duree,
-                                           fill_modes_paiement=fill_modes_paiement, message_rez=message_rez, bd=profile_list[3])
+                suggested_time = allowed_start
+
+            if suggested_start_base.time() > suggested_time:
+                suggested_start = datetime.combine(
+                    suggested_start_base.date() + timedelta(days=1),
+                    suggested_time
+                )
+            else:
+                suggested_start = datetime.combine(
+                    suggested_start_base.date(),
+                    suggested_time
+                )
+
+            form_data["date_rez"] = suggested_start.strftime("%Y-%m-%d")
+            form_data["heure_rez"] = suggested_start.strftime("%H:%M")
+            form_data["duree_rez"] = str(duree_max or '')
+
+    cnx.close()
+
+    return render_template(
+        'reservation_ajout_proprio.html',
+        fill_ressources=fill_ressources,
+        fill_modes_paiement=fill_modes_paiement,
+        form_data=form_data,
+        message_affiche=message_affiche,
+        message_rez=message_rez,
+        bd=profile_list[3]
+    )
+# @bp_reservations.route("/reservation_affiche_proprio", methods=['GET','POST'])
+# def reservation_affiche_proprio():
+#     """Afficher l'écran pour effectuer une réservation pour les copropriétaires.
+#     Les champs sont remplis selon les paramètres fixés pour la ressource sélectionnée dans le calendrier de réservations."""
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#     fill_ressource=[]
+#     fill_modes_paiement=[]
+#     ident_ress=request.form.get('ress_select')
+#     desc_ressource=str()
+#     cur.execute("SELECT Description FROM ressources WHERE IDRessource=%s AND IDClient=%s", (ident_ress,client_ident))
+#     row = cur.fetchone()
+#     if row == None:  # pas d'enregistrement trouvé: on retourne au calendrier de réservation
+#         return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
+#     else:
+#         desc_ressource=row[0]
+#
+#     # pour remplir combo de mode de paiement
+#     cur.execute("SELECT IDPaiement,Description FROM modepaiement WHERE IDClient=%s", (client_ident,))
+#     for item in cur.fetchall():
+#         fill_modes_paiement.append(item)
+#
+#     # pour afficher un message avant de permettre la réservation
+#     message_affiche=0
+#     message_rez=str()
+#     cur.execute("SELECT AfficheMessageRez, MessageRez FROM parametres WHERE IDClient=%s", (client_ident,))
+#     for item in cur.fetchall():
+#         if item[0]==1:
+#             message_affiche=1
+#             message_rez=item[1]
+#
+#     # pour remplir les champs de date, heure et durée (déclarer variables globales)
+#     date_debut=datetime
+#     delai=int()
+#     hre_debut=datetime
+#     rez_duree=float()
+#     delai_min_hres=float()
+#     delai_max_jrs=0
+#     interv_rez_hres=float()
+#     hre_debut_permise = datetime
+#     # aller chercher la valeur des paramètres pour cette ressource
+#     cur.execute("SELECT  DureeMaxHres, DelaiMinHres, HreDebutPermise, HreFinPermise, DelaiMaxJrs, IntervalleRezHres FROM ressources WHERE Actif=1 "
+#                 "AND IDRessource=%s AND IDClient=%s", (ident_ress, client_ident))
+#     for item in cur.fetchall():
+#         rez_duree=item[0]
+#         delai_min_hres=item[1]
+#         hre_debut_permise=item[2]
+#         hre_fin_permise=item[3]
+#         delai_max_jrs=item[4]
+#         interv_rez_hres=item[5]
+#
+#     # 1- Pour la prod, convertir l'heure du serveur PythonAnywhere à l'heure locale en type timezone aware
+#     # donne aussi l'heure locale sur l'environnement dev
+#     utc_time = datetime.utcnow()
+#     tz = pytz.timezone('America/Montreal')
+#     utc_time_1 =utc_time.replace(tzinfo=pytz.UTC) #replace method
+#     local_time=utc_time_1.astimezone(tz)
+#     dateheure=datetime.now()
+#     # 2- Ajouter le délai min en h. à l’heure actuelle de la demande = heure_act_delai
+#     heure_act_delai=local_time+timedelta(hours=delai_min_hres)
+#     #return 'delai:'+str(delai_min_hres)+'dateheure avec delai:'+str(heure_act_delai)
+#
+#     # 3- Vérifier si heure act_delai de demande >paramètre heure début permise.
+#     # transformer hre_debut_permise dans paramètres en format datetime.time
+#     # par ex. selon que l'heure de début permise (dans bd) se lit '8:00'  ou '18:00'
+#
+#     if len(str(hre_debut_permise).split(':')[0])==1:
+#         dateheure = datetime.strptime(str(hre_debut_permise),"%H:%M:%S")
+#     if len(str(hre_debut_permise).split(':')[0])==2:
+#         dateheure = datetime.strptime(str(hre_debut_permise),"%H:%M:%S")
+#     #heure_debut=dateheure.time()
+#     heure_debut = datetime.time(dateheure)
+#     #print('Dateheure:',dateheure)
+#     #print('heure début en datetime:', heure_debut)
+#
+#     if heure_act_delai.time()>heure_debut:
+#         dateheure_act=heure_act_delai+timedelta(days=1)
+#         dateheure_dem=datetime.strptime(str(dateheure_act.date())+' '+str(heure_debut),"%Y-%m-%d %H:%M:%S")
+#     else:
+#         dateheure_dem=datetime.strptime(str(heure_act_delai.date())+' '+str(heure_debut),"%Y-%m-%d %H:%M:%S")
+#
+#     # vérifier si conflit avec réservations actuelles (boucle):
+#     # requête des enregistrements de réservation pour cette ressource avec date >= date demandée
+#     liste_enreg=[]
+#     cur.execute("SELECT IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite FROM reservations WHERE IDRessource=%s AND Date>=%s AND IDClient=%s",
+#                 (ident_ress, dateheure_dem.date(), client_ident))
+#     for row in cur.fetchall():
+#         date_1=row[2]
+#         time_delta=row[3]
+#         date=str(date_1)
+#         time=str(time_delta)
+#         enreg_time=datetime.strptime(date+' '+time,"%Y-%m-%d %H:%M:%S")
+#         de= enreg_time
+#         secondes_debut_enreg= float(de.timestamp())
+#         plage=float(row[4]*3600)
+#         secondes_fin_enreg=float(secondes_debut_enreg)+plage
+#         enreg=(secondes_debut_enreg,secondes_fin_enreg)
+#         liste_enreg.append(enreg)
+#
+#     # si liste est vide, on va directement à l'affichage de la page de nouvelle réservation
+#     if len(liste_enreg)==0:
+#         # prévoir date avec délai minimum
+#         date_today=datetime.now().date()
+#         date_debut=date_today+timedelta(days=round(delai_min_hres/24))
+#         if message_affiche==0:
+#             return render_template('reservation_ajout_proprio.html', id_ress=ident_ress, desc_ressource=desc_ressource,
+#                                date=dateheure_dem.date(), heure=dateheure_dem.time(), duree=rez_duree, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
+#         else:
+#             return render_template('reservation_ajout_proprio_message.html', id_ress=ident_ress, desc_ressource=desc_ressource,
+#                                    date=dateheure_dem.date(), heure=dateheure_dem.time(), duree=rez_duree,
+#                                    fill_modes_paiement=fill_modes_paiement, message_rez=message_rez, bd=profile_list[3])
+#
+#     # la liste contient des réservations: trier la liste des enregistrements à partir d'aujourd'hui
+#     liste_enreg.sort( key=lambda tup: tup[0])
+#     cnx.close()
+#     compteur_jrs=0
+#     conflit=False
+#
+#     # heure de réservation selon les jours consécutifs débutant à 0
+#     #rez_time = rez_time+timedelta(days=round(delai_min_hres/24,0))
+#     # secondes depuis 1970-01-01
+#
+#     # pour vérifier si l'intervalle entre les rez est respecté selon l'heure demandée:
+#     # on retranche/ajoute l'intervalle exigé entre chaque réservation
+#     # et on ajoute et on retranche des secondes pour éviter que les limites des heures se touchent (si interval=0)
+#     secondes_rez_debut = dateheure_dem.timestamp()-(float(interv_rez_hres)*3600)+1
+#     secondes_rez_fin = dateheure_dem.timestamp()+float(rez_duree*3600)+(float(interv_rez_hres)*3600)-2
+#     nbr_enreg=len(liste_enreg)
+#     # voir s'il y a chevauchement avec une réservation actuelle
+#     while compteur_jrs<delai_max_jrs:
+#         enreg_courant=0
+#         for item in liste_enreg:
+#             secondes_debut_enreg= item[0]
+#             secondes_fin_enreg=item[1]
+#             # ne pas traiter les enregistrements précédant la date rajustée avec compteurs jours
+#             if secondes_rez_debut>secondes_fin_enreg:
+#                 enreg_courant+=1
+#                 if enreg_courant==nbr_enreg: # pas d'enregistrement applicable à la demande, on sort de la boucle et on affiche la page de nouvelle rez
+#                     date_debut=dateheure_dem+timedelta(days=compteur_jrs)
+#                     if message_affiche == 0:
+#                         return render_template('reservation_ajout_proprio.html', id_ress=ident_ress, desc_ressource=desc_ressource, date=date_debut.date(),
+#                                        heure=date_debut.time(), duree=rez_duree, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
+#                     else:
+#                         return render_template('reservation_ajout_proprio_message.html', id_ress=ident_ress,
+#                                         desc_ressource=desc_ressource, date=date_debut.date(),
+#                                         heure=date_debut.time(), duree=rez_duree,
+#                                         fill_modes_paiement=fill_modes_paiement, message_rez=message_rez, bd=profile_list[3])
+#
+#                 else:
+#                     continue
+#
+#
+#             # print('enreg:',secondes_debut_enreg, secondes_fin_enreg)
+#             # print('enreg:',datetime.fromtimestamp(secondes_debut_enreg),datetime.fromtimestamp(secondes_fin_enreg))
+#             # print('rez:',secondes_rez_debut, secondes_rez_fin)
+#             # print('rez:',datetime.fromtimestamp(secondes_rez_debut),datetime.fromtimestamp(secondes_rez_fin))
+#             # print('compteur:',compteur_jrs)
+#
+#             if secondes_rez_debut<=secondes_debut_enreg<=secondes_rez_fin:
+#                 conflit=True
+#             elif secondes_debut_enreg<=secondes_rez_debut<=secondes_fin_enreg:
+#                 conflit=True
+#
+#             if conflit==True:
+#                 conflit=False
+#                 compteur_jrs+=1
+#                 # supprimer enregistrement de la liste pour éviter erreur de comparaison multiple
+#
+#                 #liste_enreg.remove(item)
+#                 dr = dateheure_dem+timedelta(days=compteur_jrs)
+#
+#                 # secondes depuis 1970-01-01
+#                 # pour vérifier si l'intervalle entre les rez est respecté selon l'heure demandée:
+#                 # on retranche/ajoute l'intervalle exigé entre chaque réservation
+#                 # et on ajoute et on retranche des secondes pour éviter que les limites des heures se touchent (si interval=0)
+#                 secondes_rez_debut = dr.timestamp()-(float(interv_rez_hres)*3600)+1
+#                 secondes_rez_fin=dr.timestamp()+float(rez_duree*3600)+(float(interv_rez_hres)*3600)-2
+#                 break
+#             else:
+#                 date_debut=dateheure_dem+timedelta(days=compteur_jrs)
+#                 if message_affiche == 0:
+#                     return render_template('reservation_ajout_proprio.html', id_ress=ident_ress, desc_ressource=desc_ressource, date=date_debut.date(),
+#                                        heure=date_debut.time(), duree=rez_duree, fill_modes_paiement=fill_modes_paiement, bd=profile_list[3])
+#                 else:
+#                     return render_template('reservation_ajout_proprio_message.html', id_ress=ident_ress,
+#                                            desc_ressource=desc_ressource, date=date_debut.date(),
+#                                            heure=date_debut.time(), duree=rez_duree,
+#                                            fill_modes_paiement=fill_modes_paiement, message_rez=message_rez, bd=profile_list[3])
 
         # fin de la boucle WHILE compteur
 
@@ -1645,545 +1801,1210 @@ def reservation_ajout_admin():
 #     return redirect(url_for('bp_reservations.reservations_table'))
 
 #fonctions pour ajouter une réservations
-# fonctions pour ajouter une réservation
 @bp_reservations.route("/reservation_ajout_proprio", methods=['POST'])
 def reservation_ajout_proprio():
-    """Ajout d'une réservation à la table de la bd par les copropriétaires. Si la réservation est facturable, un courriel
-     est expédié aux destinataires spécifiés dans les paramètres. Les réglages effectués par l'admin
-     dans la table des ressources appliquent des restrictions sur l'acceptation d'une réservation et
-     un message d'avertissement est affiché (flash message) dans la page reservation_ajout_proprio_mess expliquant la limitation."""
+    """Ajout d'une réservation à la table reservations par les copropriétaires.
+
+    La validation applique les mêmes contraintes métier que le formulaire admin:
+    - ressource active du client;
+    - unité positive;
+    - date/heure/durée valides;
+    - durée en blocs de 30 minutes;
+    - limites de durée, délai minimal, délai maximal, jours consécutifs;
+    - plage horaire permise;
+    - période temporaire de non-disponibilité;
+    - conflit avec réservations existantes, incluant l'intervalle obligatoire;
+    - courriel et mode de paiement obligatoires pour les ressources facturables.
+    """
 
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
 
     profile_list = session.get('ProfilUsager')
+
+    # Vérifier si le client a acheté le module réservations.
+    if profile_list[5] == 0:
+        return redirect(url_for('bp_admin.permission'))
+
     client_ident = profile_list[0]
     mode = profile_list[8]
+
+    # ---------------------------------------------------------------------
+    # Helpers locaux
+    # ---------------------------------------------------------------------
+
+    def parse_positive_integer(value):
+        value = str(value or '').strip()
+
+        if value.isdigit() and int(value) > 0:
+            return int(value)
+
+        return None
+
+    def parse_float(value):
+        try:
+            return float(str(value or '').strip().replace(',', '.'))
+        except (TypeError, ValueError):
+            return None
+
+    def parse_date(value):
+        try:
+            return datetime.strptime(str(value or '').strip(), "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+    def parse_time(value):
+        value = str(value or '').strip()
+
+        for fmt in ("%H:%M", "%H:%M:%S"):
+            try:
+                return datetime.strptime(value, fmt).time()
+            except ValueError:
+                pass
+
+        return None
+
+    def db_date_to_date(value):
+        if isinstance(value, datetime):
+            return value.date()
+
+        if isinstance(value, date):
+            return value
+
+        return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+
+    def db_time_to_time(value):
+        if value in (None, '', 'None'):
+            return None
+
+        if isinstance(value, timedelta):
+            return (datetime.min + value).time()
+
+        if isinstance(value, time):
+            return value
+
+        value_as_text = str(value or '').strip()
+
+        for fmt in ("%H:%M:%S", "%H:%M"):
+            try:
+                return datetime.strptime(value_as_text[:8], fmt).time()
+            except ValueError:
+                pass
+
+        return None
+
+    def hours_to_minutes(value):
+        return int(round(float(value or 0) * 60))
+
+    def is_half_hour_increment(value):
+        return value is not None and round(value * 2, 8).is_integer()
+
+    def is_midnight(value):
+        return (
+            value is not None
+            and value.hour == 0
+            and value.minute == 0
+            and value.second == 0
+        )
+
+    def windows_overlap(start_a, end_a, start_b, end_b):
+        return start_a < end_b and end_a > start_b
+
+    def load_form_lists(cur):
+        fill_ressources = []
+        fill_modes_paiement = []
+
+        cur.execute("""
+            SELECT
+                IDRessource,
+                Description,
+                DureeMaxHres,
+                DelaiMinHres,
+                DelaiMaxJrs,
+                JoursConsecutifsPermis,
+                DateDebutNonDispo,
+                DureeNonDispoHres,
+                IntervalleRezHres,
+                HreDebutPermise,
+                HreFinPermise,
+                Facturable
+            FROM ressources
+            WHERE Actif = 1
+              AND IDClient = %s
+            ORDER BY Description
+        """, (client_ident,))
+
+        for item in cur.fetchall():
+            fill_ressources.append(item)
+
+        cur.execute("""
+            SELECT IDPaiement, Description
+            FROM modepaiement
+            WHERE IDClient = %s
+            ORDER BY Description
+        """, (client_ident,))
+
+        for item in cur.fetchall():
+            fill_modes_paiement.append(item)
+
+        return fill_ressources, fill_modes_paiement
+
+    def load_reservation_message(cur):
+        message_affiche = 0
+        message_rez = ''
+
+        cur.execute("""
+            SELECT AfficheMessageRez, MessageRez
+            FROM parametres
+            WHERE IDClient = %s
+        """, (client_ident,))
+
+        row = cur.fetchone()
+
+        if row is not None:
+            message_affiche = int(row[0] or 0)
+            message_rez = row[1] or ''
+
+        return message_affiche, message_rez
+
+    def flash_and_return(errors, cur, cnx_to_close=None):
+        form_data = {
+            "ress_select": ress_select_raw,
+            "no_unite": no_unite_raw,
+            "date_rez": date_rez_raw,
+            "heure_rez": heure_rez_raw,
+            "duree_rez": duree_rez_raw,
+            "jrs_consecutifs": jrs_consecutifs_raw,
+            "note": note,
+            "courriel": courriel,
+            "mode_paiement": mode_paiement_raw
+        }
+
+        fill_ressources, fill_modes_paiement = load_form_lists(cur)
+        message_affiche, message_rez = load_reservation_message(cur)
+
+        if cnx_to_close is not None:
+            cnx_to_close.close()
+
+        flash(Markup("<br>".join(errors)), "warning")
+
+        return render_template(
+            'reservation_ajout_proprio.html',
+            fill_ressources=fill_ressources,
+            fill_modes_paiement=fill_modes_paiement,
+            form_data=form_data,
+            message_affiche=message_affiche,
+            message_rez=message_rez,
+            bd=profile_list[3]
+        )
+
+    # ---------------------------------------------------------------------
+    # Lecture du formulaire
+    # ---------------------------------------------------------------------
+
+    errors = []
+
+    ress_select_raw = (
+        request.form.get('ress_select')
+        or request.form.get('ident_ress')
+        or ''
+    ).strip()
+
+    no_unite_raw = request.form.get('no_unite', '').strip()
+    date_rez_raw = request.form.get('date_rez', '').strip()
+    heure_rez_raw = request.form.get('heure_rez', '').strip()
+    duree_rez_raw = request.form.get('duree_rez', '').strip()
+    jrs_consecutifs_raw = request.form.get('jrs_consecutifs', '').strip()
+    note = request.form.get('note', '').strip()
+    courriel = request.form.get('courriel', '').strip()
+    mode_paiement_raw = request.form.get('mode_paiement', '').strip()
+
+    resource_id = parse_positive_integer(ress_select_raw)
+    no_unite = parse_positive_integer(no_unite_raw)
+    date_rez_obj = parse_date(date_rez_raw)
+    heure_rez_obj = parse_time(heure_rez_raw)
+    duree_rez = parse_float(duree_rez_raw)
+    jrs_consecutifs = parse_positive_integer(jrs_consecutifs_raw)
+
+    if resource_id is None:
+        errors.append("Veuillez sélectionner une ressource valide.")
+
+    if no_unite is None:
+        errors.append("Le numéro d'unité doit être un nombre entier positif.")
+
+    if date_rez_obj is None:
+        errors.append("La date de réservation est invalide.")
+
+    if heure_rez_obj is None:
+        errors.append("L'heure de début est invalide.")
+
+    if duree_rez is None or duree_rez <= 0:
+        errors.append("La durée doit être supérieure à 0.")
+    elif not is_half_hour_increment(duree_rez):
+        errors.append("La durée doit être saisie en blocs de 30 minutes : 0.5, 1, 1.5, 2, etc.")
+
+    if jrs_consecutifs is None:
+        errors.append("Les jours consécutifs doivent être un nombre entier positif.")
+
+    if len(note) > 200:
+        errors.append("La note ne peut pas dépasser 200 caractères.")
 
     cnx = connect_db(mode)
     cur = cnx.cursor()
 
-    # assembler les deux valeurs date et heure selon le bon format 'datetime'
-    date_rez = request.form['date_rez']
-    time_rez = request.form['heure_rez']
-    rez_time = datetime(
-        int(date_rez[0:4]),
-        int(date_rez[5:7]),
-        int(date_rez[8:10]),
-        int(time_rez[0:2]),
-        int(time_rez[3:5])
-    )
+    # ---------------------------------------------------------------------
+    # Lecture de la ressource sélectionnée
+    # ---------------------------------------------------------------------
 
-    # convertir du type timezone naive à timezone aware pour calcul du delta
-    rez_time_modif = rez_time.astimezone()
-
-    # pour respecter l'heure locale: le serveur PythonAnywhere est à Londres (heure utc)
-
-    # convertir l'heure du serveur PythonAnywhere à l'heure locale en type timezone aware
-    utc_time = datetime.utcnow()
-    # tz = pytz.timezone('America/Montreal')
-    tz = pytz.timezone('Europe/London')
-    utc_time_1 = utc_time.replace(tzinfo=pytz.UTC)  # replace method
-    # local_time = utc_time_1.astimezone(tz)
-    # local_time = utc_time.astimezone(tz)
-    utcnow = timezone('utc').localize(datetime.utcnow())  # generic time
-    local_time = utcnow.astimezone(timezone('America/Montreal'))
-
-    utcnow = timezone('utc').localize(datetime.utcnow())  # generic time
-    here = utcnow.astimezone(timezone('America/Montreal')).replace(tzinfo=None)
-    there = utcnow.astimezone(timezone('utc')).replace(tzinfo=None)
-    offset = relativedelta(there, here)
-    time_diff_serv_pa = offset.hours
-    # print(offset, time_diff_serv_pa)
-
-    delta = rez_time_modif - local_time
-    # délai de rez en heures avec 1 décimale
-    delai_rez_hres = round(delta.total_seconds() / 3600, 3) + round(time_diff_serv_pa, 3)
-
-    # print('time diff pa:', time_diff_serv_pa)
-    # print('délai rez hres:', delai_rez_hres)
-
-    # définition des variables pour qu'elles ne soient pas hors contexte
-    desc_ress = str()
+    desc_ress = ''
     facturable = 0
     duree_max = 0
-    delai_min_h = 0
-    delai_max_j = 0
-    date_debut_non_dispo = str()
-    duree_non_dispo = 0
+    delai_min_hres = 0
+    delai_max_jrs = 0
+    date_debut_non_dispo = None
+    duree_non_dispo_hres = 0
     jrs_consecutifs_permis = 0
-    interv_rez_hres = 0
-    hre_debut_permise = str()
-    hre_fin_permise = str()
+    intervalle_rez_hres = 0
+    hre_debut_permise = None
+    hre_fin_permise = None
 
-    # obtenir tous les paramètres pour cette ressource
-    cur.execute(
-        "SELECT Description, Facturable, DureeMaxHres, DelaiMinHres, DelaiMaxJrs, "
-        "DateDebutNonDispo, DureeNonDispoHres, JoursConsecutifsPermis, IntervalleRezHres, "
-        "HreDebutPermise, HreFinPermise "
-        "FROM ressources "
-        "WHERE IDRessource=%s AND IDClient=%s",
-        (request.form['ident_ress'], client_ident)
-    )
-    for item in cur.fetchall():
-        desc_ress = item[0]
-        facturable = item[1]
-        duree_max = float(item[2])
-        delai_min_h = float(item[3])
-        delai_max_j = float(item[4])
-        date_debut_non_dispo = str(item[5])
-        duree_non_dispo = item[6]
-        jrs_consecutifs_permis = float(item[7])
-        interv_rez_hres = item[8]
-        hre_debut_permise = item[9]
-        hre_fin_permise = item[10]
+    if resource_id is not None:
+        cur.execute("""
+            SELECT
+                Description,
+                Facturable,
+                DureeMaxHres,
+                DelaiMinHres,
+                DelaiMaxJrs,
+                DateDebutNonDispo,
+                DureeNonDispoHres,
+                JoursConsecutifsPermis,
+                IntervalleRezHres,
+                HreDebutPermise,
+                HreFinPermise
+            FROM ressources
+            WHERE IDRessource = %s
+              AND IDClient = %s
+              AND Actif = 1
+        """, (resource_id, client_ident))
 
-    # pour afficher les messages d'avertissement où l'usager a dépassé un paramètre
-    # on affiche une page spéciale identique à 'nouvelle réservation' en utilisant le contenu des champs actuels dans une liste
-    liste_rez = [
-        request.form['ident_ress'],
-        desc_ress,
-        request.form['date_rez'],
-        request.form['heure_rez'],
-        request.form['duree_rez'],
-        request.form['jrs_consecutifs'],
-        request.form['no_unite'],
-        request.form['courriel'],
-        request.form['mode_paiement'],
-        request.form['note']
-    ]
+        ressource = cur.fetchone()
 
-    avertissement = False  # permet d'envoyer l'usager à la page d'avertissement
-    message = str()        # on accumule le texte des messages pour l'utiliser à la fin du processus de vérif
+        if ressource is None:
+            errors.append("La ressource sélectionnée est invalide ou inactive.")
+        else:
+            desc_ress = ressource[0]
+            facturable = int(parse_float(ressource[1]) or 0)
+            duree_max = parse_float(ressource[2]) or 0
+            delai_min_hres = parse_float(ressource[3]) or 0
+            delai_max_jrs = parse_float(ressource[4]) or 0
+            date_debut_non_dispo = ressource[5]
+            duree_non_dispo_hres = parse_float(ressource[6]) or 0
+            jrs_consecutifs_permis = int(parse_float(ressource[7]) or 0)
+            intervalle_rez_hres = parse_float(ressource[8]) or 0
+            hre_debut_permise = db_time_to_time(ressource[9])
+            hre_fin_permise = db_time_to_time(ressource[10])
 
-    fill_modes_paiement = []
-    # modes de paiement à retenir pour page ayant messages d'avertissement
-    cur.execute(
-        "SELECT IDPaiement, Description FROM modepaiement WHERE IDClient=%s",
-        (client_ident,)
-    )
-    for item in cur.fetchall():
-        fill_modes_paiement.append(item)
+    # ---------------------------------------------------------------------
+    # Validation du mode de paiement
+    # ---------------------------------------------------------------------
 
-    # pour s'assurer que l'usager saisisse son courriel et le mode de paiement (rez facturable)
-    if facturable == 1:
-        if request.form['courriel'] == '':
-            avertissement = True
-            message = Markup(
-                "<b>Vous devez saisir votre courriel pour réserver une ressource facturable.</b><br>"
-            )
-
-        if request.form['mode_paiement'] == '':
-            avertissement = True
-            message = message + Markup(
-                "<b>Vous devez saisir un mode de paiement pour réserver une ressource facturable.</b><br>"
-            )
-
-    # validation de base sur la durée et les jours consécutifs
-    try:
-        rez_duree = float(request.form['duree_rez'])
-        jrs_consecutifs = float(request.form['jrs_consecutifs'])
-    except (TypeError, ValueError):
-        avertissement = True
-        message = message + Markup(
-            "<b>La durée et le nombre de jours consécutifs doivent être des nombres valides.</b><br>"
-        )
-        flash(
-            message + Markup("Veuillez modifier les champs visés afin de compléter cette réservation."),
-            'warning'
-        )
-        return render_template(
-            'reservation_ajout_proprio_mess.html',
-            fill_rez=liste_rez,
-            fill_modes=fill_modes_paiement
-        )
-
-    if rez_duree <= 0:
-        avertissement = True
-        message = message + Markup(
-            "<b>La durée doit être supérieure à 0.</b><br>"
-        )
-
-    if jrs_consecutifs <= 0:
-        avertissement = True
-        message = message + Markup(
-            "<b>Le nombre de jours consécutifs doit être supérieur à 0.</b><br>"
-        )
-
-    # séquence de vérification pour accepter la réservation (rejet de la demande aussitôt qu'un critère n'est pas conforme):
-    # a) peu importe le nombre de jours consécutifs demandés:
-    # - voir si le nombre de jours consécutifs demandé dépasse le maximum permis
-    # - vérifier si durée demandée est au-delà du maximum
-    # - vérifier si le délai minimal est respecté (date de la première rez de la série consécutive)
-    # - vérifier si le délai maximal est respecté (date de la dernière rez de la série consécutive)
-    # - vérifier si l'heure demandée tombe entre l'heure début et de fin permise
-    # - vérifier si la ressource est temporairement indisponible (date début + durée non dispo)
-    #
-    # b) pour toute réservation :
-    # - vérifier si l'intervalle entre les rez est respecté selon l'heure demandée
-    # - voir s'il y a chevauchement avec une réservation actuelle
-
-    # a) peu importe le nombre de jours consécutifs demandés:
-    # 1- voir si le nombre de jours consécutifs demandé dépasse le maximum permis
-    if jrs_consecutifs > jrs_consecutifs_permis:
-        avertissement = True
-        message = message + Markup(
-            "<b>Le nombre de jours consécutifs demandés excède celui fixé par le syndicat pour cette ressource soit de "
-            + str(jrs_consecutifs_permis) + " jours.</b><br>"
-        )
-
-    # 2- vérifier si durée demandée est au-delà du maximum
-    if rez_duree > duree_max:
-        avertissement = True
-        message = message + Markup(
-            "<b>La durée demandée excède celle fixée par le syndicat pour cette ressource soit de "
-            + str(duree_max) + " heures.</b><br>"
-        )
-
-    # 3- vérifier si délai minimal en heures est respecté
-    if delai_rez_hres < delai_min_h:
-        avertissement = True
-        message = message + Markup(
-            "<b>La réservation demandée n'est pas conforme au délai minimal fixé par le syndicat pour cette ressource soit de "
-            + str(float(delai_min_h)) + " heures.</b><br>"
-        )
-
-    # 4- vérifier si délai maximal en jours est respecté
-    delai_rez_avec_jrs_consec = delai_rez_hres / 24 + jrs_consecutifs - 1
-    if delai_rez_avec_jrs_consec > delai_max_j:
-        avertissement = True
-        message = message + Markup(
-            "<b>Le délai maximal pour la demande de réservation est plus long que celui fixé par le syndicat pour cette ressource soit de "
-            + str(float(delai_max_j)) + " jours.</b><br>"
-        )
-
-    # 5- vérifier si l'heure demandée tombe entre l'heure début et de fin permise
-    # convertir heure de rez en datetime.datetime
-
-    # print('heure brut:', request.form['heure_rez'])
-    heure_brut = str(request.form['heure_rez'])
-    heure_net = heure_brut[0:5]
-    # print('heure net:', heure_net)
-    hre_rez_datetime = datetime.strptime(heure_net, '%H:%M')
-
-    # vérifier si critère exigé pour cette ressource:
-    if hre_debut_permise is not None:
-        if hre_debut_permise != timedelta(seconds=0):  # ='0:00:00' si remis à zéro par usager
-            hre_debut_modif = hre_debut_permise
-            # convertir heures permises de datetime.timedelta en str puis en datetime.datetime
-            hre_debut_str = str(hre_debut_modif)
-            hre_debut_datetime = datetime.strptime(hre_debut_str, '%H:%M:%S')
-            if hre_rez_datetime < hre_debut_datetime:
-                avertissement = True
-                message = message + Markup(
-                    "<b>L'heure de début demandée est plus tôt que celle fixée par le syndicat pour cette ressource soit "
-                    + str(hre_debut_permise) + ".</b><br>"
-                )
-
-    if hre_fin_permise is not None:
-        if hre_fin_permise != timedelta(seconds=0):
-            # enlever la durée de la rez de l'heure de fin permise
-            min_duree = rez_duree * 60
-            duree = timedelta(minutes=min_duree)
-            hre_fin_modif = hre_fin_permise - duree
-
-            # si la durée demandée ne rentre pas dans la fenêtre permise,
-            # on affiche un avertissement au lieu de planter
-            if hre_fin_modif.total_seconds() <= 0:
-                avertissement = True
-                message = message + Markup(
-                    "<b>La combinaison de l'heure de début et de la durée demandée dépasse l'heure de fin permise pour cette ressource soit "
-                    + str(hre_fin_permise) + ".</b><br>"
-                )
-            else:
-                # convertir le timedelta positif en heure comparable à hre_rez_datetime
-                total_seconds = int(hre_fin_modif.total_seconds())
-                heures = total_seconds // 3600
-                minutes = (total_seconds % 3600) // 60
-                secondes = total_seconds % 60
-
-                # même base de date implicite que hre_rez_datetime (1900-01-01)
-                hre_fin_datetime = datetime(1900, 1, 1, heures, minutes, secondes)
-
-                if hre_rez_datetime > hre_fin_datetime:
-                    avertissement = True
-                    message = message + Markup(
-                        "<b>L'heure de fin demandée (heure plus durée) tombe plus tard que celle fixée par le syndicat pour cette ressource soit "
-                        + str(hre_fin_permise) + ".</b><br>"
-                    )
-
-    # 6- vérifier si la ressource est temporairement indisponible (date début + durée non dispo)
-    # vérifier si ces critères sont exigés pour cette ressource:
-    if date_debut_non_dispo != '':
-        if duree_non_dispo is not None or duree_non_dispo != '':
-            # heure de réservation selon les jours consécutifs débutant à 0
-            # secondes depuis 1970-01-01
-            # période de réservation demandée
-            # on ajoute et on retranche des secondes à la réservation pour éviter que les limites des heures se touchent
-            secondes_rez_debut = rez_time.timestamp() + 1
-            # on ajoute la durée et les jours consécutifs (ajout de 0 jrs si jrs consécutifs=1)
-            secondes_rez_fin = (
-                secondes_rez_debut
-                + float(rez_duree * 3600)
-                + ((jrs_consecutifs - 1) * 24 * 3600)
-                - 2
-            )
-
-            print('Date non dispo:', date_debut_non_dispo)
-            datetime_non_dispo = datetime(
-                int(date_debut_non_dispo[0:4]),
-                int(date_debut_non_dispo[5:7]),
-                int(date_debut_non_dispo[8:10])
-            )
-
-            secondes_nondispo_debut = datetime_non_dispo.timestamp()
-            secondes_nondispo_fin = secondes_nondispo_debut + float(duree_non_dispo * 3600)
-
-            # voir s'il y a chevauchement
-            if secondes_rez_debut <= secondes_nondispo_debut <= secondes_rez_fin:
-                avertissement = True
-                message = message + Markup(
-                    "<b>Cette ressource n'est pas disponible à partir du "
-                    + str(date_debut_non_dispo)
-                    + " pour "
-                    + str(duree_non_dispo)
-                    + " heures..</b><br>"
-                )
-
-            elif secondes_nondispo_debut <= secondes_rez_debut <= secondes_nondispo_fin:
-                avertissement = True
-                message = message + Markup(
-                    "<b>Cette ressource n'est pas disponible à partir du "
-                    + str(date_debut_non_dispo)
-                    + " pour "
-                    + str(duree_non_dispo)
-                    + " heures.</b><br>"
-                )
-
-    # si le système a trouvé un conflit avec les paramètres, on affiche le ou les messages cumulés:
-    if avertissement is True:
-        message = message + Markup("Veuillez modifier les champs visés afin de compléter cette réservation.")
-        flash(message, 'warning')
-        return render_template(
-            'reservation_ajout_proprio_mess.html',
-            fill_rez=liste_rez,
-            fill_modes=fill_modes_paiement
-        )
+    if mode_paiement_raw == '':
+        mode_de_paiement = 0
     else:
-        print(avertissement)
+        mode_de_paiement = parse_positive_integer(mode_paiement_raw)
 
-    # 7- vérification du chevauchement avec réservations existantes:
-    # on sauvegarde les réservations à venir dans une liste
-    # requête des enregistrements de réservation pour cette ressource avec date >= date demandée
-    liste_enreg = []
-    cur.execute(
-        "SELECT IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite "
-        "FROM reservations "
-        "WHERE IDRessource=%s AND Date>=%s AND IDClient=%s",
-        (request.form['ident_ress'], datetime.now(), client_ident)
-    )
-    for row in cur.fetchall():
-        liste_enreg.append(row)
+        if mode_de_paiement is None:
+            errors.append("Le mode de paiement est invalide.")
+            mode_de_paiement = 0
+        else:
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM modepaiement
+                WHERE IDPaiement = %s
+                  AND IDClient = %s
+            """, (mode_de_paiement, client_ident))
 
-    # début de la boucle
-    compteur_jrs = 0
-    while compteur_jrs < jrs_consecutifs:
-        # heure de réservation selon les jours consécutifs débutant à 0
-        dr = rez_time + timedelta(days=compteur_jrs)
+            if cur.fetchone()[0] == 0:
+                errors.append("Le mode de paiement sélectionné est invalide.")
 
-        # 7- pour vérifier si l'intervalle entre les rez est respecté selon l'heure demandée:
-        # on retranche/ajoute l'intervalle exigé entre chaque réservation
-        # et on ajoute et on retranche des secondes pour éviter que les limites des heures se touchent (si interval=0)
-        secondes_rez_debut = dr.timestamp() - (float(interv_rez_hres) * 3600) + 1
-        secondes_rez_fin = dr.timestamp() + float(rez_duree * 3600) + (float(interv_rez_hres) * 3600) - 2
+    if facturable == 1:
+        if not courriel:
+            errors.append("Le courriel est obligatoire pour une ressource facturable.")
 
-        # 8- voir s'il y a chevauchement avec une réservation actuelle
-        for item in liste_enreg:
-            date_1 = item[2]
-            time_delta = item[3]
-            date_str = str(date_1)
-            time_str = str(time_delta)
+        if mode_de_paiement == 0:
+            errors.append("Le mode de paiement est obligatoire pour une ressource facturable.")
 
-            # régler problème avec heures ayant seulement 1 caractère (ex. 9:00 vs. 13:00)
-            if time_str.index(':') == 1:
-                time_1 = time_str[0]
-                time_2 = time_str[2:4]
-            else:
-                time_1 = time_str[0:2]
-                time_2 = time_str[3:5]
+    if errors:
+        return flash_and_return(errors, cur, cnx)
 
-            enreg_time = datetime(
-                int(date_str[0:4]),
-                int(date_str[5:7]),
-                int(date_str[8:10]),
-                int(time_1),
-                int(time_2)
+    # ---------------------------------------------------------------------
+    # Validation des contraintes de la ressource
+    # ---------------------------------------------------------------------
+
+    now_montreal = datetime.now(
+        pytz.timezone('America/Montreal')
+    ).replace(tzinfo=None)
+
+    requested_windows = []
+
+    for day_index in range(jrs_consecutifs):
+        requested_start = datetime.combine(
+            date_rez_obj + timedelta(days=day_index),
+            heure_rez_obj
+        )
+
+        requested_end = requested_start + timedelta(
+            minutes=hours_to_minutes(duree_rez)
+        )
+
+        requested_windows.append((requested_start, requested_end))
+
+    first_requested_start = requested_windows[0][0]
+    last_requested_start = requested_windows[-1][0]
+
+    if duree_max > 0 and duree_rez > duree_max:
+        errors.append(
+            "La durée demandée dépasse la durée maximale permise pour cette ressource "
+            + "(" + str(duree_max) + " h)."
+        )
+
+    if jrs_consecutifs_permis > 0 and jrs_consecutifs > jrs_consecutifs_permis:
+        errors.append(
+            "Le nombre de jours consécutifs dépasse la limite permise pour cette ressource "
+            + "(" + str(jrs_consecutifs_permis) + " jour(s))."
+        )
+
+    delai_rez_hres = (first_requested_start - now_montreal).total_seconds() / 3600
+
+    if delai_rez_hres < 0:
+        errors.append("La réservation ne peut pas être créée dans le passé.")
+    elif delai_min_hres > 0 and delai_rez_hres < delai_min_hres:
+        errors.append(
+            "La réservation ne respecte pas le délai minimal configuré pour cette ressource "
+            + "(" + str(delai_min_hres) + " h)."
+        )
+
+    delai_rez_jrs = (last_requested_start - now_montreal).total_seconds() / 86400
+
+    if delai_max_jrs > 0 and delai_rez_jrs > delai_max_jrs:
+        errors.append(
+            "La réservation dépasse le délai maximal configuré pour cette ressource "
+            + "(" + str(delai_max_jrs) + " jour(s))."
+        )
+
+    # Convention CondoFix:
+    # - 00:00 à 00:00 = disponible 24 h/24.
+    # - Si l'heure de fin est plus petite ou égale à l'heure de début,
+    #   la plage se termine le lendemain.
+    is_24h_available = is_midnight(hre_debut_permise) and is_midnight(hre_fin_permise)
+
+    if not is_24h_available and hre_debut_permise is not None and hre_fin_permise is not None:
+        for requested_start, requested_end in requested_windows:
+            allowed_start = datetime.combine(requested_start.date(), hre_debut_permise)
+            allowed_end = datetime.combine(requested_start.date(), hre_fin_permise)
+
+            if allowed_end <= allowed_start:
+                allowed_end = allowed_end + timedelta(days=1)
+
+            if requested_start < allowed_start or requested_end > allowed_end:
+                errors.append(
+                    "La réservation doit respecter la plage horaire permise pour cette ressource "
+                    + "("
+                    + hre_debut_permise.strftime("%H:%M")
+                    + " à "
+                    + hre_fin_permise.strftime("%H:%M")
+                    + ")."
+                )
+                break
+
+    if date_debut_non_dispo not in (None, '', 'None') and duree_non_dispo_hres > 0:
+        try:
+            non_dispo_date = db_date_to_date(date_debut_non_dispo)
+
+            non_dispo_start = datetime(
+                non_dispo_date.year,
+                non_dispo_date.month,
+                non_dispo_date.day
             )
 
-            de = enreg_time
-            secondes_debut_enreg = float(de.timestamp())
-            plage = float(item[4] * 3600)
-            secondes_fin_enreg = float(secondes_debut_enreg) + plage
-
-            if secondes_rez_debut <= secondes_debut_enreg <= secondes_rez_fin:
-                if interv_rez_hres == 0:
-                    avertissement = True
-                    message = message + Markup(
-                        "<b>Cette ressource est déjà réservée par l'unité "
-                        + str(item[5]) + ".</b><br>"
-                    )
-                else:
-                    avertissement = True
-                    message = message + Markup(
-                        "<b>Cette réservation entre en conflit avec une autre réservation adjacente. Veuillez tenir compte de "
-                        + "l'intervalle de " + str(interv_rez_hres)
-                        + " heures exigé par le syndicat entre chaque réservation.</b><br>"
-                    )
-
-            elif secondes_debut_enreg <= secondes_rez_debut <= secondes_fin_enreg:
-                if interv_rez_hres == 0:
-                    avertissement = True
-                    message = message + Markup(
-                        "<b>Cette ressource est déjà réservée par l'unité "
-                        + str(item[5]) + ".</b><br>"
-                    )
-                else:
-                    avertissement = True
-                    message = message + Markup(
-                        "<b>Cette réservation entre en conflit avec une autre réservation adjacente. Veuillez tenir compte de "
-                        + "l'intervalle de " + str(interv_rez_hres)
-                        + " heures exigé par le syndicat entre chaque réservation.</b><br>"
-                    )
-
-            if avertissement is True:
-                message = message + Markup(
-                    "Veuillez modifier les champs visés afin de compléter cette réservation."
-                )
-                flash(message, 'warning')
-                return render_template(
-                    'reservation_ajout_proprio_mess.html',
-                    fill_rez=liste_rez,
-                    fill_modes=fill_modes_paiement
-                )
-
-        compteur_jrs += 1
-
-    if avertissement is False:
-        compteur_jrs = 0
-        while compteur_jrs < jrs_consecutifs:
-            date_rez_courante = rez_time + timedelta(days=compteur_jrs)
-            heure_rez_courante = request.form['heure_rez']
-
-            # mode de paiement doit être un numérique
-            if request.form['mode_paiement'] == '':  # champ vide
-                mode_paiement = 0
-            else:
-                mode_paiement = request.form['mode_paiement']
-
-            # ajout de la réservation
-            cur.execute(
-                'INSERT INTO reservations '
-                '(DateHeureCreation, IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite, Note, Courriel, ModePaiement) '
-                'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-                [
-                    local_time,
-                    request.form['ident_ress'],
-                    client_ident,
-                    date_rez_courante,
-                    heure_rez_courante,
-                    request.form['duree_rez'],
-                    request.form['no_unite'],
-                    request.form['note'],
-                    request.form['courriel'],
-                    mode_paiement
-                ]
+            non_dispo_end = non_dispo_start + timedelta(
+                minutes=hours_to_minutes(duree_non_dispo_hres)
             )
-            cnx.commit()
-            compteur_jrs += 1
 
-    # envoi de courriel d'alerte à l'adresse dans les paramètres si rez facturable
+            for requested_start, requested_end in requested_windows:
+                if windows_overlap(requested_start, requested_end, non_dispo_start, non_dispo_end):
+                    errors.append(
+                        "Cette ressource est temporairement non disponible à partir du "
+                        + str(non_dispo_date)
+                        + " pour "
+                        + str(duree_non_dispo_hres)
+                        + " h."
+                    )
+                    break
+
+        except (TypeError, ValueError):
+            errors.append("La période de non-disponibilité configurée pour cette ressource est invalide.")
+
+    # ---------------------------------------------------------------------
+    # Validation des conflits avec réservations existantes
+    # ---------------------------------------------------------------------
+
+    if not errors:
+        intervalle_minutes = hours_to_minutes(intervalle_rez_hres)
+        today_montreal = datetime.now(
+            pytz.timezone('America/Montreal')
+        ).strftime('%Y-%m-%d')
+
+        cur.execute("""
+            SELECT
+                IDReservation,
+                Date,
+                HeureDebut,
+                DureeHres,
+                NoUnite
+            FROM reservations
+            WHERE IDClient = %s
+              AND IDRessource = %s
+              AND Date >= %s
+        """, (client_ident, resource_id, today_montreal))
+
+        conflicts = []
+
+        for existing in cur.fetchall():
+            existing_id = existing[0]
+            existing_date = existing[1]
+            existing_time = existing[2]
+            existing_duration = existing[3]
+            existing_unit = existing[4]
+
+            existing_start = datetime.combine(
+                db_date_to_date(existing_date),
+                db_time_to_time(existing_time)
+            )
+
+            existing_end = existing_start + timedelta(
+                minutes=hours_to_minutes(existing_duration)
+            )
+
+            protected_start = existing_start - timedelta(minutes=intervalle_minutes)
+            protected_end = existing_end + timedelta(minutes=intervalle_minutes)
+
+            for requested_start, requested_end in requested_windows:
+                if windows_overlap(requested_start, requested_end, protected_start, protected_end):
+                    conflicts.append({
+                        "id": existing_id,
+                        "date": existing_start.strftime("%Y-%m-%d"),
+                        "start": existing_start.strftime("%H:%M"),
+                        "end": existing_end.strftime("%H:%M"),
+                        "unit": existing_unit
+                    })
+                    break
+
+            if conflicts:
+                break
+
+        if conflicts:
+            first_conflict = conflicts[0]
+
+            errors.append(
+                "Cette ressource est déjà réservée ou trop près d’une autre réservation."
+            )
+
+            errors.append(
+                "Conflit détecté le "
+                + first_conflict["date"]
+                + " de "
+                + first_conflict["start"]
+                + " à "
+                + first_conflict["end"]
+                + " pour l'unité "
+                + str(first_conflict["unit"])
+                + "."
+            )
+
+            if intervalle_rez_hres > 0:
+                errors.append(
+                    "Intervalle obligatoire entre réservations : "
+                    + str(intervalle_rez_hres)
+                    + " h."
+                )
+
+    if errors:
+        return flash_and_return(errors, cur, cnx)
+
+    # ---------------------------------------------------------------------
+    # Insertion des réservations consécutives
+    # ---------------------------------------------------------------------
+
+    utc_time = datetime.utcnow()
+    tz = pytz.timezone('America/Montreal')
+    local_time = utc_time.replace(tzinfo=pytz.UTC).astimezone(tz)
+
+    for day_index in range(jrs_consecutifs):
+        date_rez_courante = date_rez_obj + timedelta(days=day_index)
+
+        cur.execute("""
+            INSERT INTO reservations
+                (
+                    DateHeureCreation,
+                    IDRessource,
+                    IDClient,
+                    Date,
+                    HeureDebut,
+                    DureeHres,
+                    NoUnite,
+                    Note,
+                    Courriel,
+                    ModePaiement
+                )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, [
+            local_time,
+            resource_id,
+            client_ident,
+            date_rez_courante,
+            heure_rez_obj,
+            duree_rez,
+            no_unite,
+            note,
+            courriel,
+            mode_de_paiement
+        ])
+
+    cnx.commit()
+
+    # ---------------------------------------------------------------------
+    # Courriel pour réservation facturable
+    # ---------------------------------------------------------------------
+
     email_list = []
-    cur.execute(
-        "SELECT EmailRezFacturable FROM parametres WHERE IDClient=%s",
-        (client_ident,)
-    )
+
+    cur.execute("""
+        SELECT EmailRezFacturable
+        FROM parametres
+        WHERE IDClient = %s
+    """, (client_ident,))
+
     for item in cur.fetchall():
         email_a = item[0]
-        email_list = email_a.split(',')
+        if email_a:
+            email_list = [
+                email.strip()
+                for email in email_a.split(',')
+                if email.strip()
+            ]
 
-    if facturable == 1:
+    mode_text = ''
+
+    if mode_de_paiement != 0:
+        cur.execute("""
+            SELECT Description
+            FROM modepaiement
+            WHERE IDPaiement = %s
+              AND IDClient = %s
+        """, (mode_de_paiement, client_ident))
+
+        mode_row = cur.fetchone()
+
+        if mode_row is not None:
+            mode_text = mode_row[0]
+
+    cnx.close()
+
+    if facturable == 1 and email_list:
         yahoo_mail_user = 'condofix.ca@yahoo.com'
         yahoo_mail_password = 'spyvlumgfwscqfkc'
 
-        no_unite = request.form['no_unite']
-        date = request.form['date_rez']
-        heure = request.form['heure_rez']
-        duree = request.form['duree_rez']
-        jours = request.form['jrs_consecutifs']
-        courriel = request.form['courriel']
-        note = request.form['note']
-        mode = request.form['mode_paiement']
+        if not yahoo_mail_password:
+            print("YAHOO_MAIL_PASSWORD is missing; reservation email was not sent.")
+        else:
+            msg = MIMEMultipart("related")
+            msg['Subject'] = "Réservation facturable"
+            msg['From'] = yahoo_mail_user
 
-        cur.execute(
-            "SELECT Description FROM modepaiement WHERE IDPaiement=%s AND IDClient=%s",
-            (mode, client_ident)
-        )
-        for item in cur.fetchall():
-            mode_de_paiement = item[0]
+            html = """
+                <html><body>
+                <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
+                <b>Soumis par unité:</b>&nbsp;{no_unite}<br/>
+                <b>Date:</b>&nbsp;{date}<br/>
+                <b>Heure:</b>&nbsp;{heure}<br/>
+                <b>Durée (h.):</b>&nbsp;{duree}<br/>
+                <b>Jours:</b>&nbsp;{jours}<br/>
+                <b>Courriel:</b>&nbsp;{courriel}<br/>
+                <b>Mode de paiement:</b>&nbsp;{mode_de_paiement}<br/>
+                <b>Note:</b>&nbsp;{note}</p>
+                </body></html>
+            """
 
-        msg = MIMEMultipart("related")
-        msg['Subject'] = "Réservation facturable"
-        msg['From'] = yahoo_mail_user
-        html = """
-            <html><body>
-            <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
-            <b>Soumis par unité:</b>&nbsp;{no_unite}<br/>
-            <b>Date:</b>&nbsp;{date}<br/>
-            <b>Heure:</b>&nbsp;{heure}<br/>
-            <b>Durée (h.):</b>&nbsp;{duree}<br/>
-            <b>Jours:</b>&nbsp;{jours}<br/>
-            <b>Courriel:</b>&nbsp;{courriel}<br/>
-            <b>Mode de paiement:</b>&nbsp;{mode_de_paiement}<br/>
-            <b>Note:</b>&nbsp;{note}</p>
-            </body></html>
-        """
+            html = html.format(
+                desc_ress=desc_ress,
+                no_unite=no_unite,
+                date=date_rez_raw,
+                heure=heure_rez_raw,
+                duree=str(duree_rez),
+                jours=str(jrs_consecutifs),
+                courriel=courriel,
+                mode_de_paiement=mode_text,
+                note=note
+            )
 
-        html = html.format(
-            desc_ress=desc_ress,
-            no_unite=no_unite,
-            date=date,
-            heure=heure,
-            duree=duree,
-            jours=jours,
-            courriel=courriel,
-            mode_de_paiement=mode_de_paiement,
-            note=note
-        )
+            msg.attach(MIMEText(html, 'html'))
 
-        # enregistrer le MIME pour l'HTML
-        contenu = MIMEText(html, 'html')
-        # attacher le contenu au 'container' du message
-        msg.attach(contenu)
+            try:
+                server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
+                server.ehlo()
+                server.login(yahoo_mail_user, yahoo_mail_password)
 
-        try:
-            server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
-            server.ehlo()
-            server.login(yahoo_mail_user, yahoo_mail_password)
-            # sendmail function takes 3 arguments: sender's address, recipient's address
-            # and message to send - here it is sent as one string.
-            for i in range(len(email_list)):
-                server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
-            server.quit()
-        except:
-            print(traceback.format_exc())
+                for email in email_list:
+                    server.sendmail(yahoo_mail_user, email, msg.as_string())
 
-        cnx.close()
-        return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
-    else:
-        # pas facturable
-        cnx.close()
-        return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
+                server.quit()
+
+            except:
+                print(traceback.format_exc())
+
+    flash("La réservation a été enregistrée.", "success")
+    return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
+# fonctions pour ajouter une réservation
+# @bp_reservations.route("/reservation_ajout_proprio", methods=['POST'])
+# def reservation_ajout_proprio():
+#     """Ajout d'une réservation à la table de la bd par les copropriétaires. Si la réservation est facturable, un courriel
+#      est expédié aux destinataires spécifiés dans les paramètres. Les réglages effectués par l'admin
+#      dans la table des ressources appliquent des restrictions sur l'acceptation d'une réservation et
+#      un message d'avertissement est affiché (flash message) dans la page reservation_ajout_proprio_mess expliquant la limitation."""
+#
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#
+#     profile_list = session.get('ProfilUsager')
+#     client_ident = profile_list[0]
+#     mode = profile_list[8]
+#
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#
+#     # assembler les deux valeurs date et heure selon le bon format 'datetime'
+#     date_rez = request.form['date_rez']
+#     time_rez = request.form['heure_rez']
+#     rez_time = datetime(
+#         int(date_rez[0:4]),
+#         int(date_rez[5:7]),
+#         int(date_rez[8:10]),
+#         int(time_rez[0:2]),
+#         int(time_rez[3:5])
+#     )
+#
+#     # convertir du type timezone naive à timezone aware pour calcul du delta
+#     rez_time_modif = rez_time.astimezone()
+#
+#     # pour respecter l'heure locale: le serveur PythonAnywhere est à Londres (heure utc)
+#
+#     # convertir l'heure du serveur PythonAnywhere à l'heure locale en type timezone aware
+#     utc_time = datetime.utcnow()
+#     # tz = pytz.timezone('America/Montreal')
+#     tz = pytz.timezone('Europe/London')
+#     utc_time_1 = utc_time.replace(tzinfo=pytz.UTC)  # replace method
+#     # local_time = utc_time_1.astimezone(tz)
+#     # local_time = utc_time.astimezone(tz)
+#     utcnow = timezone('utc').localize(datetime.utcnow())  # generic time
+#     local_time = utcnow.astimezone(timezone('America/Montreal'))
+#
+#     utcnow = timezone('utc').localize(datetime.utcnow())  # generic time
+#     here = utcnow.astimezone(timezone('America/Montreal')).replace(tzinfo=None)
+#     there = utcnow.astimezone(timezone('utc')).replace(tzinfo=None)
+#     offset = relativedelta(there, here)
+#     time_diff_serv_pa = offset.hours
+#     # print(offset, time_diff_serv_pa)
+#
+#     delta = rez_time_modif - local_time
+#     # délai de rez en heures avec 1 décimale
+#     delai_rez_hres = round(delta.total_seconds() / 3600, 3) + round(time_diff_serv_pa, 3)
+#
+#     # print('time diff pa:', time_diff_serv_pa)
+#     # print('délai rez hres:', delai_rez_hres)
+#
+#     # définition des variables pour qu'elles ne soient pas hors contexte
+#     desc_ress = str()
+#     facturable = 0
+#     duree_max = 0
+#     delai_min_h = 0
+#     delai_max_j = 0
+#     date_debut_non_dispo = str()
+#     duree_non_dispo = 0
+#     jrs_consecutifs_permis = 0
+#     interv_rez_hres = 0
+#     hre_debut_permise = str()
+#     hre_fin_permise = str()
+#
+#     # obtenir tous les paramètres pour cette ressource
+#     cur.execute(
+#         "SELECT Description, Facturable, DureeMaxHres, DelaiMinHres, DelaiMaxJrs, "
+#         "DateDebutNonDispo, DureeNonDispoHres, JoursConsecutifsPermis, IntervalleRezHres, "
+#         "HreDebutPermise, HreFinPermise "
+#         "FROM ressources "
+#         "WHERE IDRessource=%s AND IDClient=%s",
+#         (request.form['ident_ress'], client_ident)
+#     )
+#     for item in cur.fetchall():
+#         desc_ress = item[0]
+#         facturable = item[1]
+#         duree_max = float(item[2])
+#         delai_min_h = float(item[3])
+#         delai_max_j = float(item[4])
+#         date_debut_non_dispo = str(item[5])
+#         duree_non_dispo = item[6]
+#         jrs_consecutifs_permis = float(item[7])
+#         interv_rez_hres = item[8]
+#         hre_debut_permise = item[9]
+#         hre_fin_permise = item[10]
+#
+#     # pour afficher les messages d'avertissement où l'usager a dépassé un paramètre
+#     # on affiche une page spéciale identique à 'nouvelle réservation' en utilisant le contenu des champs actuels dans une liste
+#     liste_rez = [
+#         request.form['ident_ress'],
+#         desc_ress,
+#         request.form['date_rez'],
+#         request.form['heure_rez'],
+#         request.form['duree_rez'],
+#         request.form['jrs_consecutifs'],
+#         request.form['no_unite'],
+#         request.form['courriel'],
+#         request.form['mode_paiement'],
+#         request.form['note']
+#     ]
+#
+#     avertissement = False  # permet d'envoyer l'usager à la page d'avertissement
+#     message = str()        # on accumule le texte des messages pour l'utiliser à la fin du processus de vérif
+#
+#     fill_modes_paiement = []
+#     # modes de paiement à retenir pour page ayant messages d'avertissement
+#     cur.execute(
+#         "SELECT IDPaiement, Description FROM modepaiement WHERE IDClient=%s",
+#         (client_ident,)
+#     )
+#     for item in cur.fetchall():
+#         fill_modes_paiement.append(item)
+#
+#     # pour s'assurer que l'usager saisisse son courriel et le mode de paiement (rez facturable)
+#     if facturable == 1:
+#         if request.form['courriel'] == '':
+#             avertissement = True
+#             message = Markup(
+#                 "<b>Vous devez saisir votre courriel pour réserver une ressource facturable.</b><br>"
+#             )
+#
+#         if request.form['mode_paiement'] == '':
+#             avertissement = True
+#             message = message + Markup(
+#                 "<b>Vous devez saisir un mode de paiement pour réserver une ressource facturable.</b><br>"
+#             )
+#
+#     # validation de base sur la durée et les jours consécutifs
+#     try:
+#         rez_duree = float(request.form['duree_rez'])
+#         jrs_consecutifs = float(request.form['jrs_consecutifs'])
+#     except (TypeError, ValueError):
+#         avertissement = True
+#         message = message + Markup(
+#             "<b>La durée et le nombre de jours consécutifs doivent être des nombres valides.</b><br>"
+#         )
+#         flash(
+#             message + Markup("Veuillez modifier les champs visés afin de compléter cette réservation."),
+#             'warning'
+#         )
+#         return render_template(
+#             'reservation_ajout_proprio_mess.html',
+#             fill_rez=liste_rez,
+#             fill_modes=fill_modes_paiement
+#         )
+#
+#     if rez_duree <= 0:
+#         avertissement = True
+#         message = message + Markup(
+#             "<b>La durée doit être supérieure à 0.</b><br>"
+#         )
+#
+#     if jrs_consecutifs <= 0:
+#         avertissement = True
+#         message = message + Markup(
+#             "<b>Le nombre de jours consécutifs doit être supérieur à 0.</b><br>"
+#         )
+#
+#     # séquence de vérification pour accepter la réservation (rejet de la demande aussitôt qu'un critère n'est pas conforme):
+#     # a) peu importe le nombre de jours consécutifs demandés:
+#     # - voir si le nombre de jours consécutifs demandé dépasse le maximum permis
+#     # - vérifier si durée demandée est au-delà du maximum
+#     # - vérifier si le délai minimal est respecté (date de la première rez de la série consécutive)
+#     # - vérifier si le délai maximal est respecté (date de la dernière rez de la série consécutive)
+#     # - vérifier si l'heure demandée tombe entre l'heure début et de fin permise
+#     # - vérifier si la ressource est temporairement indisponible (date début + durée non dispo)
+#     #
+#     # b) pour toute réservation :
+#     # - vérifier si l'intervalle entre les rez est respecté selon l'heure demandée
+#     # - voir s'il y a chevauchement avec une réservation actuelle
+#
+#     # a) peu importe le nombre de jours consécutifs demandés:
+#     # 1- voir si le nombre de jours consécutifs demandé dépasse le maximum permis
+#     if jrs_consecutifs > jrs_consecutifs_permis:
+#         avertissement = True
+#         message = message + Markup(
+#             "<b>Le nombre de jours consécutifs demandés excède celui fixé par le syndicat pour cette ressource soit de "
+#             + str(jrs_consecutifs_permis) + " jours.</b><br>"
+#         )
+#
+#     # 2- vérifier si durée demandée est au-delà du maximum
+#     if rez_duree > duree_max:
+#         avertissement = True
+#         message = message + Markup(
+#             "<b>La durée demandée excède celle fixée par le syndicat pour cette ressource soit de "
+#             + str(duree_max) + " heures.</b><br>"
+#         )
+#
+#     # 3- vérifier si délai minimal en heures est respecté
+#     if delai_rez_hres < delai_min_h:
+#         avertissement = True
+#         message = message + Markup(
+#             "<b>La réservation demandée n'est pas conforme au délai minimal fixé par le syndicat pour cette ressource soit de "
+#             + str(float(delai_min_h)) + " heures.</b><br>"
+#         )
+#
+#     # 4- vérifier si délai maximal en jours est respecté
+#     delai_rez_avec_jrs_consec = delai_rez_hres / 24 + jrs_consecutifs - 1
+#     if delai_rez_avec_jrs_consec > delai_max_j:
+#         avertissement = True
+#         message = message + Markup(
+#             "<b>Le délai maximal pour la demande de réservation est plus long que celui fixé par le syndicat pour cette ressource soit de "
+#             + str(float(delai_max_j)) + " jours.</b><br>"
+#         )
+#
+#     # 5- vérifier si l'heure demandée tombe entre l'heure début et de fin permise
+#     # convertir heure de rez en datetime.datetime
+#
+#     # print('heure brut:', request.form['heure_rez'])
+#     heure_brut = str(request.form['heure_rez'])
+#     heure_net = heure_brut[0:5]
+#     # print('heure net:', heure_net)
+#     hre_rez_datetime = datetime.strptime(heure_net, '%H:%M')
+#
+#     # vérifier si critère exigé pour cette ressource:
+#     if hre_debut_permise is not None:
+#         if hre_debut_permise != timedelta(seconds=0):  # ='0:00:00' si remis à zéro par usager
+#             hre_debut_modif = hre_debut_permise
+#             # convertir heures permises de datetime.timedelta en str puis en datetime.datetime
+#             hre_debut_str = str(hre_debut_modif)
+#             hre_debut_datetime = datetime.strptime(hre_debut_str, '%H:%M:%S')
+#             if hre_rez_datetime < hre_debut_datetime:
+#                 avertissement = True
+#                 message = message + Markup(
+#                     "<b>L'heure de début demandée est plus tôt que celle fixée par le syndicat pour cette ressource soit "
+#                     + str(hre_debut_permise) + ".</b><br>"
+#                 )
+#
+#     if hre_fin_permise is not None:
+#         if hre_fin_permise != timedelta(seconds=0):
+#             # enlever la durée de la rez de l'heure de fin permise
+#             min_duree = rez_duree * 60
+#             duree = timedelta(minutes=min_duree)
+#             hre_fin_modif = hre_fin_permise - duree
+#
+#             # si la durée demandée ne rentre pas dans la fenêtre permise,
+#             # on affiche un avertissement au lieu de planter
+#             if hre_fin_modif.total_seconds() <= 0:
+#                 avertissement = True
+#                 message = message + Markup(
+#                     "<b>La combinaison de l'heure de début et de la durée demandée dépasse l'heure de fin permise pour cette ressource soit "
+#                     + str(hre_fin_permise) + ".</b><br>"
+#                 )
+#             else:
+#                 # convertir le timedelta positif en heure comparable à hre_rez_datetime
+#                 total_seconds = int(hre_fin_modif.total_seconds())
+#                 heures = total_seconds // 3600
+#                 minutes = (total_seconds % 3600) // 60
+#                 secondes = total_seconds % 60
+#
+#                 # même base de date implicite que hre_rez_datetime (1900-01-01)
+#                 hre_fin_datetime = datetime(1900, 1, 1, heures, minutes, secondes)
+#
+#                 if hre_rez_datetime > hre_fin_datetime:
+#                     avertissement = True
+#                     message = message + Markup(
+#                         "<b>L'heure de fin demandée (heure plus durée) tombe plus tard que celle fixée par le syndicat pour cette ressource soit "
+#                         + str(hre_fin_permise) + ".</b><br>"
+#                     )
+#
+#     # 6- vérifier si la ressource est temporairement indisponible (date début + durée non dispo)
+#     # vérifier si ces critères sont exigés pour cette ressource:
+#     if date_debut_non_dispo != '':
+#         if duree_non_dispo is not None or duree_non_dispo != '':
+#             # heure de réservation selon les jours consécutifs débutant à 0
+#             # secondes depuis 1970-01-01
+#             # période de réservation demandée
+#             # on ajoute et on retranche des secondes à la réservation pour éviter que les limites des heures se touchent
+#             secondes_rez_debut = rez_time.timestamp() + 1
+#             # on ajoute la durée et les jours consécutifs (ajout de 0 jrs si jrs consécutifs=1)
+#             secondes_rez_fin = (
+#                 secondes_rez_debut
+#                 + float(rez_duree * 3600)
+#                 + ((jrs_consecutifs - 1) * 24 * 3600)
+#                 - 2
+#             )
+#
+#             print('Date non dispo:', date_debut_non_dispo)
+#             datetime_non_dispo = datetime(
+#                 int(date_debut_non_dispo[0:4]),
+#                 int(date_debut_non_dispo[5:7]),
+#                 int(date_debut_non_dispo[8:10])
+#             )
+#
+#             secondes_nondispo_debut = datetime_non_dispo.timestamp()
+#             secondes_nondispo_fin = secondes_nondispo_debut + float(duree_non_dispo * 3600)
+#
+#             # voir s'il y a chevauchement
+#             if secondes_rez_debut <= secondes_nondispo_debut <= secondes_rez_fin:
+#                 avertissement = True
+#                 message = message + Markup(
+#                     "<b>Cette ressource n'est pas disponible à partir du "
+#                     + str(date_debut_non_dispo)
+#                     + " pour "
+#                     + str(duree_non_dispo)
+#                     + " heures..</b><br>"
+#                 )
+#
+#             elif secondes_nondispo_debut <= secondes_rez_debut <= secondes_nondispo_fin:
+#                 avertissement = True
+#                 message = message + Markup(
+#                     "<b>Cette ressource n'est pas disponible à partir du "
+#                     + str(date_debut_non_dispo)
+#                     + " pour "
+#                     + str(duree_non_dispo)
+#                     + " heures.</b><br>"
+#                 )
+#
+#     # si le système a trouvé un conflit avec les paramètres, on affiche le ou les messages cumulés:
+#     if avertissement is True:
+#         message = message + Markup("Veuillez modifier les champs visés afin de compléter cette réservation.")
+#         flash(message, 'warning')
+#         return render_template(
+#             'reservation_ajout_proprio_mess.html',
+#             fill_rez=liste_rez,
+#             fill_modes=fill_modes_paiement
+#         )
+#     else:
+#         print(avertissement)
+#
+#     # 7- vérification du chevauchement avec réservations existantes:
+#     # on sauvegarde les réservations à venir dans une liste
+#     # requête des enregistrements de réservation pour cette ressource avec date >= date demandée
+#     liste_enreg = []
+#     cur.execute(
+#         "SELECT IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite "
+#         "FROM reservations "
+#         "WHERE IDRessource=%s AND Date>=%s AND IDClient=%s",
+#         (request.form['ident_ress'], datetime.now(), client_ident)
+#     )
+#     for row in cur.fetchall():
+#         liste_enreg.append(row)
+#
+#     # début de la boucle
+#     compteur_jrs = 0
+#     while compteur_jrs < jrs_consecutifs:
+#         # heure de réservation selon les jours consécutifs débutant à 0
+#         dr = rez_time + timedelta(days=compteur_jrs)
+#
+#         # 7- pour vérifier si l'intervalle entre les rez est respecté selon l'heure demandée:
+#         # on retranche/ajoute l'intervalle exigé entre chaque réservation
+#         # et on ajoute et on retranche des secondes pour éviter que les limites des heures se touchent (si interval=0)
+#         secondes_rez_debut = dr.timestamp() - (float(interv_rez_hres) * 3600) + 1
+#         secondes_rez_fin = dr.timestamp() + float(rez_duree * 3600) + (float(interv_rez_hres) * 3600) - 2
+#
+#         # 8- voir s'il y a chevauchement avec une réservation actuelle
+#         for item in liste_enreg:
+#             date_1 = item[2]
+#             time_delta = item[3]
+#             date_str = str(date_1)
+#             time_str = str(time_delta)
+#
+#             # régler problème avec heures ayant seulement 1 caractère (ex. 9:00 vs. 13:00)
+#             if time_str.index(':') == 1:
+#                 time_1 = time_str[0]
+#                 time_2 = time_str[2:4]
+#             else:
+#                 time_1 = time_str[0:2]
+#                 time_2 = time_str[3:5]
+#
+#             enreg_time = datetime(
+#                 int(date_str[0:4]),
+#                 int(date_str[5:7]),
+#                 int(date_str[8:10]),
+#                 int(time_1),
+#                 int(time_2)
+#             )
+#
+#             de = enreg_time
+#             secondes_debut_enreg = float(de.timestamp())
+#             plage = float(item[4] * 3600)
+#             secondes_fin_enreg = float(secondes_debut_enreg) + plage
+#
+#             if secondes_rez_debut <= secondes_debut_enreg <= secondes_rez_fin:
+#                 if interv_rez_hres == 0:
+#                     avertissement = True
+#                     message = message + Markup(
+#                         "<b>Cette ressource est déjà réservée par l'unité "
+#                         + str(item[5]) + ".</b><br>"
+#                     )
+#                 else:
+#                     avertissement = True
+#                     message = message + Markup(
+#                         "<b>Cette réservation entre en conflit avec une autre réservation adjacente. Veuillez tenir compte de "
+#                         + "l'intervalle de " + str(interv_rez_hres)
+#                         + " heures exigé par le syndicat entre chaque réservation.</b><br>"
+#                     )
+#
+#             elif secondes_debut_enreg <= secondes_rez_debut <= secondes_fin_enreg:
+#                 if interv_rez_hres == 0:
+#                     avertissement = True
+#                     message = message + Markup(
+#                         "<b>Cette ressource est déjà réservée par l'unité "
+#                         + str(item[5]) + ".</b><br>"
+#                     )
+#                 else:
+#                     avertissement = True
+#                     message = message + Markup(
+#                         "<b>Cette réservation entre en conflit avec une autre réservation adjacente. Veuillez tenir compte de "
+#                         + "l'intervalle de " + str(interv_rez_hres)
+#                         + " heures exigé par le syndicat entre chaque réservation.</b><br>"
+#                     )
+#
+#             if avertissement is True:
+#                 message = message + Markup(
+#                     "Veuillez modifier les champs visés afin de compléter cette réservation."
+#                 )
+#                 flash(message, 'warning')
+#                 return render_template(
+#                     'reservation_ajout_proprio_mess.html',
+#                     fill_rez=liste_rez,
+#                     fill_modes=fill_modes_paiement
+#                 )
+#
+#         compteur_jrs += 1
+#
+#     if avertissement is False:
+#         compteur_jrs = 0
+#         while compteur_jrs < jrs_consecutifs:
+#             date_rez_courante = rez_time + timedelta(days=compteur_jrs)
+#             heure_rez_courante = request.form['heure_rez']
+#
+#             # mode de paiement doit être un numérique
+#             if request.form['mode_paiement'] == '':  # champ vide
+#                 mode_paiement = 0
+#             else:
+#                 mode_paiement = request.form['mode_paiement']
+#
+#             # ajout de la réservation
+#             cur.execute(
+#                 'INSERT INTO reservations '
+#                 '(DateHeureCreation, IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite, Note, Courriel, ModePaiement) '
+#                 'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
+#                 [
+#                     local_time,
+#                     request.form['ident_ress'],
+#                     client_ident,
+#                     date_rez_courante,
+#                     heure_rez_courante,
+#                     request.form['duree_rez'],
+#                     request.form['no_unite'],
+#                     request.form['note'],
+#                     request.form['courriel'],
+#                     mode_paiement
+#                 ]
+#             )
+#             cnx.commit()
+#             compteur_jrs += 1
+#
+#     # envoi de courriel d'alerte à l'adresse dans les paramètres si rez facturable
+#     email_list = []
+#     cur.execute(
+#         "SELECT EmailRezFacturable FROM parametres WHERE IDClient=%s",
+#         (client_ident,)
+#     )
+#     for item in cur.fetchall():
+#         email_a = item[0]
+#         email_list = email_a.split(',')
+#
+#     if facturable == 1:
+#         yahoo_mail_user = 'condofix.ca@yahoo.com'
+#         yahoo_mail_password = 'spyvlumgfwscqfkc'
+#
+#         no_unite = request.form['no_unite']
+#         date = request.form['date_rez']
+#         heure = request.form['heure_rez']
+#         duree = request.form['duree_rez']
+#         jours = request.form['jrs_consecutifs']
+#         courriel = request.form['courriel']
+#         note = request.form['note']
+#         mode = request.form['mode_paiement']
+#
+#         cur.execute(
+#             "SELECT Description FROM modepaiement WHERE IDPaiement=%s AND IDClient=%s",
+#             (mode, client_ident)
+#         )
+#         for item in cur.fetchall():
+#             mode_de_paiement = item[0]
+#
+#         msg = MIMEMultipart("related")
+#         msg['Subject'] = "Réservation facturable"
+#         msg['From'] = yahoo_mail_user
+#         html = """
+#             <html><body>
+#             <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
+#             <b>Soumis par unité:</b>&nbsp;{no_unite}<br/>
+#             <b>Date:</b>&nbsp;{date}<br/>
+#             <b>Heure:</b>&nbsp;{heure}<br/>
+#             <b>Durée (h.):</b>&nbsp;{duree}<br/>
+#             <b>Jours:</b>&nbsp;{jours}<br/>
+#             <b>Courriel:</b>&nbsp;{courriel}<br/>
+#             <b>Mode de paiement:</b>&nbsp;{mode_de_paiement}<br/>
+#             <b>Note:</b>&nbsp;{note}</p>
+#             </body></html>
+#         """
+#
+#         html = html.format(
+#             desc_ress=desc_ress,
+#             no_unite=no_unite,
+#             date=date,
+#             heure=heure,
+#             duree=duree,
+#             jours=jours,
+#             courriel=courriel,
+#             mode_de_paiement=mode_de_paiement,
+#             note=note
+#         )
+#
+#         # enregistrer le MIME pour l'HTML
+#         contenu = MIMEText(html, 'html')
+#         # attacher le contenu au 'container' du message
+#         msg.attach(contenu)
+#
+#         try:
+#             server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
+#             server.ehlo()
+#             server.login(yahoo_mail_user, yahoo_mail_password)
+#             # sendmail function takes 3 arguments: sender's address, recipient's address
+#             # and message to send - here it is sent as one string.
+#             for i in range(len(email_list)):
+#                 server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
+#             server.quit()
+#         except:
+#             print(traceback.format_exc())
+#
+#         cnx.close()
+#         return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
+#     else:
+#         # pas facturable
+#         cnx.close()
+#         return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
 
 
 # @bp_reservations.route("/reservation_ajout_proprio", methods=['POST'])
@@ -2554,128 +3375,411 @@ def reservation_ajout_proprio():
 #         # pas facturable
 #         return redirect(url_for('bp_reservations.calendrier_rez', usager='proprio'))
 
+
 # affichage de la page de 'mes reservations'
 @bp_reservations.route("/mes_rez")
 def mes_rez():
-    """Afficher la page des réservations d'un copropriétaire selon leur numéro d'unité. Permet de supprimer
-    une réservation."""
-    return render_template('reservations_mon_unite.html')
+    """Afficher les réservations futures du syndicat pour les copropriétaires.
 
+    Note importante:
+    La table reservations ne contient actuellement pas d'identifiant d'usager créateur.
+    Il n'est donc pas possible de limiter cette vue aux réservations créées par
+    l'usager connecté sans modifier le modèle de données.
 
-#fonctions pour afficher les réservations d'une unité
-@bp_reservations.route("/reservations_unite", methods=['POST','GET'])
-def reservations_unite():
-    """Afficher la page des réservations d'un copropriétaire selon leur numéro d'unité. Permet de supprimer
-    une réservation."""
+    MVP:
+    - afficher toutes les réservations futures du client;
+    - offrir une recherche dans la table;
+    - permettre l'annulation seulement par POST et seulement pour les réservations futures.
+    """
+
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
-    client_ident=profile_list[0]
+
+    profile_list = session.get('ProfilUsager')
+
+    # Vérifier si le client a acheté le module réservations.
+    if profile_list[5] == 0:
+        return redirect(url_for('bp_admin.permission'))
+
+    client_ident = profile_list[0]
     mode = profile_list[8]
+    today_montreal = datetime.now(
+        pytz.timezone('America/Montreal')
+    ).strftime('%Y-%m-%d')
+
+    def format_duration_label(value):
+        """Retourne un libellé lisible: 30 min, 1 h, 1 h 30, 4 h, etc."""
+        minutes_total = _hours_to_minutes(value)
+
+        if minutes_total <= 0:
+            return "0 min"
+
+        hours = minutes_total // 60
+        minutes = minutes_total % 60
+
+        if hours == 0:
+            return str(minutes) + " min"
+
+        if minutes == 0:
+            return str(hours) + " h"
+
+        return str(hours) + " h " + str(minutes).zfill(2)
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
-    no_unite_rez=request.form['unite_no']
-    liste_rez_unite=[]
-    cur.execute("SELECT IDReservation, IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite, Note FROM reservations "
-                "WHERE Date>=%s AND NoUnite=%s AND IDClient=%s",(datetime.now().strftime('%Y-%m-%d'),no_unite_rez,client_ident))
+
+    cur.execute("""
+        SELECT
+            rez.IDReservation,
+            rez.IDRessource,
+            rez.Date,
+            rez.HeureDebut,
+            rez.DureeHres,
+            rez.NoUnite,
+            COALESCE(rez.Note, ''),
+            COALESCE(ress.Description, ''),
+            COALESCE(ress.Facturable, 0)
+        FROM reservations rez
+        LEFT JOIN ressources ress
+            ON ress.IDRessource = rez.IDRessource
+           AND ress.IDClient = rez.IDClient
+        WHERE rez.Date >= %s
+          AND rez.IDClient = %s
+        ORDER BY rez.Date, rez.HeureDebut, rez.NoUnite
+    """, (today_montreal, client_ident))
+
+    reservations = []
+
     for row in cur.fetchall():
-        cur.execute('SELECT Description FROM ressources WHERE IDRessource=%s AND IDClient=%s',(row[1],client_ident))
-        for item in cur.fetchall():
-            row+=(item)
-        liste_rez_unite.append(row)
+        start_datetime, end_datetime = _build_reservation_window(
+            row[2],
+            row[3],
+            row[4]
+        )
+
+        reservations.append({
+            "id": row[0],
+            "resource_id": row[1],
+            "date": row[2],
+            "date_label": start_datetime.strftime("%Y-%m-%d"),
+            "date_order": start_datetime.strftime("%Y-%m-%d"),
+            "start_label": start_datetime.strftime("%H:%M"),
+            "start_order": start_datetime.strftime("%H:%M"),
+            "end_label": end_datetime.strftime("%H:%M"),
+            "duration_label": format_duration_label(row[4]),
+            "no_unite": row[5],
+            "note": row[6] or "—",
+            "ressource": row[7] or "—",
+            "facturable": int(row[8] or 0)
+        })
+
     cnx.close()
-    # trier les réservations selon la date ascendante
-    liste_rez_unite.sort( key=lambda tup: tup[3])
-    return render_template('reservations_mon_unite.html',liste_rez_unite=liste_rez_unite)
+
+    total_reservations = len(reservations)
+    total_units = len({str(item["no_unite"]) for item in reservations if item["no_unite"]})
+    total_resources = len({str(item["resource_id"]) for item in reservations if item["resource_id"]})
+
+    prochaine_reservation = "Aucune réservation future"
+    if reservations:
+        first = reservations[0]
+        prochaine_reservation = (
+            first["date_label"]
+            + " "
+            + first["start_label"]
+            + " — "
+            + first["ressource"]
+            + " — unité "
+            + str(first["no_unite"])
+        )
+
+    return render_template(
+        'reservations_mon_unite.html',
+        reservations=reservations,
+        total_reservations=total_reservations,
+        total_units=total_units,
+        total_resources=total_resources,
+        prochaine_reservation=prochaine_reservation,
+        bd=profile_list[3]
+    )
 
 
-#fonctions pour supprimer une réservations
-@bp_reservations.route("/rez_unite_supprime/<id_rez>")
-def rez_unite_supprime(id_rez):
-    """À partir de la page 'mes réservations' supprimer un enregistrement affiché par un copropriétaire."""
+# Ancienne route conservée pour compatibilité avec les anciens formulaires/liens.
+@bp_reservations.route("/reservations_unite", methods=['POST', 'GET'])
+def reservations_unite():
+    """Ancienne recherche par numéro d'unité.
+
+    La page copropriétaire affiche maintenant toutes les réservations futures
+    du client et utilise une recherche côté table.
+    """
+
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
-    profile_list=session.get('ProfilUsager')
 
-    client_ident=profile_list[0]
+    return redirect(url_for('bp_reservations.mes_rez'))
+
+
+# fonctions pour supprimer une réservation
+@bp_reservations.route("/rez_unite_supprime/<int:id_rez>", methods=['POST'])
+def rez_unite_supprime(id_rez):
+    """Annuler une réservation future à partir de la page copropriétaire.
+
+    Sécurité MVP:
+    - suppression par POST seulement;
+    - restriction au client connecté;
+    - restriction aux réservations futures.
+    """
+
+    if session.get('ProfilUsager') is None:
+        return render_template('session_ferme.html')
+
+    profile_list = session.get('ProfilUsager')
+
+    if profile_list[5] == 0:
+        return redirect(url_for('bp_admin.permission'))
+
+    client_ident = profile_list[0]
     mode = profile_list[8]
+    today_montreal = datetime.now(
+        pytz.timezone('America/Montreal')
+    ).strftime('%Y-%m-%d')
+
     cnx = connect_db(mode)
     cur = cnx.cursor()
 
-    id_ressource=0
-    facturable=0
-    date=''
-    heure=''
-    duree=0
-    note=str()
-    no_unite=0
-    email=str()
-    desc_ress=str()
+    cur.execute("""
+        SELECT
+            rez.IDRessource,
+            rez.Date,
+            rez.HeureDebut,
+            rez.DureeHres,
+            rez.NoUnite,
+            COALESCE(rez.Note, ''),
+            COALESCE(ress.Facturable, 0),
+            COALESCE(ress.Description, '')
+        FROM reservations rez
+        LEFT JOIN ressources ress
+            ON ress.IDRessource = rez.IDRessource
+           AND ress.IDClient = rez.IDClient
+        WHERE rez.IDReservation = %s
+          AND rez.IDClient = %s
+          AND rez.Date >= %s
+    """, (id_rez, client_ident, today_montreal))
 
-    #trouver ressource de la réservation (premier élément des paramètres)
-    cur.execute("SELECT IDRessource, Date, HeureDebut, DureeHres, NoUnite, Note from reservations WHERE IDReservation=%s AND IDClient=%s",(int(id_rez),client_ident))
-    for item in cur.fetchall():
-        id_ressource=item[0]
-        date=str(item[1])
-        heure=str(item[2])
-        duree=str(item[3])
-        note=item[5]
-        no_unite=item[4]
-    #trouver type de réservation (facturable)
-    cur.execute("SELECT Facturable,Description from ressources WHERE IDRessource=%s AND IDClient=%s",(id_ressource,client_ident))
-    for item_1 in cur.fetchall():
-        facturable=item_1[0]
-        desc_ress=item_1[1]
-    # supprimer la réservation
-    cur.execute("DELETE FROM reservations WHERE IDReservation=%s AND IDClient=%s",(int(id_rez),client_ident))
+    reservation = cur.fetchone()
+
+    if reservation is None:
+        cnx.close()
+        flash("La réservation est introuvable ou ne peut plus être annulée.", "warning")
+        return redirect(url_for('bp_reservations.mes_rez'))
+
+    id_ressource = reservation[0]
+    date = str(reservation[1])
+    heure = str(reservation[2])
+    duree = str(reservation[3])
+    no_unite = reservation[4]
+    note = reservation[5]
+    facturable = int(reservation[6] or 0)
+    desc_ress = reservation[7]
+
+    cur.execute("""
+        DELETE FROM reservations
+        WHERE IDReservation = %s
+          AND IDClient = %s
+          AND Date >= %s
+    """, (id_rez, client_ident, today_montreal))
+
     cnx.commit()
-    email_list=[]
-    # si réservation est facturable, aviser de la suppression par email
-    if facturable==1:
-        # trouver email admin
-        cur.execute("SELECT EmailRezFacturable FROM parametres WHERE IDClient=%s",(client_ident,))
-        for item_2 in cur.fetchall():
-            email_a=item_2[0]
-            email_list=email_a.split(',')
+
+    email_list = []
+
+    if facturable == 1:
+        cur.execute("""
+            SELECT EmailRezFacturable
+            FROM parametres
+            WHERE IDClient = %s
+        """, (client_ident,))
+
+        for item in cur.fetchall():
+            email_a = item[0]
+            if email_a:
+                email_list = [
+                    email.strip()
+                    for email in email_a.split(',')
+                    if email.strip()
+                ]
+
+    cnx.close()
+
+    if facturable == 1 and email_list:
         yahoo_mail_user = 'condofix.ca@yahoo.com'
+
+        # TODO PBI sécurité:
+        # déplacer ce mot de passe dans une variable d'environnement.
         yahoo_mail_password = 'spyvlumgfwscqfkc'
 
         msg = MIMEMultipart("related")
         msg['Subject'] = "Annulation d'une réservation facturable"
         msg['From'] = yahoo_mail_user
+
         html = """
-                    <html><body>
-                    <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
-                    <b>Soumis par unité:</b>&nbsp;{no_unite}<br/>
-                    <b>Date:</b>&nbsp;{date}<br/>
-                    <b>Heure:</b>&nbsp;{heure}<br/>
-                    <b>Durée (h.):</b>&nbsp;{duree}<br/>
-                    <b>Note:</b>&nbsp;{note}</p>
-                    </body></html>
-                    """
+            <html><body>
+            <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
+            <b>Soumis par unité:</b>&nbsp;{no_unite}<br/>
+            <b>Date:</b>&nbsp;{date}<br/>
+            <b>Heure:</b>&nbsp;{heure}<br/>
+            <b>Durée (h.):</b>&nbsp;{duree}<br/>
+            <b>Note:</b>&nbsp;{note}</p>
+            </body></html>
+        """
 
-        html = html.format(desc_ress=desc_ress, no_unite=no_unite, date=date, heure=heure, duree=duree, note=note)
+        html = html.format(
+            desc_ress=desc_ress,
+            no_unite=no_unite,
+            date=date,
+            heure=heure,
+            duree=duree,
+            note=note
+        )
 
-        # enregistrer le MIME pour l'HTML
-        contenu = MIMEText(html, 'html')
-        # attacher le contenu au 'container' du message
-        msg.attach(contenu)
+        msg.attach(MIMEText(html, 'html'))
+
         try:
             server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
             server.ehlo()
             server.login(yahoo_mail_user, yahoo_mail_password)
-            # sendmail function takes 3 arguments: sender's address, recipient's address
-            # and message to send - here it is sent as one string.
-            for i in range(len(email_list)):
-                server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
+
+            for email in email_list:
+                server.sendmail(yahoo_mail_user, email, msg.as_string())
+
             server.quit()
+
         except:
             print(traceback.format_exc())
-    cnx.close()
-    return redirect(url_for('bp_reservations.calendrier_rez',usager='proprio'))
 
+    flash("La réservation a été annulée.", "success")
+    return redirect(url_for('bp_reservations.mes_rez'))
+# # affichage de la page de 'mes reservations'
+# @bp_reservations.route("/mes_rez")
+# def mes_rez():
+#     """Afficher la page des réservations d'un copropriétaire selon leur numéro d'unité. Permet de supprimer
+#     une réservation."""
+#     return render_template('reservations_mon_unite.html')
+#
+#
+# #fonctions pour afficher les réservations d'une unité
+# @bp_reservations.route("/reservations_unite", methods=['POST','GET'])
+# def reservations_unite():
+#     """Afficher la page des réservations d'un copropriétaire selon leur numéro d'unité. Permet de supprimer
+#     une réservation."""
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#     no_unite_rez=request.form['unite_no']
+#     liste_rez_unite=[]
+#     cur.execute("SELECT IDReservation, IDRessource, IDClient, Date, HeureDebut, DureeHres, NoUnite, Note FROM reservations "
+#                 "WHERE Date>=%s AND NoUnite=%s AND IDClient=%s",(datetime.now().strftime('%Y-%m-%d'),no_unite_rez,client_ident))
+#     for row in cur.fetchall():
+#         cur.execute('SELECT Description FROM ressources WHERE IDRessource=%s AND IDClient=%s',(row[1],client_ident))
+#         for item in cur.fetchall():
+#             row+=(item)
+#         liste_rez_unite.append(row)
+#     cnx.close()
+#     # trier les réservations selon la date ascendante
+#     liste_rez_unite.sort( key=lambda tup: tup[3])
+#     return render_template('reservations_mon_unite.html',liste_rez_unite=liste_rez_unite)
+#
+#
+# #fonctions pour supprimer une réservations
+# @bp_reservations.route("/rez_unite_supprime/<id_rez>")
+# def rez_unite_supprime(id_rez):
+#     """À partir de la page 'mes réservations' supprimer un enregistrement affiché par un copropriétaire."""
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list=session.get('ProfilUsager')
+#
+#     client_ident=profile_list[0]
+#     mode = profile_list[8]
+#     cnx = connect_db(mode)
+#     cur = cnx.cursor()
+#
+#     id_ressource=0
+#     facturable=0
+#     date=''
+#     heure=''
+#     duree=0
+#     note=str()
+#     no_unite=0
+#     email=str()
+#     desc_ress=str()
+#
+#     #trouver ressource de la réservation (premier élément des paramètres)
+#     cur.execute("SELECT IDRessource, Date, HeureDebut, DureeHres, NoUnite, Note from reservations WHERE IDReservation=%s AND IDClient=%s",(int(id_rez),client_ident))
+#     for item in cur.fetchall():
+#         id_ressource=item[0]
+#         date=str(item[1])
+#         heure=str(item[2])
+#         duree=str(item[3])
+#         note=item[5]
+#         no_unite=item[4]
+#     #trouver type de réservation (facturable)
+#     cur.execute("SELECT Facturable,Description from ressources WHERE IDRessource=%s AND IDClient=%s",(id_ressource,client_ident))
+#     for item_1 in cur.fetchall():
+#         facturable=item_1[0]
+#         desc_ress=item_1[1]
+#     # supprimer la réservation
+#     cur.execute("DELETE FROM reservations WHERE IDReservation=%s AND IDClient=%s",(int(id_rez),client_ident))
+#     cnx.commit()
+#     email_list=[]
+#     # si réservation est facturable, aviser de la suppression par email
+#     if facturable==1:
+#         # trouver email admin
+#         cur.execute("SELECT EmailRezFacturable FROM parametres WHERE IDClient=%s",(client_ident,))
+#         for item_2 in cur.fetchall():
+#             email_a=item_2[0]
+#             email_list=email_a.split(',')
+#         yahoo_mail_user = 'condofix.ca@yahoo.com'
+#         yahoo_mail_password = 'spyvlumgfwscqfkc'
+#
+#         msg = MIMEMultipart("related")
+#         msg['Subject'] = "Annulation d'une réservation facturable"
+#         msg['From'] = yahoo_mail_user
+#         html = """
+#                     <html><body>
+#                     <p><b>Ressource:</b>&nbsp;{desc_ress}<br/>
+#                     <b>Soumis par unité:</b>&nbsp;{no_unite}<br/>
+#                     <b>Date:</b>&nbsp;{date}<br/>
+#                     <b>Heure:</b>&nbsp;{heure}<br/>
+#                     <b>Durée (h.):</b>&nbsp;{duree}<br/>
+#                     <b>Note:</b>&nbsp;{note}</p>
+#                     </body></html>
+#                     """
+#
+#         html = html.format(desc_ress=desc_ress, no_unite=no_unite, date=date, heure=heure, duree=duree, note=note)
+#
+#         # enregistrer le MIME pour l'HTML
+#         contenu = MIMEText(html, 'html')
+#         # attacher le contenu au 'container' du message
+#         msg.attach(contenu)
+#         try:
+#             server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
+#             server.ehlo()
+#             server.login(yahoo_mail_user, yahoo_mail_password)
+#             # sendmail function takes 3 arguments: sender's address, recipient's address
+#             # and message to send - here it is sent as one string.
+#             for i in range(len(email_list)):
+#                 server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
+#             server.quit()
+#         except:
+#             print(traceback.format_exc())
+#     cnx.close()
+#     return redirect(url_for('bp_reservations.calendrier_rez',usager='proprio'))
+#
 
 #fonctions pour supprimer une réservation par l'administrateur
 @bp_reservations.route("/reservation_supprimer/<id_rez>", methods=['POST','GET'])

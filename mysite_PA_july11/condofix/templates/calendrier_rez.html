@@ -4,155 +4,761 @@
 {% block head_extra %}
   <meta charset="utf-8" />
   <link href="../static/FullCalendar/main.css" rel="stylesheet" />
-{% endblock %}
 
-{% block content %}
-<div class="rez-page container-fluid">
+  <style>
+    /* ==========================================================================
+       Réservations copropriétaire calendar
+       --------------------------------------------------------------------------
+       Purpose:
+       - Modern owner-facing reservation calendar.
+       - Same visual language as the admin reservation calendar.
+       - Removes admin-only actions: reservation table, resources, bulk delete.
+       - Keeps the owner flow: choose a resource to create a reservation.
+       - Supports month, week and day views.
+       - Supports resource filtering, collapsible filter panel and reservation
+         detail display.
+       ========================================================================== */
 
-  {# B) Mobile-friendly controls: stack on small screens, align on desktop #}
-  <div class="row g-2 align-items-center mt-2">
-    <div class="col-12 col-md-6 col-lg-4">
-      <form
-        action="{{ url_for('bp_reservations.reservation_affiche_proprio') }}"
-        name="ressource"
-        method="post"
-        class="m-0"
-        role="form"
-      >
-        <select
-          class="form-select bg-steel text-white rounded w-100"
-          style="font-size:16px; height: 44px;"
-          name="ress_select"
-          autofocus="autofocus"
-          onchange="this.form.submit()"
-          aria-label="Réserver - choisir une ressource"
-        >
-          <option hidden value="">Réserver...</option>
-          {% for item in fill_ressources %}
-            <option value="{{ item[0] }}">{{ item[1] }}</option>
-          {% endfor %}
-        </select>
-      </form>
-    </div>
+    /* --------------------------------------------------------------------------
+       1. Page shell and structural safeguards
+       -------------------------------------------------------------------------- */
 
-    <div class="col-12 col-md-auto ms-md-auto mt-2 mt-md-0">
-      <a
-        class="btn btn-warning btn-rounded w-100 w-md-auto rez-btn"
-        role="button"
-        href="{{ url_for('bp_reservations.mes_rez') }}"
-      >
-        Mes réservations
-      </a>
-    </div>
-  </div>
-
-  {# Legend: only show non-empty resources #}
-  <ul class="legend mt-3">
-    {% for res in fill_ressources %}
-      {% if res[1] %}
-        <li>
-          <span class="ressource_{{ loop.index }}"></span>{{ res[1] }}
-        </li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-
-  <div class="row">
-    <div class="col-md-12">
-      <div id="calendar"></div>
-    </div>
-  </div>
-</div>
-
-<style>
-  /* Page-scoped styling only (avoid overriding global body rules from styles_1.css) */
-  .rez-page {
-    padding-top: 8px;
-    font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
-    font-size: 14px;
-  }
-
-  #calendar {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  /* C) Legend usability: flex-wrap + mobile horizontal scroll */
-  .legend {
-    list-style: none;
-    padding-left: 0;
-    margin-bottom: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-  }
-  .legend li {
-    display: inline-flex;
-    align-items: center;
-    white-space: nowrap;
-  }
-  .legend span {
-    border: 1px solid #ccc;
-    width: 10px;
-    height: 10px;
-    margin-right: 6px;
-    display: inline-block;
-    flex: 0 0 auto;
-  }
-
-  @media (max-width: 768px) {
-    .legend {
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 6px;
+    .rez-owner-page,
+    .rez-owner-shell,
+    .rez-owner-main-grid,
+    .rez-owner-calendar-card,
+    .rez-owner-panel-card,
+    .rez-owner-side-panel {
+      min-width: 0;
+      max-width: 100%;
     }
-  }
 
-  /* Preserve exact resource colors */
-  .legend .ressource_1{ background-color: black; }
-  .legend .ressource_2 { background-color: lawngreen; }
-  .legend .ressource_3 { background-color: blue; }
-  .legend .ressource_4 { background-color: red; }
-  .legend .ressource_5 { background-color: orange; }
-  .legend .ressource_6 { background-color: pink; }
-  .legend .ressource_7 { background-color: lightslategrey; }
-  .legend .ressource_8 { background-color: magenta; }
-  .legend .ressource_9 { background-color: peru; }
-  .legend .ressource_10 { background-color: purple; }
+    .rez-owner-page {
+      padding: 24px 10px 32px;
+      overflow-x: hidden;
+      color: var(--theme-text, #061a33);
+    }
 
-  /* Desktop: allow a bit of wrapping if you want */
-  @media (min-width: 769px){
-    .fc-daygrid-event { white-space: normal; }
-  }
+    .rez-owner-shell {
+      padding: 24px;
+      background: var(--theme-surface, #ffffff);
+      border: 1px solid var(--theme-border, #d7e3ef);
+      border-radius: 18px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    }
 
-  /* Mobile: do NOT wrap (prevents vertical letter-stacking) */
-  @media (max-width: 768px){
-    .fc-daygrid-event {
+    /* --------------------------------------------------------------------------
+       2. Header, title and page actions
+       -------------------------------------------------------------------------- */
+
+    .rez-owner-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .rez-owner-title {
+      margin: 0;
+      color: var(--theme-title, #061a33);
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .rez-owner-subtitle {
+      margin: 6px 0 0;
+      color: var(--theme-muted, #4f6683);
+      font-size: 1rem;
+    }
+
+    .rez-owner-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: 360px;
+    }
+
+    .rez-owner-reserve-form {
+      margin: 0;
+      min-width: 260px;
+    }
+
+    .rez-owner-select {
+      width: 100%;
+      min-height: 44px;
+      padding: 0 42px 0 14px;
+      border: 1px solid var(--theme-border, #d7e3ef);
+      border-radius: 12px;
+      background-color: var(--theme-link-edit, #5f788a);
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      cursor: pointer;
+    }
+
+    .rez-owner-select:focus {
+      outline: 0;
+      border-color: var(--theme-priority-high, #f4b400);
+      box-shadow: 0 0 0 3px rgba(244, 180, 0, 0.25);
+    }
+
+    .rez-owner-select option {
+      color: #061a33;
+      background: #ffffff;
+    }
+
+    .rez-owner-action-btn {
+      min-height: 44px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 12px;
+      font-weight: 800;
+      text-decoration: none;
       white-space: nowrap;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .rez-owner-action-btn:hover {
+      text-decoration: none;
+      filter: brightness(0.98);
+    }
+
+    .rez-owner-action-warning {
+      background: var(--theme-priority-high, #f4b400);
+      color: #061a33;
+    }
+
+    /* --------------------------------------------------------------------------
+       3. KPI cards
+       -------------------------------------------------------------------------- */
+
+    .rez-owner-kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .rez-owner-kpi-card {
+      padding: 14px 16px;
+      background: var(--theme-surface-alt, #eef5fb);
+      border: 1px solid var(--theme-border, #d7e3ef);
+      border-radius: 14px;
+    }
+
+    .rez-owner-kpi-label {
+      color: var(--theme-muted, #4f6683);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .rez-owner-kpi-value {
+      margin-top: 6px;
+      color: var(--theme-title, #061a33);
+      font-size: 1.55rem;
+      line-height: 1.1;
+      font-weight: 900;
+    }
+
+    .rez-owner-kpi-small {
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+
+    /* --------------------------------------------------------------------------
+       4. Main content layout
+       -------------------------------------------------------------------------- */
+
+    .rez-owner-main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .rez-owner-calendar-card,
+    .rez-owner-panel-card {
+      background: var(--theme-surface, #ffffff);
+      border: 1px solid var(--theme-border, #d7e3ef);
+      border-radius: 16px;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+    }
+
+    .rez-owner-calendar-card {
+      padding: 16px;
       overflow: hidden;
+    }
+
+    .rez-owner-card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .rez-owner-card-header h2,
+    .rez-owner-panel-card h2 {
+      margin: 0;
+      color: var(--theme-title, #061a33);
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .rez-owner-card-header p,
+    .rez-owner-panel-note {
+      margin: 4px 0 0;
+      color: var(--theme-muted, #4f6683);
+      font-size: 0.92rem;
+    }
+
+    .rez-owner-side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .rez-owner-panel-card {
+      padding: 16px;
+    }
+
+    /* --------------------------------------------------------------------------
+       5. Calendar overflow container
+       -------------------------------------------------------------------------- */
+
+    .rez-owner-calendar-scroll {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #calendar {
+      min-width: 680px;
+    }
+
+    /* --------------------------------------------------------------------------
+       6. Resource filter panel
+       -------------------------------------------------------------------------- */
+
+    .rez-owner-filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .rez-owner-filter-toggle {
+      padding: 6px 12px;
+      border: 1px solid var(--theme-border, #d7e3ef);
+      border-radius: 999px;
+      background: var(--theme-surface-alt, #eef5fb);
+      color: var(--theme-title, #061a33);
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .rez-owner-filter-toggle:hover {
+      filter: brightness(0.98);
+    }
+
+    .rez-owner-selected-resource {
+      margin-top: 12px;
+      padding: 9px 12px;
+      background: var(--theme-surface-alt, #eef5fb);
+      border: 1px solid var(--theme-border, #d7e3ef);
+      border-radius: 12px;
+      color: var(--theme-muted, #4f6683);
+      font-size: 0.9rem;
+    }
+
+    .rez-owner-selected-resource strong {
+      color: var(--theme-title, #061a33);
+      font-weight: 900;
+    }
+
+    .rez-owner-resource-filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+      overflow: hidden;
+      max-height: 650px;
+      opacity: 1;
+      transition:
+        max-height 0.25s ease,
+        opacity 0.2s ease,
+        margin-top 0.2s ease;
+    }
+
+    .rez-owner-filter-card.is-collapsed .rez-owner-resource-filter-list {
+      max-height: 0;
+      margin-top: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .rez-owner-resource-chip {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 12px;
+      border: 2px solid var(--theme-border, #d7e3ef);
+      border-radius: 999px;
+      background: var(--theme-surface-alt, #f3f8fc);
+      color: var(--theme-title, #061a33);
+      font-weight: 800;
+      text-align: left;
+      cursor: pointer;
+      transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .rez-owner-resource-chip:hover {
+      background: var(--theme-surface, #ffffff);
+    }
+
+    .rez-owner-resource-chip.active {
+      border-color: var(--theme-link-edit, #0d6efd);
+      background: var(--theme-surface, #ffffff);
+      box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.08);
+    }
+
+    .rez-owner-resource-dot {
+      width: 11px;
+      height: 11px;
+      display: inline-block;
+      flex: 0 0 auto;
+      border: 1px solid rgba(15, 23, 42, 0.25);
+      border-radius: 50%;
+    }
+
+    .rez-owner-resource-dot-all {
+      background: linear-gradient(135deg, #5f788a, #0d6efd);
+    }
+
+    .rez-owner-dot-color-1 { background-color: black; }
+    .rez-owner-dot-color-2 { background-color: lawngreen; }
+    .rez-owner-dot-color-3 { background-color: blue; }
+    .rez-owner-dot-color-4 { background-color: red; }
+    .rez-owner-dot-color-5 { background-color: orange; }
+    .rez-owner-dot-color-6 { background-color: pink; }
+    .rez-owner-dot-color-7 { background-color: lightslategrey; }
+    .rez-owner-dot-color-8 { background-color: magenta; }
+    .rez-owner-dot-color-9 { background-color: peru; }
+    .rez-owner-dot-color-10 { background-color: purple; }
+
+    /* --------------------------------------------------------------------------
+       7. Reservation detail card
+       -------------------------------------------------------------------------- */
+
+    .rez-owner-detail-list {
+      margin: 12px 0 0;
+    }
+
+    .rez-owner-detail-list div {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--theme-border, #d7e3ef);
+    }
+
+    .rez-owner-detail-list div:last-child {
+      border-bottom: 0;
+    }
+
+    .rez-owner-detail-list dt {
+      color: var(--theme-muted, #4f6683);
+      font-size: 0.76rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .rez-owner-detail-list dd {
+      margin: 3px 0 0;
+      color: var(--theme-title, #061a33);
+      font-weight: 700;
+    }
+
+    /* --------------------------------------------------------------------------
+       8. FullCalendar theme overrides
+       -------------------------------------------------------------------------- */
+
+    .rez-owner-page .fc {
+      color: var(--theme-text, #061a33);
+      font-family: inherit;
+    }
+
+    .rez-owner-page .fc .fc-toolbar-title {
+      color: var(--theme-title, #061a33);
+      font-size: 1.35rem;
+      font-weight: 900;
+    }
+
+    .rez-owner-page .fc .fc-button-primary {
+      background: var(--theme-link-edit, #5f788a);
+      border-color: var(--theme-link-edit, #5f788a);
+      border-radius: 10px;
+      color: #ffffff;
+      font-weight: 800;
+      box-shadow: none;
+    }
+
+    .rez-owner-page .fc .fc-button-primary:hover,
+    .rez-owner-page .fc .fc-button-primary:focus {
+      background: var(--theme-link-edit, #4e697a);
+      border-color: var(--theme-link-edit, #4e697a);
+    }
+
+    .rez-owner-page .fc .fc-button-primary:not(:disabled).fc-button-active {
+      background: var(--theme-priority-high, #f4b400);
+      border-color: var(--theme-priority-high, #f4b400);
+      color: #061a33;
+    }
+
+    .rez-owner-page .fc-theme-standard .fc-scrollgrid,
+    .rez-owner-page .fc-theme-standard td,
+    .rez-owner-page .fc-theme-standard th {
+      border-color: var(--theme-border, #d7e3ef);
+    }
+
+    .rez-owner-page .fc .fc-col-header-cell {
+      background: var(--theme-surface-alt, #eef5fb);
+    }
+
+    .rez-owner-page .fc .fc-col-header-cell-cushion,
+    .rez-owner-page .fc .fc-daygrid-day-number {
+      color: var(--theme-title, #061a33);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .rez-owner-page .fc .fc-day-today {
+      background: var(--theme-calendar-today-bg, #fff7d6) !important;
+    }
+
+    .rez-owner-page .fc .fc-event {
+      padding: 2px 4px;
+      border-width: 0;
+      border-radius: 8px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .rez-owner-page .fc .fc-daygrid-event {
+      overflow: hidden;
+      white-space: nowrap;
       text-overflow: ellipsis;
     }
-  }
 
-  .fc .fc-event { cursor: pointer; }
-  .fc { user-select: none; }
-
-  /* Better button padding/typography (esp. mobile) */
-  .rez-btn{
-    height: 44px;              /* match select */
-    line-height: 44px;         /* vertically center text without weird padding */
-    padding: 0 16px;           /* horizontal padding only */
-    font-size: 16px;
-    font-weight: 600;
-  }
-  @media (min-width: 768px){
-    .rez-btn{
-      height: 44px;
-      line-height: 44px;
+    .rez-owner-page .fc .fc-timegrid-event {
+      padding: 4px 6px;
     }
-  }
-</style>
+
+    /* --------------------------------------------------------------------------
+       9. Responsive behavior
+       -------------------------------------------------------------------------- */
+
+    @media (max-width: 1100px) {
+      .rez-owner-main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .rez-owner-side-panel {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .rez-owner-page {
+        padding: 18px 8px 28px;
+      }
+
+      .rez-owner-shell {
+        padding: 18px 14px;
+      }
+
+      .rez-owner-header {
+        flex-direction: column;
+      }
+
+      .rez-owner-actions {
+        width: 100%;
+        min-width: 0;
+        justify-content: stretch;
+      }
+
+      .rez-owner-reserve-form,
+      .rez-owner-action-btn {
+        width: 100%;
+      }
+
+      .rez-owner-kpi-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .rez-owner-side-panel {
+        display: flex;
+      }
+
+      .rez-owner-filter-header {
+        flex-direction: column;
+      }
+
+      .rez-owner-filter-toggle {
+        width: 100%;
+      }
+
+      .rez-owner-page .fc .fc-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+
+      .rez-owner-page .fc .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      #calendar {
+        min-width: 760px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #calendar {
+        min-width: 620px;
+      }
+
+      .rez-owner-page .fc .fc-toolbar-title {
+        font-size: 1.05rem;
+      }
+
+      .rez-owner-page .fc .fc-button-primary {
+        padding: 0.35rem 0.55rem;
+        font-size: 0.82rem;
+      }
+
+      .rez-owner-page .fc .fc-daygrid-event {
+        font-size: 0.68rem;
+      }
+
+      .rez-owner-page .fc .fc-col-header-cell-cushion,
+      .rez-owner-page .fc .fc-daygrid-day-number {
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+{% endblock head_extra %}
+
+{% block content %}
+  <div class="rez-owner-page container-fluid">
+    <section class="rez-owner-shell">
+
+      <div class="rez-owner-header">
+        <div>
+          <h1 class="rez-owner-title">Calendrier des réservations</h1>
+          <p class="rez-owner-subtitle">
+            Consultez les disponibilités des ressources communes et créez une nouvelle réservation.
+          </p>
+        </div>
+
+        <div class="rez-owner-actions">
+          <form
+            action="{{ url_for('bp_reservations.reservation_affiche_proprio') }}"
+            name="ressource"
+            method="post"
+            class="rez-owner-reserve-form"
+            role="form"
+          >
+            <select
+              class="rez-owner-select"
+              name="ress_select"
+              onchange="this.form.submit()"
+              aria-label="Choisir une ressource à réserver"
+            >
+              <option hidden value="">Choisir une ressource à réserver...</option>
+
+              {% for item in fill_ressources %}
+                {% if item[1] %}
+                  <option value="{{ item[0] }}">{{ item[1] }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </form>
+
+          <a
+            class="rez-owner-action-btn rez-owner-action-warning"
+            role="button"
+            href="{{ url_for('bp_reservations.mes_rez') }}"
+          >
+            Mes réservations
+          </a>
+        </div>
+      </div>
+
+      <div class="rez-owner-kpi-grid">
+        <div class="rez-owner-kpi-card">
+          <div class="rez-owner-kpi-label">Réservations futures</div>
+          <div class="rez-owner-kpi-value">
+            {{ total_reservations_futures|default(events_list|length) }}
+          </div>
+        </div>
+
+        <div class="rez-owner-kpi-card">
+          <div class="rez-owner-kpi-label">Ressources disponibles</div>
+          <div class="rez-owner-kpi-value">
+            {{ total_ressources_actives|default(0) }}
+          </div>
+        </div>
+
+        <div class="rez-owner-kpi-card">
+          <div class="rez-owner-kpi-label">Prochaine réservation</div>
+          <div class="rez-owner-kpi-value rez-owner-kpi-small">
+            {{ prochaine_reservation|default('Aucune réservation future', true) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="rez-owner-main-grid">
+
+        <div class="rez-owner-calendar-card">
+          <div class="rez-owner-card-header">
+            <div>
+              <h2>Vue calendrier</h2>
+              <p>
+                Utilisez les vues mois, semaine et jour pour vérifier les périodes occupées.
+              </p>
+            </div>
+          </div>
+
+          <div class="rez-owner-calendar-scroll">
+            <div id="calendar"></div>
+          </div>
+        </div>
+
+        <aside class="rez-owner-side-panel">
+
+          <div class="rez-owner-panel-card rez-owner-filter-card" id="rezOwnerFilterCard">
+            <div class="rez-owner-filter-header">
+              <div>
+                <h2>Filtrer par ressource</h2>
+                <p class="rez-owner-panel-note">
+                  Cliquez sur une ressource pour isoler ses réservations.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                class="rez-owner-filter-toggle"
+                id="rezOwnerFilterToggle"
+                aria-expanded="true"
+                aria-controls="rezOwnerResourceFilters"
+              >
+                Masquer
+              </button>
+            </div>
+
+            <div class="rez-owner-selected-resource" id="rezOwnerSelectedResource">
+              Ressource sélectionnée :
+              <strong>Toutes les ressources</strong>
+            </div>
+
+            <div class="rez-owner-resource-filter-list" id="rezOwnerResourceFilters">
+              <button
+                type="button"
+                class="rez-owner-resource-chip active"
+                data-resource-id="all"
+              >
+                <span class="rez-owner-resource-dot rez-owner-resource-dot-all"></span>
+                Toutes les ressources
+              </button>
+
+              {% if legend_ressources is defined and legend_ressources %}
+                {% for res in legend_ressources %}
+                  <button
+                    type="button"
+                    class="rez-owner-resource-chip"
+                    data-resource-id="{{ res.id }}"
+                  >
+                    <span
+                      class="rez-owner-resource-dot"
+                      style="background-color: {{ res.couleur }};"
+                    ></span>
+                    {{ res.description }}
+                  </button>
+                {% endfor %}
+              {% else %}
+                {% for res in fill_ressources %}
+                  {% if res[1] %}
+                    <button
+                      type="button"
+                      class="rez-owner-resource-chip"
+                      data-resource-id="{{ res[0] }}"
+                    >
+                      <span class="rez-owner-resource-dot rez-owner-dot-color-{{ loop.index }}"></span>
+                      {{ res[1] }}
+                    </button>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="rez-owner-panel-card">
+            <h2>Détails</h2>
+            <p class="rez-owner-panel-note" id="rezOwnerNoSelection">
+              Sélectionnez une réservation dans le calendrier pour afficher ses détails.
+            </p>
+
+            <dl class="rez-owner-detail-list d-none" id="rezOwnerDetailList">
+              <div>
+                <dt>Ressource</dt>
+                <dd id="rezOwnerDetailResource">—</dd>
+              </div>
+              <div>
+                <dt>Unité</dt>
+                <dd id="rezOwnerDetailUnit">—</dd>
+              </div>
+              <div>
+                <dt>Début</dt>
+                <dd id="rezOwnerDetailStart">—</dd>
+              </div>
+              <div>
+                <dt>Fin</dt>
+                <dd id="rezOwnerDetailEnd">—</dd>
+              </div>
+              <div>
+                <dt>Durée</dt>
+                <dd id="rezOwnerDetailDuration">—</dd>
+              </div>
+              <div>
+                <dt>Note</dt>
+                <dd id="rezOwnerDetailNote">—</dd>
+              </div>
+            </dl>
+          </div>
+
+        </aside>
+
+      </div>
+    </section>
+  </div>
 {% endblock content %}
 
 {% block scripts %}
@@ -162,53 +768,337 @@
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const calendarEl = document.getElementById('calendar');
-      if (!calendarEl) return;
 
-      const events = [
+      if (!calendarEl) {
+        return;
+      }
+
+      const rawEvents = [
         {% for event in events_list %}
-        {
-          title: '{{event.no_unite}} ({{event.duree}} h)',
-          start: '{{event.date_heure}}',
-          color: '{{event.couleur}}',
-          extendedProps: {
-            tooltip: '{{ event.ressource_desc }} — Unité {{ event.no_unite }} — {{ event.duree }} h'
-            {# Optional if you want notes too:
-               + (event.note ? " — " + event.note : "")
-            #}
-          }
-        },
+          {% set event_id = event.id|default(loop.index, true) %}
+          {% set event_start = event.start|default(event.date_heure|default('', true), true) %}
+          {% set event_end = event.end|default(event.date_heure_fin|default('', true), true) %}
+          {% set event_title = event.title|default('', true) %}
+          {% set event_duration_label = event.duree_label|default('', true) %}
+          {% set event_time_label = event.heure_label|default('', true) %}
+          {% set event_tooltip = event.tooltip|default('', true) %}
+          {
+            id: {{ event_id|string|tojson }},
+            title: {{ event_title|tojson }},
+            start: {{ event_start|tojson }},
+            end: {{ event_end|tojson }},
+            noUnite: {{ event.no_unite|string|tojson }},
+            resourceId: {{ event.ressource|string|tojson }},
+            resourceDescription: {{ event.ressource_desc|default('', true)|tojson }},
+            durationHours: {{ event.duree|default(0, true)|float }},
+            durationLabel: {{ event_duration_label|tojson }},
+            timeLabel: {{ event_time_label|tojson }},
+            note: {{ event.note|default('', true)|replace('\n', ' ')|tojson }},
+            color: {{ event.couleur|default('#5f788a', true)|tojson }},
+            tooltip: {{ event_tooltip|tojson }}
+          },
         {% endfor %}
       ];
 
-      // D) Better mobile functionality: list view on mobile, month view on desktop
-      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      function pad(value) {
+        return String(value).padStart(2, '0');
+      }
+
+      function localIsoNoZone(date) {
+        return (
+          date.getFullYear() + '-' +
+          pad(date.getMonth() + 1) + '-' +
+          pad(date.getDate()) + 'T' +
+          pad(date.getHours()) + ':' +
+          pad(date.getMinutes()) + ':' +
+          pad(date.getSeconds())
+        );
+      }
+
+      function addHoursToIso(startIso, hours) {
+        if (!startIso) {
+          return '';
+        }
+
+        const date = new Date(startIso);
+
+        if (Number.isNaN(date.getTime())) {
+          return '';
+        }
+
+        date.setMinutes(date.getMinutes() + Math.round((Number(hours) || 0) * 60));
+
+        return localIsoNoZone(date);
+      }
+
+      function formatDuration(hoursValue) {
+        const totalMinutes = Math.round((Number(hoursValue) || 0) * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+
+        if (totalMinutes <= 0) {
+          return '0 min';
+        }
+
+        if (hours === 0) {
+          return minutes + ' min';
+        }
+
+        if (minutes === 0) {
+          return hours + ' h';
+        }
+
+        return hours + ' h ' + pad(minutes);
+      }
+
+      function formatDateTime(value) {
+        if (!value) {
+          return '—';
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+          return value;
+        }
+
+        return date.toLocaleString('fr-CA', {
+          year: 'numeric',
+          month: 'long',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      }
+
+      function getTextColor(colorName) {
+        const lightColors = ['lawngreen', 'orange', 'pink', 'yellow', '#f4b400'];
+        const normalizedColor = String(colorName).toLowerCase();
+
+        return lightColors.includes(normalizedColor) ? '#061a33' : '#ffffff';
+      }
+
+      function buildEvent(raw) {
+        const durationLabel = raw.durationLabel || formatDuration(raw.durationHours);
+        const end = raw.end || addHoursToIso(raw.start, raw.durationHours);
+
+        const title = raw.title ||
+          (
+            (raw.timeLabel ? raw.timeLabel + ' h ' : '') +
+            raw.noUnite +
+            ' (' + durationLabel + ')'
+          );
+
+        const tooltip = raw.tooltip ||
+          (
+            (raw.resourceDescription ? raw.resourceDescription + ' — ' : '') +
+            'Unité ' + raw.noUnite +
+            ' — ' + durationLabel +
+            (raw.note ? ' — ' + raw.note : '')
+          );
+
+        return {
+          id: raw.id,
+          title: title,
+          start: raw.start,
+          end: end,
+          backgroundColor: raw.color,
+          borderColor: raw.color,
+          textColor: getTextColor(raw.color),
+          extendedProps: {
+            resourceId: raw.resourceId,
+            resourceDescription: raw.resourceDescription,
+            noUnite: raw.noUnite,
+            durationLabel: durationLabel,
+            note: raw.note || '',
+            tooltip: tooltip
+          }
+        };
+      }
+
+      const allEvents = rawEvents
+        .filter(function (event) {
+          return event.start;
+        })
+        .map(buildEvent);
+
+      function getFilteredEvents(resourceId) {
+        if (!resourceId || resourceId === 'all') {
+          return allEvents;
+        }
+
+        return allEvents.filter(function (event) {
+          return String(event.extendedProps.resourceId) === String(resourceId);
+        });
+      }
+
+      function setCalendarEvents(calendar, resourceId) {
+        calendar.removeAllEvents();
+        calendar.addEventSource(getFilteredEvents(resourceId));
+      }
+
+      function updateSelectedResourceLabel(button) {
+        const selectedResource = document.getElementById('rezOwnerSelectedResource');
+
+        if (!selectedResource || !button) {
+          return;
+        }
+
+        const label = button.textContent.trim() || 'Toutes les ressources';
+
+        selectedResource.innerHTML =
+          'Ressource sélectionnée : <strong>' + label + '</strong>';
+      }
+
+      function setFilterCollapsed(isCollapsed) {
+        const filterCard = document.getElementById('rezOwnerFilterCard');
+        const filterToggle = document.getElementById('rezOwnerFilterToggle');
+
+        if (!filterCard || !filterToggle) {
+          return;
+        }
+
+        filterCard.classList.toggle('is-collapsed', isCollapsed);
+        filterToggle.setAttribute('aria-expanded', String(!isCollapsed));
+        filterToggle.textContent = isCollapsed ? 'Afficher les filtres' : 'Masquer';
+      }
+
+      function updateDetails(event) {
+        const noSelection = document.getElementById('rezOwnerNoSelection');
+        const detailList = document.getElementById('rezOwnerDetailList');
+
+        if (!noSelection || !detailList) {
+          return;
+        }
+
+        noSelection.classList.add('d-none');
+        detailList.classList.remove('d-none');
+
+        document.getElementById('rezOwnerDetailResource').textContent =
+          event.extendedProps.resourceDescription || '—';
+
+        document.getElementById('rezOwnerDetailUnit').textContent =
+          event.extendedProps.noUnite || '—';
+
+        document.getElementById('rezOwnerDetailStart').textContent =
+          formatDateTime(event.start);
+
+        document.getElementById('rezOwnerDetailEnd').textContent =
+          formatDateTime(event.end);
+
+        document.getElementById('rezOwnerDetailDuration').textContent =
+          event.extendedProps.durationLabel || '—';
+
+        document.getElementById('rezOwnerDetailNote').textContent =
+          event.extendedProps.note || '—';
+      }
 
       const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: isMobile ? 'listWeek' : 'dayGridMonth',
+        initialView: 'dayGridMonth',
         locale: 'fr',
-        events: events,
+        events: allEvents,
+
         height: 'auto',
         expandRows: true,
         dayMaxEvents: true,
+        nowIndicator: true,
+        allDaySlot: false,
+        displayEventTime: false,
+
+        slotMinTime: '06:00:00',
+        slotMaxTime: '24:00:00',
+        slotDuration: '00:30:00',
 
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
-          right: isMobile ? 'dayGridMonth,listWeek' : ''
+          right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
 
-        eventDidMount: function(info) {
+        buttonText: {
+          today: "Aujourd'hui",
+          month: 'Mois',
+          week: 'Semaine',
+          day: 'Jour'
+        },
+
+        slotLabelFormat: {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        },
+
+        eventDidMount: function (info) {
           const tip = info.event.extendedProps.tooltip || info.event.title;
+
           info.el.setAttribute('title', tip);
+          info.el.setAttribute('aria-label', tip);
+        },
+
+        eventClick: function (info) {
+          const detailsCard = document.getElementById('rezOwnerDetailList')?.closest('.rez-owner-panel-card');
+
+          info.jsEvent.preventDefault();
+          updateDetails(info.event);
+
+          if (window.matchMedia('(max-width: 768px)').matches && detailsCard) {
+            detailsCard.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
         }
       });
 
       calendar.render();
 
-      // Force correct sizing once layout/fonts settle (fixes missing Sat/Sun on first render)
-      window.addEventListener('load', () => calendar.updateSize());
-      setTimeout(() => calendar.updateSize(), 250);
-      window.addEventListener('resize', () => calendar.updateSize());
+      const filterToggle = document.getElementById('rezOwnerFilterToggle');
+
+      if (filterToggle) {
+        filterToggle.addEventListener('click', function () {
+          const filterCard = document.getElementById('rezOwnerFilterCard');
+          const isCurrentlyCollapsed =
+            filterCard && filterCard.classList.contains('is-collapsed');
+
+          setFilterCollapsed(!isCurrentlyCollapsed);
+        });
+      }
+
+      document.querySelectorAll('[data-resource-id]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          const resourceId = this.getAttribute('data-resource-id');
+
+          document.querySelectorAll('[data-resource-id]').forEach(function (btn) {
+            btn.classList.remove('active');
+          });
+
+          this.classList.add('active');
+          updateSelectedResourceLabel(this);
+          setCalendarEvents(calendar, resourceId);
+          calendar.updateSize();
+
+          if (window.matchMedia('(max-width: 768px)').matches) {
+            setFilterCollapsed(true);
+          }
+        });
+      });
+
+      updateSelectedResourceLabel(
+        document.querySelector('[data-resource-id].active')
+      );
+
+      window.addEventListener('load', function () {
+        calendar.updateSize();
+      });
+
+      setTimeout(function () {
+        calendar.updateSize();
+      }, 250);
+
+      window.addEventListener('resize', function () {
+        calendar.updateSize();
+      });
     });
   </script>
 {% endblock scripts %}
