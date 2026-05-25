@@ -1,3 +1,8 @@
+# This file defines how Git handles tracked files.
+# It normalizes text file line endings for consistency across Windows and Linux
+# and marks binary files such as PDFs, images, Excel files, and videos so Git
+# does not try to process them as text.
+
 # Normalize text files in the repository
 * text=auto
 
