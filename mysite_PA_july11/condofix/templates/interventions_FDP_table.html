@@ -1,148 +1,1070 @@
 {% extends "layout_admin_tables.html" %}
 {% block content %}
 
-<head>
-    <title>CondoFix</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="icon" href="../static/ToolsIcon.png">
-     <!-- javascript ne peut pas lire un fichier sur une machine locale donc on DOIT utiliser le plugin de 'datatables'-->
-    <script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
-    <script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
-    <!-- pour que les menus dropdown fonctionnent avec DataTables-->
-    <script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
-    <!-- pour le style de la table-->
-    <link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
-    <link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
 
-    <script>
-    $(document).ready(function() {
-        $('#table_data').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-             {
-               extend: 'excelHtml5',
-               title: 'Export CondoFix Interventions du Fonds de prévoyance'
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
 
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .fdp-interventions-page {
+        --fdp-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --fdp-shadow-soft: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --fdp-radius-xl: 20px;
+        --fdp-radius-lg: 16px;
+        --fdp-radius-md: 14px;
+        --fdp-radius-sm: 12px;
+
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .fdp-interventions-page .fdp-shell {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--fdp-radius-xl);
+        box-shadow: var(--fdp-shadow);
+        padding: 1.25rem;
+    }
+
+    .fdp-interventions-page .fdp-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .fdp-interventions-page .fdp-header-copy {
+        min-width: 0;
+        flex: 1 1 540px;
+    }
+
+    .fdp-interventions-page .fdp-header-copy h1 {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: var(--theme-text);
+    }
+
+    .fdp-interventions-page .fdp-header-copy p {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .fdp-interventions-page .fdp-header-actions {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .fdp-interventions-page .fdp-history-form {
+        margin: 0;
+    }
+
+    .fdp-interventions-page .fdp-history-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        min-height: 42px;
+        min-width: 134px;
+        padding: 0.65rem 1rem;
+        border-radius: var(--fdp-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        line-height: 1.1;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .fdp-interventions-page .fdp-history-toggle input {
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        position: static;
+    }
+
+    .fdp-interventions-page .fdp-history-toggle span {
+        display: inline-block;
+        white-space: nowrap;
+        padding-right: 0.1rem;
+    }
+
+    .fdp-interventions-page .fdp-summary-strip {
+        margin-bottom: 1rem;
+    }
+
+    .fdp-interventions-page .fdp-metrics {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(130px, 1fr));
+        gap: 10px;
+        margin-bottom: 0.85rem;
+    }
+
+    .fdp-interventions-page .metric-card {
+        border-radius: 16px;
+        padding: 10px 12px 9px;
+        min-height: 78px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        box-shadow: var(--fdp-shadow-soft);
+        filter: saturate(0.94);
+    }
+
+    .fdp-interventions-page .metric-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
+        pointer-events: none;
+    }
+
+.fdp-interventions-page .fdp-status-toggle {
+        cursor: pointer;
+        transition: transform 0.12s ease, opacity 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    }
+
+    .fdp-interventions-page .fdp-status-toggle:hover {
+        transform: translateY(-1px);
+    }
+
+    .fdp-interventions-page .fdp-status-toggle:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.18), var(--fdp-shadow-soft);
+    }
+
+    .fdp-interventions-page .fdp-status-toggle.is-active {
+        opacity: 1;
+    }
+
+    .fdp-interventions-page .fdp-status-toggle.is-inactive {
+        opacity: 0.42;
+        filter: grayscale(0.18);
+        box-shadow: none;
+    }
+
+    .fdp-interventions-page .metric-label {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        opacity: 0.95;
+        line-height: 1.05;
+    }
+
+    .fdp-interventions-page .metric-value {
+        font-size: 1.45rem;
+        font-weight: 800;
+        line-height: 1;
+        margin: 4px 0 2px;
+    }
+
+    .fdp-interventions-page .metric-note {
+        font-size: 0.72rem;
+        font-weight: 700;
+        opacity: 0.92;
+        line-height: 1.05;
+    }
+
+    .fdp-interventions-page .kpi-critical {
+        background: var(--theme-priority-critical);
+        color: var(--theme-priority-critical-text, #ffffff);
+    }
+
+    .fdp-interventions-page .kpi-high {
+        background: var(--theme-priority-high);
+        color: var(--theme-priority-high-text, #1f2937);
+    }
+
+    .fdp-interventions-page .kpi-medium {
+        background: var(--theme-priority-medium);
+        color: var(--theme-priority-medium-text, #ffffff);
+    }
+
+    .fdp-interventions-page .kpi-low {
+        background: var(--theme-priority-low);
+        color: var(--theme-priority-low-text, #ffffff);
+    }
+
+    .fdp-interventions-page .kpi-age {
+        background: var(--theme-kpi-age);
+        color: var(--theme-kpi-age-text, #243447);
+    }
+
+    .fdp-interventions-page .kpi-hours {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text, #ffffff);
+    }
+
+    .fdp-interventions-page .fdp-context-line {
+        padding: 12px 16px;
+        border-radius: var(--fdp-radius-md);
+        background: var(--theme-surface-alt);
+        border: 1px dashed var(--theme-border);
+        font-weight: 700;
+        color: var(--theme-text);
+        box-shadow: var(--fdp-shadow-soft);
+    }
+
+    .fdp-interventions-page .fdp-context-line strong {
+        color: var(--theme-text);
+    }
+
+    .fdp-interventions-page .fdp-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .fdp-interventions-page .fdp-toolbar-left,
+    .fdp-interventions-page .fdp-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .fdp-interventions-page .fdp-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--fdp-radius-sm);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    .fdp-interventions-page .fdp-btn:hover,
+    .fdp-interventions-page .fdp-btn:focus {
+        text-decoration: none;
+        color: var(--theme-text);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .fdp-interventions-page .fdp-btn-primary {
+        background: var(--theme-kpi-hours);
+        color: var(--theme-kpi-hours-text);
+        border-color: transparent;
+    }
+
+    .fdp-interventions-page .fdp-btn-primary:hover,
+    .fdp-interventions-page .fdp-btn-primary:focus {
+        color: var(--theme-kpi-hours-text);
+        opacity: 0.96;
+    }
+
+    .fdp-interventions-page .fdp-table-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        border-radius: var(--fdp-radius-lg);
+        box-shadow: var(--fdp-shadow);
+        overflow: hidden;
+    }
+
+    .fdp-interventions-page .fdp-table-inner {
+        padding: 0;
+    }
+
+    .fdp-interventions-page .fdp-table-scroll-top,
+    .fdp-interventions-page .fdp-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .fdp-interventions-page .fdp-table-scroll-top {
+        display: block;
+        height: 18px;
+        margin-bottom: 8px;
+    }
+
+    .fdp-interventions-page .fdp-table-scroll-top-inner {
+        height: 1px;
+        min-width: 1500px;
+    }
+
+    .fdp-interventions-page .fdp-table-scroll table {
+        min-width: 1500px !important;
+    }
+
+    .fdp-interventions-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--fdp-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .fdp-interventions-page .dt-buttons .dt-button:hover,
+    .fdp-interventions-page .dt-buttons .dt-button:focus {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-color: var(--theme-border) !important;
+        opacity: 0.95;
+    }
+
+    .fdp-interventions-page #fdp-dt-search .dataTables_filter {
+        margin: 0;
+    }
+
+    .fdp-interventions-page #fdp-dt-search .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        font-weight: 700;
+        color: var(--theme-text-muted);
+    }
+
+    .fdp-interventions-page #fdp-dt-search .dataTables_filter input,
+    .fdp-interventions-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .fdp-interventions-page #fdp-dt-search .dataTables_filter input::placeholder,
+    .fdp-interventions-page .dataTables_wrapper .dataTables_filter input::placeholder {
+        color: var(--theme-text-muted);
+    }
+
+    .fdp-interventions-page #fdp-dt-search .dataTables_filter input:focus,
+    .fdp-interventions-page .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--theme-link-edit) !important;
+        box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.10) !important;
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_length,
+    .fdp-interventions-page .dataTables_wrapper .dataTables_filter,
+    .fdp-interventions-page .dataTables_wrapper .dt-buttons,
+    .fdp-interventions-page .dataTables_wrapper .dataTables_info,
+    .fdp-interventions-page .dataTables_wrapper .dataTables_paginate {
+        color: var(--theme-text-muted) !important;
+    }
+
+    .fdp-interventions-page table.dataTable,
+    .fdp-interventions-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.94rem;
+        border: 0 !important;
+    }
+
+    .fdp-interventions-page table.dataTable thead th,
+    .fdp-interventions-page table#table_data thead th {
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.9rem;
+        font-weight: 800;
+        vertical-align: middle;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .fdp-interventions-page table.dataTable thead th.sorting_disabled,
+    .fdp-interventions-page table#table_data thead th.sorting_disabled {
+        padding-right: 12px !important;
+    }
+
+    .fdp-interventions-page table.dataTable tbody td,
+    .fdp-interventions-page table#table_data tbody td {
+        background: var(--theme-surface);
+        color: var(--theme-text);
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: middle;
+    }
+
+    .fdp-interventions-page table.dataTable tbody tr:nth-child(even) td,
+    .fdp-interventions-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(127, 145, 168, 0.05);
+    }
+
+    .fdp-interventions-page .fdp-ref {
+        font-weight: 800;
+        color: var(--theme-text);
+        white-space: nowrap;
+    }
+
+    .fdp-interventions-page .fdp-description {
+        min-width: 300px;
+        max-width: 540px;
+        line-height: 1.35;
+    }
+
+    .fdp-interventions-page .fdp-money,
+    .fdp-interventions-page .fdp-year,
+    .fdp-interventions-page .fdp-frequency {
+        white-space: nowrap;
+    }
+
+    .fdp-interventions-page .type-pill,
+    .fdp-interventions-page .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 0.8rem;
+        line-height: 1.15;
+        white-space: nowrap;
+    }
+
+    .fdp-interventions-page .type-maintenance {
+        background: rgba(13, 110, 253, 0.13);
+        color: var(--theme-priority-medium);
+    }
+
+    .fdp-interventions-page .type-remplacement {
+        background: rgba(244, 180, 0, 0.18);
+        color: #7c5200;
+    }
+
+    .fdp-interventions-page .status-active {
+        background: rgba(25, 135, 84, 0.13);
+        color: var(--theme-priority-low);
+    }
+
+    .fdp-interventions-page .status-inactive {
+        background: rgba(220, 53, 69, 0.13);
+        color: var(--theme-priority-critical);
+    }
+
+    .fdp-interventions-page .fdp-action-cell {
+        min-width: 125px;
+        vertical-align: middle !important;
+    }
+
+    .fdp-interventions-page .fdp-actions-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+
+    .fdp-interventions-page .fdp-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 34px;
+        padding: 0.4rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-link-edit);
+        font-weight: 800;
+        text-decoration: none;
+        line-height: 1.1;
+        white-space: nowrap;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .fdp-interventions-page .fdp-action-link:hover,
+    .fdp-interventions-page .fdp-action-link:focus {
+        color: var(--theme-link-edit);
+        opacity: 0.9;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_length {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_length select {
+        min-height: 36px;
+        border-radius: 8px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+        color: var(--theme-text);
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_info {
+        padding: 1.2rem 0.5rem 0.6rem !important;
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_paginate {
+        padding: 1rem 0.5rem 0.75rem !important;
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .fdp-interventions-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .fdp-interventions-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    @media (max-width: 1200px) {
+        .fdp-interventions-page .fdp-metrics {
+            grid-template-columns: repeat(3, minmax(130px, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
+        .fdp-interventions-page {
+            padding-top: 1rem;
+        }
+
+        .fdp-interventions-page .fdp-shell {
+            padding: 1rem;
+            border-radius: 16px;
+        }
+
+        .fdp-interventions-page .fdp-header-copy h1 {
+            font-size: 1.6rem;
+        }
+
+        .fdp-interventions-page .fdp-header-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .fdp-interventions-page .fdp-metrics {
+            grid-template-columns: repeat(2, minmax(130px, 1fr));
+        }
+
+        .fdp-interventions-page #fdp-dt-search .dataTables_filter input,
+        .fdp-interventions-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 220px !important;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .fdp-interventions-page .fdp-metrics {
+            grid-template-columns: 1fr;
+        }
+
+        .fdp-interventions-page .fdp-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .fdp-interventions-page .fdp-toolbar-left,
+        .fdp-interventions-page .fdp-toolbar-right {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .fdp-interventions-page #fdp-dt-search .dataTables_filter label,
+        .fdp-interventions-page .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .fdp-interventions-page #fdp-dt-search .dataTables_filter input,
+        .fdp-interventions-page .dataTables_wrapper .dataTables_filter input {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .fdp-shell {
+        background: linear-gradient(180deg, rgba(13, 26, 48, 0.96), rgba(10, 21, 40, 0.96));
+        border-color: rgba(126, 149, 176, 0.22);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .fdp-context-line,
+    html[data-theme^="dark-"] .fdp-interventions-page .fdp-table-card {
+        background: rgba(26, 41, 66, 0.88);
+        border-color: rgba(126, 149, 176, 0.18);
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page table.dataTable thead th,
+    html[data-theme^="dark-"] .fdp-interventions-page table#table_data thead th {
+        background: rgba(33, 49, 78, 0.94);
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page table.dataTable tbody td,
+    html[data-theme^="dark-"] .fdp-interventions-page table#table_data tbody td {
+        background: rgba(10, 27, 51, 0.9);
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page table.dataTable tbody tr:nth-child(even) td,
+    html[data-theme^="dark-"] .fdp-interventions-page table#table_data tbody tr:nth-child(even) td {
+        background: rgba(16, 35, 62, 0.92);
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .dataTables_wrapper .dataTables_filter input {
+        background: rgba(26, 41, 66, 0.95) !important;
+        border-color: rgba(126, 149, 176, 0.22) !important;
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .fdp-btn,
+    html[data-theme^="dark-"] .fdp-interventions-page .dt-buttons .dt-button,
+    html[data-theme^="dark-"] .fdp-interventions-page .fdp-history-toggle {
+        background: rgba(26, 41, 66, 0.95) !important;
+        border-color: rgba(126, 149, 176, 0.20) !important;
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .type-maintenance {
+        background: rgba(91, 141, 239, 0.18);
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .type-remplacement {
+        background: rgba(217, 164, 65, 0.22);
+        color: #f5d995;
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .status-active {
+        background: rgba(77, 181, 124, 0.18);
+    }
+
+    html[data-theme^="dark-"] .fdp-interventions-page .status-inactive {
+        background: rgba(217, 91, 106, 0.18);
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        const $bottomScroll = $('.fdp-table-scroll');
+        const $topScroll = $('.fdp-table-scroll-top');
+        const $topInner = $('.fdp-table-scroll-top-inner');
+        let isSyncingScroll = false;
+        let table = null;
+
+        const activeStatuses = {
+            active: true,
+            inactive: true
+        };
+
+        function normalizeStatus(value) {
+            const text = $('<div>')
+                .html(value || '')
+                .text()
+                .toString()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim();
+
+            if (text.includes('oui')) {
+                return 'active';
+            }
+
+            if (text.includes('non')) {
+                return 'inactive';
+            }
+
+            return '';
+        }
+
+        function syncFdpScrollWidth() {
+            const bottomScrollElement = $bottomScroll.get(0);
+
+            if (!bottomScrollElement) {
+                return;
+            }
+
+            $topInner.width(bottomScrollElement.scrollWidth);
+
+            if (table) {
+                table.columns.adjust();
+            }
+        }
+
+        function syncScroll(source, target) {
+            if (isSyncingScroll) {
+                return;
+            }
+
+            isSyncingScroll = true;
+            target.scrollLeft(source.scrollLeft());
+            isSyncingScroll = false;
+        }
+
+        $.fn.dataTable.ext.search.push(function (settings, data) {
+            if (settings.nTable.id !== 'table_data') {
+                return true;
+            }
+
+            const statusKey = normalizeStatus(data[15] || '');
+
+            if (!statusKey) {
+                return true;
+            }
+
+            return !!activeStatuses[statusKey];
+        });
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, 'Tous']
+            ],
+            pageLength: 25,
+            order: [[8, 'asc']],
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: 'Export CondoFix Interventions du Fonds de prévoyance',
+                    text: 'Excel'
+                }
+            ],
+            columnDefs: [
+                {
+                    visible: false,
+                    targets: [9, 10, 11, 12, 13, 14]
+                },
+                {
+                    orderable: false,
+                    targets: 16
+                }
+            ],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                infoPostFix: '',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
             },
-        ],
-        "pageLength":100,
-        "order": [[ 8, "asc" ]],
-        columnDefs: [
-            { "visible": false, "targets": [ 9,10,11,12,13,14 ], }
-        ],
-        language: {
-                url: "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#fdp-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#fdp-dt-search');
+
+                setTimeout(syncFdpScrollWidth, 0);
             }
         });
-    } );
-    </script>
 
-</head>
-<body>
-<style>
-    h4 {
-  margin: 1px;
-}
-</style>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-12 col-xs-12 col-sm-12 mt-1">
-<!--            <h4 class="mb-2">Interventions prévues dans l'analyse du fonds de prévoyance</h4>-->
-<!--            <a class="btn bg-steel text-white btn-rounded btn-sm mb-2 float-left" role="button"-->
-<!--                   href="{{ url_for('bp_fonds_prevoyance.affiche_intervention') }}">Ajouter intervention</a>-->
-<h4 class="mb-2">Interventions prévues dans l'analyse du fonds de prévoyance</h4>
+        $topScroll.on('scroll', function () {
+            syncScroll($topScroll, $bottomScroll);
+        });
 
-<form method="POST" action="{{ url_for('bp_fonds_prevoyance.interventions_table') }}">
-    <div class="form-check mb-2 float-right">
-        <input class="form-check-input" type="checkbox" name="show_historique" id="show_historique"
-               onchange="this.form.submit()" {% if show_historique %}checked{% endif %}>
-        <label class="form-check-label" for="show_historique">
-            Historique
-        </label>
-    </div>
-</form>
+        $bottomScroll.on('scroll', function () {
+            syncScroll($bottomScroll, $topScroll);
+        });
 
-{% if show_historique %}
-    <p class="text-info"><b>Affichage des interventions historiques activé.</b></p>
-{% endif %}
+        $(window).on('resize', function () {
+            syncFdpScrollWidth();
+        });
 
-<a class="btn bg-steel text-white btn-rounded btn-sm mb-2 float-left" role="button"
-   href="{{ url_for('bp_fonds_prevoyance.affiche_intervention') }}">Ajouter intervention</a>
+        table.on('draw', function () {
+            setTimeout(syncFdpScrollWidth, 0);
+        });
 
-            <div class="datagrid">
-                <style>
-                    table {
-                        font-family: arial, sans-serif;
-                        font-size: 11px;
-                        border-collapse: collapse;
-                        width: 100%;
-                        z-index: -1;
-                    }
-                    td, th {
-                        border: 1px solid #dddddd;
-                        text-align: left;
-                        padding: 2px;
-                    }
-                    tr:nth-child(even) {
-                        background-color: #dddddd;
-                    }
-                </style>
-                <table id="table_data" class="table table-striped table-bordered" style="width:100%">
-                    <thead>
-                    <tr>
-                        <th width="60px"><strong>Référence</strong></th>
-                        <th width="60px"><strong>Type</strong></th>
-                        <th width="150px"><strong>Description</strong></th>
-                        <th width="40px"><strong>Groupe</strong></th>
-                        <th width="80px"><strong>Catégorie</strong></th>
-                        <th width="80px"><strong>Tag</strong></th>
-                        <th width="80px"><strong>Valeur ($) de remplacement</strong></th>
-                        <th width="60px"><strong>Fréquence (ans)</strong></th>
-                        <th width="40px"><strong>Année prévue</strong></th>
-                        <th width="60px"><strong>Intervenant</strong></th>
-                        <th width="60px"><strong>Code élément Uniformat</strong></th>
-                        <th width="60px"><strong>Part du syndicat</strong></th>
-                        <th width="60px"><strong>Inflation 0-5 ans</strong></th>
-                        <th width="60px"><strong>Inflation 6-15 ans</strong></th>
-                        <th width="60px"><strong>Inflation Plus 15 ans</strong></th>
-                        <th width="40px"><strong>Actif</strong></th>
-                        <th width="60px"><strong>Action</strong></th>
-                    </tr>
-                    </thead>
-                    {% for item in fill_table %}
-                    <tr>
-                        <td width="60px">{{ item[5] }}</td>
-                        <td width="60px">{{ item[17] }}</td>
-                        <td width="150px">{{ item[1] }}</td>
-                        <td width="40px">{{ item[19] }}</td>
-                        <td width="80px">{{ item[18] }}</td>
-                        <td width="80px">{{ item[21] }}</td>
-                        <td width="80px">{{ item[6] }}</td>
-                        <td width="60px">{{ item[7] }}</td>
-                        <td width="40px">{{ item[8] }}</td>
-                        <td width="60px">{{ item[20] }}</td>
-                        <td width="60px">{{ item[10] }}</td>
-                        <td width="60px">{{ item[11] }}</td>
-                        <td width="60px">{{ item[12] }}</td>
-                        <td width="60px">{{ item[13] }}</td>
-                        <td width="60px">{{ item[14] }}</td>
-                        <td width="60px">{{ item[22] }}</td>
-                        <td class="align-middle">
-                            <a class="btn bg-steel text-white btn-rounded btn-sm mb-1" role="button"
-                               href="{{ url_for('bp_fonds_prevoyance.affiche_interv_modif',id_interv=item[0]) }}">Modifier</a></h6>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
+        function refreshStatusCardState($card, isActive) {
+            $card.toggleClass('is-active', isActive);
+            $card.toggleClass('is-inactive', !isActive);
+            $card.attr('aria-pressed', isActive ? 'true' : 'false');
+        }
+
+        function toggleStatusCard(cardElement) {
+            const $card = $(cardElement);
+            const key = $card.data('status');
+
+            if (!key || !(key in activeStatuses)) {
+                return;
+            }
+
+            activeStatuses[key] = !activeStatuses[key];
+            refreshStatusCardState($card, activeStatuses[key]);
+            table.draw();
+        }
+
+        $('.fdp-status-toggle').each(function () {
+            refreshStatusCardState($(this), true);
+        });
+
+        $('.fdp-status-toggle').on('click', function () {
+            toggleStatusCard(this);
+        });
+
+        $('.fdp-status-toggle').on('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleStatusCard(this);
+            }
+        });
+
+        setTimeout(syncFdpScrollWidth, 150);
+    });
+</script>
+
+{% set fdp_stats = namespace(active_count=0, inactive_count=0, total_value=0, next_year=None) %}
+{% for item in fill_table %}
+    {% if item[22] == 'oui' %}
+        {% set fdp_stats.active_count = fdp_stats.active_count + 1 %}
+    {% else %}
+        {% set fdp_stats.inactive_count = fdp_stats.inactive_count + 1 %}
+    {% endif %}
+
+    {% if item[6] %}
+        {% set fdp_stats.total_value = fdp_stats.total_value + item[6] %}
+    {% endif %}
+
+    {% if item[8] and (fdp_stats.next_year is none or item[8] < fdp_stats.next_year) %}
+        {% set fdp_stats.next_year = item[8] %}
+    {% endif %}
+{% endfor %}
+
+<div class="container-fluid fdp-interventions-page">
+    <section class="fdp-shell">
+        <div class="fdp-header">
+            <div class="fdp-header-copy">
+                <h1>Interventions prévues</h1>
+                <p>
+                    Registre des interventions saisies à partir de l’analyse du fonds de prévoyance.
+                    Cette vue sert à valider, maintenir et compléter les données financières du plan.
+                </p>
+            </div>
+
+            <div class="fdp-header-actions">
+                <form method="POST"
+                      action="{{ url_for('bp_fonds_prevoyance.interventions_table') }}"
+                      class="fdp-history-form">
+                    <label class="fdp-history-toggle" for="show_historique">
+                        <input class="fdp-history-checkbox"
+                               type="checkbox"
+                               name="show_historique"
+                               id="show_historique"
+                               onchange="this.form.submit()"
+                               {% if show_historique %}checked{% endif %}>
+                        <span>Historique</span>
+                    </label>
+                </form>
             </div>
         </div>
-    </div>
+
+        <div class="fdp-summary-strip">
+            <div class="fdp-metrics">
+                <article class="metric-card kpi-medium">
+                    <div class="metric-label">Interventions</div>
+                    <div class="metric-value">{{ fill_table|length }}</div>
+                    <div class="metric-note">{% if show_historique %}historiques{% else %}du plan courant{% endif %}</div>
+                </article>
+
+                <article class="metric-card kpi-hours">
+                    <div class="metric-label">Valeur totale</div>
+                    <div class="metric-value">{{ "{:,.0f}".format(fdp_stats.total_value).replace(",", " ") }} $</div>
+                    <div class="metric-note">valeur actuelle</div>
+                </article>
+
+                <article class="metric-card kpi-high">
+                    <div class="metric-label">Prochaine année</div>
+                    <div class="metric-value">{{ fdp_stats.next_year if fdp_stats.next_year is not none else "—" }}</div>
+                    <div class="metric-note">intervention prévue</div>
+                </article>
+
+                <article class="metric-card kpi-low fdp-status-toggle is-active"
+                         data-status="active"
+                         role="button"
+                         tabindex="0"
+                         aria-pressed="true"
+                         title="Cliquer pour afficher ou masquer les interventions actives.">
+                    <div class="metric-label">Actives</div>
+                    <div class="metric-value">{{ fdp_stats.active_count }}</div>
+                    <div class="metric-note">incluses au calcul</div>
+                </article>
+
+                <article class="metric-card kpi-age fdp-status-toggle is-active"
+                         data-status="inactive"
+                         role="button"
+                         tabindex="0"
+                         aria-pressed="true"
+                         title="Cliquer pour afficher ou masquer les interventions inactives.">
+                    <div class="metric-label">Inactives</div>
+                    <div class="metric-value">{{ fdp_stats.inactive_count }}</div>
+                    <div class="metric-note">exclues des projections</div>
+                </article>
+            </div>
+
+            <div class="fdp-context-line">
+                {% if show_historique %}
+                    <strong>Analyse historique :</strong> anciennes interventions conservées lors du renouvellement quinquennal du fonds de prévoyance.
+                {% else %}
+                    <strong>Analyse courante :</strong> interventions de l’analyse en vigueur, utilisées pour le suivi et les projections du fonds de prévoyance.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="fdp-toolbar">
+            <div class="fdp-toolbar-left">
+                <a class="fdp-btn fdp-btn-primary"
+                   role="button"
+                   href="{{ url_for('bp_fonds_prevoyance.affiche_intervention') }}">
+                    Ajouter intervention
+                </a>
+
+                <div id="fdp-dt-buttons"></div>
+            </div>
+
+            <div class="fdp-toolbar-right">
+                <div id="fdp-dt-search"></div>
+            </div>
+        </div>
+
+        <div class="fdp-table-card">
+            <div class="fdp-table-inner">
+                <div class="fdp-table-scroll-top">
+                    <div class="fdp-table-scroll-top-inner"></div>
+                </div>
+
+                <div class="fdp-table-scroll">
+                    <table id="table_data" class="table" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Référence</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Groupe</th>
+                                <th>Catégorie</th>
+                                <th>Tag</th>
+                                <th>Valeur ($) de remplacement</th>
+                                <th>Fréquence (ans)</th>
+                                <th>Année prévue</th>
+                                <th>Intervenant</th>
+                                <th>Code élément Uniformat</th>
+                                <th>Part du syndicat</th>
+                                <th>Inflation 0-5 ans</th>
+                                <th>Inflation 6-15 ans</th>
+                                <th>Inflation Plus 15 ans</th>
+                                <th>Actif</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in fill_table %}
+                            <tr>
+                                <td class="fdp-ref">{{ item[5] }}</td>
+                                <td>
+                                    {% if item[17] == "Maintenance" %}
+                                        <span class="type-pill type-maintenance">{{ item[17] }}</span>
+                                    {% elif item[17] == "Remplacement" %}
+                                        <span class="type-pill type-remplacement">{{ item[17] }}</span>
+                                    {% else %}
+                                        {{ item[17] }}
+                                    {% endif %}
+                                </td>
+                                <td class="fdp-description">{{ item[1] }}</td>
+                                <td>{{ item[19] }}</td>
+                                <td>{{ item[18] }}</td>
+                                <td>{{ item[21] }}</td>
+                                <td class="fdp-money">{{ item[6] }}</td>
+                                <td class="fdp-frequency">{{ item[7] }}</td>
+                                <td class="fdp-year">{{ item[8] }}</td>
+                                <td>{{ item[20] }}</td>
+                                <td>{{ item[10] }}</td>
+                                <td>{{ item[11] }}</td>
+                                <td>{{ item[12] }}</td>
+                                <td>{{ item[13] }}</td>
+                                <td>{{ item[14] }}</td>
+                                <td>
+                                    {% if item[22] == "oui" %}
+                                        <span class="status-pill status-active">oui</span>
+                                    {% else %}
+                                        <span class="status-pill status-inactive">non</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle fdp-action-cell">
+                                    <div class="fdp-actions-row">
+                                        <a class="fdp-action-link"
+                                           role="button"
+                                           href="{{ url_for('bp_fonds_prevoyance.affiche_interv_modif', id_interv=item[0]) }}">
+                                            Modifier
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
-</body>
+
 {% endblock content %}
