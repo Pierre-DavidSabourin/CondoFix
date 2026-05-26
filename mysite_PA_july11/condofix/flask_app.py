@@ -1,8 +1,23 @@
 import sys
 import os
-
+from pathlib import Path
 #sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..'))
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env")
+except ImportError:
+    pass
+
+
+def required_env(name):
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
 #-*-coding: Utf-8-*-
 
 __author__ = 'donald'
@@ -132,7 +147,8 @@ f"""  <url>
     return resp
 
 
-app.config['SECRET_KEY'] = 'OHOSZO5D382UAL9J'
+# app.config['SECRET_KEY'] = 'OHOSZO5D382UAL9J'
+app.config['SECRET_KEY'] = required_env('CONDOFIX_SECRET_KEY')
 # délai pour fermeture de session
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=30)
 app.config.update(
@@ -151,7 +167,7 @@ dropzone = Dropzone(app)
 #         sujet='Erreur pour CondoFix SERVEUR'
 #         body=traceback.format_exc()
 #         yahoo_mail_user = 'condofix.ca@yahoo.com'
-#         yahoo_mail_password = 'spyvlumgfwscqfkc'
+#         yahoo_mail_password = 'password'
 #         sent_from = yahoo_mail_user
 #         sent_to = ['donald.boileau@gmail.com']
 #         subject = sujet

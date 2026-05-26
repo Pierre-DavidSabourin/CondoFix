@@ -30,5 +30,10 @@ Central.db
 *.log
 .DS_Store
 
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
 # Local generated test invoices
 mysite_PA_july11/documentation/Test_docs/Factures/*.pdf

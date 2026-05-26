@@ -10,6 +10,9 @@ from email.mime.text import MIMEText
 import unicodedata
 import urllib.request
 from pathlib import Path
+import os
+from html import escape
+from services.email_service import send_html_email
 
 bp_public = Blueprint('bp_public', __name__)
 
@@ -164,8 +167,9 @@ def demande_info():
 def soumettre_info():
     """
     Envoi des données de demande de contact via email à l'équipe CondoFix
-    et enregistrement dans la bd démo.
+    et enregistrement dans la BD démo.
     """
+
     # --- Honeypot check (Task 132.1) ---
     hp = (request.form.get('website') or '').strip()
     if hp:
@@ -175,26 +179,26 @@ def soumettre_info():
             current_app.logger.info(f"HONEYPOT block on /soumettre_info ip={ip} ua={ua[:120]}")
         except Exception:
             pass
-        # Return normal thank-you page; no DB write, no email
+
+        # Return normal thank-you page; no DB write, no email.
         return render_template('-merci_demande_info.html')
-    # --- end honeypot ---
 
     # Helper: safe get (prevents KeyError if field missing)
     def f(name, default=''):
         return (request.form.get(name) or default).strip()
 
     # --- Read fields ---
-    syndicat_nom   = f('syndicat_nom')
+    syndicat_nom = f('syndicat_nom')
     contact_prenom = f('contact_prenom')
-    contact_nom    = f('contact_nom')
-    nbre_portes    = f('nbre_portes')
-    contact_email  = f('contact_email')
-    contact_tel    = f('contact_tel')
-    commentaires   = f('commentaires')
-    role           = f('options_role')
+    contact_nom = f('contact_nom')
+    nbre_portes = f('nbre_portes')
+    contact_email = f('contact_email')
+    contact_tel = f('contact_tel')
+    commentaires = f('commentaires')
+    role = f('options_role')
 
-    # NEW: multi-select checkbox values (slugs)
-    demande_ids = request.form.getlist('options_demande')  # e.g. ['demo_acces','soumission_devis']
+    # Multi-select checkbox values (slugs)
+    demande_ids = request.form.getlist('options_demande')  # e.g. ['demo_acces', 'soumission_devis']
 
     # --- Basic tampering / length checks (mirror HTML maxlength) ---
     if len(syndicat_nom) > 40:
@@ -221,49 +225,52 @@ def soumettre_info():
         flash("Les données soumises ne sont pas conformes.", 'warning')
         return render_template('-demande_info.html')
 
-    # REQUIRED: role must be selected (was implicitly enforced before; now explicit server-side)
+    # REQUIRED: role must be selected.
     if not role:
         flash("Veuillez sélectionner votre rôle.", 'warning')
         return render_template('-demande_info.html')
 
     # --- Validate + normalize checkbox values (tamper-proof) ---
-    DEMANDE_MAP = {
+    demande_map = {
         'demo_acces': "Recevoir un accès démo (code envoyé par courriel)",
         'demo_planifier': "Planifier une démonstration en ligne (20 min)",
         'soumission_devis': "Recevoir une soumission / un devis (tarification selon le nombre de portes)",
         'implantation_demarrage': "Être contacté pour l’implantation / démarrage (mise en place, paramètres, formation)",
     }
 
-    # keep only allowed values + dedupe while preserving order
+    # Keep only allowed values + dedupe while preserving order.
     seen = set()
-    demande_ids = [d for d in demande_ids if d in DEMANDE_MAP and not (d in seen or seen.add(d))]
+    demande_ids = [
+        demande_id
+        for demande_id in demande_ids
+        if demande_id in demande_map and not (demande_id in seen or seen.add(demande_id))
+    ]
 
     if not demande_ids:
         flash("Veuillez sélectionner au moins une option dans « Je souhaite ».", 'warning')
         return render_template('-demande_info.html')
 
-    demandes_labels = [DEMANDE_MAP[d] for d in demande_ids]
+    demandes_labels = [demande_map[demande_id] for demande_id in demande_ids]
 
-    # DB: compact, stable identifiers
+    # DB: compact, stable identifiers.
     type_demande_db = ",".join(demande_ids)  # demo_acces,soumission_devis
 
-    # Build full contact name (for DB + email)
+    # Build full contact name (for DB + email).
     nom_contact = f"{contact_prenom} {contact_nom}".strip()
 
     # --- GEO lookup ---
-    GEO_IP_API_URL = 'http://ip-api.com/json/'
+    geo_ip_api_url = 'http://ip-api.com/json/'
+
     if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-        IP_TO_SEARCH = request.environ.get('REMOTE_ADDR', '')
+        ip_to_search = request.environ.get('REMOTE_ADDR', '')
     else:
-        IP_TO_SEARCH = request.environ.get('HTTP_X_FORWARDED_FOR', '')
+        ip_to_search = request.environ.get('HTTP_X_FORWARDED_FOR', '')
 
     try:
-        req = urllib.request.Request(GEO_IP_API_URL + IP_TO_SEARCH)
+        req = urllib.request.Request(geo_ip_api_url + ip_to_search)
         response = urllib.request.urlopen(req).read()
         json_response = json.loads(response.decode('utf-8'))
         ville_brut = (json_response.get('city') or '').strip()
-        pays = (json_response.get('country') or '').strip()
-        # Keep it simple: if city missing, fallback
         ville = ville_brut or 'Inconnue'
     except Exception:
         ville = 'Inconnue'
@@ -272,35 +279,54 @@ def soumettre_info():
     cnx = connect_dbase()
     cur = cnx.cursor()
     cur.execute(
-        "INSERT INTO demandes_info (Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande, Commentaires) "
+        "INSERT INTO demandes_info "
+        "(Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande, Commentaires) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-        [datetime.now(), nom_contact, syndicat_nom, ville, nbre_portes, contact_email, contact_tel, role, type_demande_db, commentaires]
+        [
+            datetime.now(),
+            nom_contact,
+            syndicat_nom,
+            ville,
+            nbre_portes,
+            contact_email,
+            contact_tel,
+            role,
+            type_demande_db,
+            commentaires,
+        ]
     )
     cnx.commit()
     cnx.close()
 
-    # --- Email ---
-    mail_to = 'donald.boileau@gmail.com, sabourinpd@outlook.com'
-    email_list = [e.strip() for e in mail_to.split(',') if e.strip()]
+    # --- Email recipients from .env ---
+    mail_to = os.getenv(
+        "CONDOFIX_INFO_REQUEST_RECIPIENTS",
+        "sabourinpd@outlook.com"
+    )
+    email_list = [email.strip() for email in mail_to.split(",") if email.strip()]
 
-    yahoo_mail_user = 'condofix.ca@yahoo.com'
-    yahoo_mail_password = 'spyvlumgfwscqfkc'
+    # Escape public form values before injecting them into HTML email.
+    safe_syndicat_nom = escape(syndicat_nom)
+    safe_contact_prenom = escape(contact_prenom)
+    safe_contact_nom = escape(contact_nom)
+    safe_role = escape(role)
+    safe_nbre_portes = escape(nbre_portes)
+    safe_contact_email = escape(contact_email)
+    safe_contact_tel = escape(contact_tel)
+    safe_commentaires = escape(commentaires)
 
-    msg = MIMEMultipart("related")
-    msg['Subject'] = 'Demande de prospect CondoFix'
-    msg['From'] = yahoo_mail_user
-
-    demandes_html = "".join(f"<li>{label}</li>" for label in demandes_labels)
+    # Labels come from our fixed demande_map, but escaping is still harmless.
+    demandes_html = "".join(f"<li>{escape(label)}</li>" for label in demandes_labels)
 
     html = f"""
     <html><body>
       <p>
-        <b>Syndicat:</b>&nbsp;{syndicat_nom}<br/>
-        <b>Soumis par:</b>&nbsp;{contact_prenom} {contact_nom}<br/>
-        <b>Rôle:</b>&nbsp;{role}<br/>
-        <b>Nombre de portes:</b>&nbsp;{nbre_portes}<br/>
-        <b>Courriel:</b>&nbsp;{contact_email}<br/>
-        <b>Téléphone:</b>&nbsp;{contact_tel}<br/>
+        <b>Syndicat:</b>&nbsp;{safe_syndicat_nom}<br/>
+        <b>Soumis par:</b>&nbsp;{safe_contact_prenom} {safe_contact_nom}<br/>
+        <b>Rôle:</b>&nbsp;{safe_role}<br/>
+        <b>Nombre de portes:</b>&nbsp;{safe_nbre_portes}<br/>
+        <b>Courriel:</b>&nbsp;{safe_contact_email}<br/>
+        <b>Téléphone:</b>&nbsp;{safe_contact_tel}<br/>
       </p>
 
       <p><b>Je souhaite :</b></p>
@@ -308,23 +334,190 @@ def soumettre_info():
         {demandes_html}
       </ul>
 
-      <p><b>Commentaires :</b><br/>{commentaires}</p>
+      <p><b>Commentaires :</b><br/>{safe_commentaires}</p>
     </body></html>
     """
 
-    msg.attach(MIMEText(html, 'html'))
-
     try:
-        server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
-        server.ehlo()
-        server.login(yahoo_mail_user, yahoo_mail_password)
-        for addr in email_list:
-            server.sendmail(yahoo_mail_user, addr, msg.as_string())
-        server.quit()
-        return render_template('-merci_demande_info.html')
+        send_html_email(
+            subject="Demande de prospect CondoFix",
+            recipients=email_list,
+            html_body=html,
+            reply_to=contact_email
+        )
     except Exception:
-        print(traceback.format_exc())
-        return render_template('-merci_demande_info.html')
+        current_app.logger.exception("Erreur lors de l'envoi du courriel de demande d'information.")
+
+    return render_template('-merci_demande_info.html')
+# @bp_public.route('/soumettre_info', methods=['POST'])
+# def soumettre_info():
+#     """
+#     Envoi des données de demande de contact via email à l'équipe CondoFix
+#     et enregistrement dans la bd démo.
+#     """
+#     # --- Honeypot check (Task 132.1) ---
+#     hp = (request.form.get('website') or '').strip()
+#     if hp:
+#         ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+#         ua = request.headers.get('User-Agent', '')
+#         try:
+#             current_app.logger.info(f"HONEYPOT block on /soumettre_info ip={ip} ua={ua[:120]}")
+#         except Exception:
+#             pass
+#         # Return normal thank-you page; no DB write, no email
+#         return render_template('-merci_demande_info.html')
+#     # --- end honeypot ---
+#
+#     # Helper: safe get (prevents KeyError if field missing)
+#     def f(name, default=''):
+#         return (request.form.get(name) or default).strip()
+#
+#     # --- Read fields ---
+#     syndicat_nom   = f('syndicat_nom')
+#     contact_prenom = f('contact_prenom')
+#     contact_nom    = f('contact_nom')
+#     nbre_portes    = f('nbre_portes')
+#     contact_email  = f('contact_email')
+#     contact_tel    = f('contact_tel')
+#     commentaires   = f('commentaires')
+#     role           = f('options_role')
+#
+#     # NEW: multi-select checkbox values (slugs)
+#     demande_ids = request.form.getlist('options_demande')  # e.g. ['demo_acces','soumission_devis']
+#
+#     # --- Basic tampering / length checks (mirror HTML maxlength) ---
+#     if len(syndicat_nom) > 40:
+#         flash("Les données soumises ne sont pas conformes.", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     if len(contact_prenom) > 30 or len(contact_nom) > 30:
+#         flash("Les données soumises ne sont pas conformes.", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     if len(nbre_portes) > 3:
+#         flash("Les données soumises ne sont pas conformes.", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     if len(contact_email) > 40:
+#         flash("Les données soumises ne sont pas conformes.", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     if len(contact_tel) > 12:
+#         flash("Les données soumises ne sont pas conformes.", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     if len(commentaires) > 200:
+#         flash("Les données soumises ne sont pas conformes.", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     # REQUIRED: role must be selected (was implicitly enforced before; now explicit server-side)
+#     if not role:
+#         flash("Veuillez sélectionner votre rôle.", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     # --- Validate + normalize checkbox values (tamper-proof) ---
+#     DEMANDE_MAP = {
+#         'demo_acces': "Recevoir un accès démo (code envoyé par courriel)",
+#         'demo_planifier': "Planifier une démonstration en ligne (20 min)",
+#         'soumission_devis': "Recevoir une soumission / un devis (tarification selon le nombre de portes)",
+#         'implantation_demarrage': "Être contacté pour l’implantation / démarrage (mise en place, paramètres, formation)",
+#     }
+#
+#     # keep only allowed values + dedupe while preserving order
+#     seen = set()
+#     demande_ids = [d for d in demande_ids if d in DEMANDE_MAP and not (d in seen or seen.add(d))]
+#
+#     if not demande_ids:
+#         flash("Veuillez sélectionner au moins une option dans « Je souhaite ».", 'warning')
+#         return render_template('-demande_info.html')
+#
+#     demandes_labels = [DEMANDE_MAP[d] for d in demande_ids]
+#
+#     # DB: compact, stable identifiers
+#     type_demande_db = ",".join(demande_ids)  # demo_acces,soumission_devis
+#
+#     # Build full contact name (for DB + email)
+#     nom_contact = f"{contact_prenom} {contact_nom}".strip()
+#
+#     # --- GEO lookup ---
+#     GEO_IP_API_URL = 'http://ip-api.com/json/'
+#     if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
+#         IP_TO_SEARCH = request.environ.get('REMOTE_ADDR', '')
+#     else:
+#         IP_TO_SEARCH = request.environ.get('HTTP_X_FORWARDED_FOR', '')
+#
+#     try:
+#         req = urllib.request.Request(GEO_IP_API_URL + IP_TO_SEARCH)
+#         response = urllib.request.urlopen(req).read()
+#         json_response = json.loads(response.decode('utf-8'))
+#         ville_brut = (json_response.get('city') or '').strip()
+#         pays = (json_response.get('country') or '').strip()
+#         # Keep it simple: if city missing, fallback
+#         ville = ville_brut or 'Inconnue'
+#     except Exception:
+#         ville = 'Inconnue'
+#
+#     # --- DB insert ---
+#     cnx = connect_dbase()
+#     cur = cnx.cursor()
+#     cur.execute(
+#         "INSERT INTO demandes_info (Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande, Commentaires) "
+#         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+#         [datetime.now(), nom_contact, syndicat_nom, ville, nbre_portes, contact_email, contact_tel, role, type_demande_db, commentaires]
+#     )
+#     cnx.commit()
+#     cnx.close()
+#
+#     # --- Email ---
+#     # mail_to = 'donald.boileau@gmail.com, sabourinpd@outlook.com'
+#     mail_to = os.getenv(
+#         "CONDOFIX_INFO_REQUEST_RECIPIENTS",
+#         "sabourinpd@outlook.com"
+#     )
+#     email_list = [e.strip() for e in mail_to.split(',') if e.strip()]
+#
+#     yahoo_mail_user = 'condofix.ca@yahoo.com'
+#     yahoo_mail_password = 'password'
+#
+#     msg = MIMEMultipart("related")
+#     msg['Subject'] = 'Demande de prospect CondoFix'
+#     msg['From'] = yahoo_mail_user
+#
+#     demandes_html = "".join(f"<li>{label}</li>" for label in demandes_labels)
+#
+#     html = f"""
+#     <html><body>
+#       <p>
+#         <b>Syndicat:</b>&nbsp;{syndicat_nom}<br/>
+#         <b>Soumis par:</b>&nbsp;{contact_prenom} {contact_nom}<br/>
+#         <b>Rôle:</b>&nbsp;{role}<br/>
+#         <b>Nombre de portes:</b>&nbsp;{nbre_portes}<br/>
+#         <b>Courriel:</b>&nbsp;{contact_email}<br/>
+#         <b>Téléphone:</b>&nbsp;{contact_tel}<br/>
+#       </p>
+#
+#       <p><b>Je souhaite :</b></p>
+#       <ul>
+#         {demandes_html}
+#       </ul>
+#
+#       <p><b>Commentaires :</b><br/>{commentaires}</p>
+#     </body></html>
+#     """
+#
+#     msg.attach(MIMEText(html, 'html'))
+#
+#     try:
+#         server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
+#         server.ehlo()
+#         server.login(yahoo_mail_user, yahoo_mail_password)
+#         for addr in email_list:
+#             server.sendmail(yahoo_mail_user, addr, msg.as_string())
+#         server.quit()
+#         return render_template('-merci_demande_info.html')
+#     except Exception:
+#         print(traceback.format_exc())
+#         return render_template('-merci_demande_info.html')
 
 
 @bp_public.route('/produits')
@@ -468,7 +661,7 @@ def calcul_tarifs():
     # mail_to = 'donald.boileau@gmail.com,jaclus1111@icloud.com'
     # email_list = mail_to.split(',')
     # yahoo_mail_user = 'condofix.ca@yahoo.com'
-    # yahoo_mail_password = 'spyvlumgfwscqfkc'
+    # yahoo_mail_password = 'password'
     #
     # msg = MIMEMultipart("related")
     # msg['Subject'] = 'Requête de tarifs'
