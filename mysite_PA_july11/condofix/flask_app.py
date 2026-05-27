@@ -1,21 +1,43 @@
 import sys
 import os
+import traceback
+from datetime import timedelta
+from html import escape
+from pathlib import Path
 
-#sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..'))
+import matplotlib
+from flask import Flask, Response, render_template, request
+from flask_dropzone import Dropzone
+from werkzeug.exceptions import HTTPException
+
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+for path in (BASE_DIR, PROJECT_ROOT):
+    path_str = str(path)
+    if path_str not in sys.path:
+        sys.path.insert(0, path_str)
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env")
+except ImportError:
+    pass
+
+
+def required_env(name):
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+def bool_env(name, default="false"):
+    return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 #-*-coding: Utf-8-*-
 
 __author__ = 'donald'
 
-from flask import Flask, request, Response, url_for
-import matplotlib
-from datetime import timedelta, date
-from flask_dropzone import Dropzone
-
-import smtplib
-from werkzeug.exceptions import HTTPException
 matplotlib.use('Agg')#pour éviter que le retour au tableau de bord cause une erreur
-import traceback
+
 app = Flask(__name__)
 
 # #pour éviter que l'engin de template jinja ajoute des espaces entre les lignes
@@ -63,6 +85,13 @@ app.register_blueprint(bp_signalements)
 app.register_blueprint(bp_parametres)
 app.register_blueprint(bp_ocr)
 #app.register_blueprint(bp_sinistres) # feature will not be implemented
+
+app.config["CONDOFIX_ENV"] = os.getenv("CONDOFIX_ENV", "DEV").upper()
+app.config["ERROR_EMAIL_ENABLED"] = bool_env("CONDOFIX_ERROR_EMAIL_ENABLED", "false")
+app.config["ERROR_EMAIL_RECIPIENTS"] = os.getenv(
+    "CONDOFIX_ERROR_EMAIL_RECIPIENTS",
+    "sabourinpd@outlook.com"
+)
 
 # =========================
 # SEO infrastructure routes
@@ -132,7 +161,7 @@ f"""  <url>
     return resp
 
 
-app.config['SECRET_KEY'] = 'OHOSZO5D382UAL9J'
+app.config['SECRET_KEY'] = required_env('CONDOFIX_SECRET_KEY')
 # délai pour fermeture de session
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=30)
 app.config.update(
@@ -143,31 +172,49 @@ app.config.update(
 
 dropzone = Dropzone(app)
 
-# @app.errorhandler(500)
-# def handle_exception(e):
-#     #pass through HTTP errors
-#     if isinstance(e, HTTPException):
-#         # envoi d'email dans le cas d'une erreur ('internal server error' par exemple)
-#         sujet='Erreur pour CondoFix SERVEUR'
-#         body=traceback.format_exc()
-#         yahoo_mail_user = 'condofix.ca@yahoo.com'
-#         yahoo_mail_password = 'spyvlumgfwscqfkc'
-#         sent_from = yahoo_mail_user
-#         sent_to = ['donald.boileau@gmail.com']
-#         subject = sujet
-#         email_text = """From: %s\nTo: %s\nSubject: %s\n\n%s""" % (sent_from, ", ".join(sent_to), subject, body)
-#         server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
-#         server.ehlo()
-#         server.login(yahoo_mail_user, yahoo_mail_password)
-#         server.sendmail(sent_from, sent_to, email_text)
-#         server.close()
-#         return render_template('-erreur.html')
+@app.errorhandler(500)
+def handle_exception(e):
+    """
+    QA/TEST server error handler.
+
+    Sends an error email only when CONDOFIX_ERROR_EMAIL_ENABLED=true.
+    SMTP credentials are handled by services.email_service and .env.
+    """
+    if isinstance(e, HTTPException):
+        app.logger.exception("Internal server error")
+
+    if app.config.get("ERROR_EMAIL_ENABLED", False):
+        try:
+            from services.email_service import send_html_email
+
+            body = escape(traceback.format_exc())
+
+            html = f"""
+            <html>
+              <body>
+                <p><b>Environnement:</b> {escape(app.config.get("CONDOFIX_ENV", "UNKNOWN"))}</p>
+                <p><b>Erreur serveur CondoFix</b></p>
+                <pre>{body}</pre>
+              </body>
+            </html>
+            """
+
+            send_html_email(
+                subject=f"Erreur CondoFix SERVEUR - {app.config.get('CONDOFIX_ENV', 'UNKNOWN')}",
+                recipients=app.config.get("ERROR_EMAIL_RECIPIENTS"),
+                html_body=html
+            )
+        except Exception:
+            app.logger.exception("Erreur lors de l'envoi du courriel d'erreur serveur.")
+
+    return render_template('-erreur.html'), 500
 
 @app.context_processor
 def inject_theme_ui() -> object:
     return {
         "theme_ui": request.cookies.get("condofix_theme_ui", "normal-condofix-classic")
     }
+
 
 # #ajout de 'host' et port pour s'assurer de la vitesse du site en test
 if __name__ == '__main__':
