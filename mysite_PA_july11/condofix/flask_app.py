@@ -9,7 +9,6 @@ import matplotlib
 from flask import Flask, Response, render_template, request
 from flask_dropzone import Dropzone
 from werkzeug.exceptions import HTTPException
-import traceback
 
 #sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..'))
