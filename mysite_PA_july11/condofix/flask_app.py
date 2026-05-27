@@ -161,7 +161,6 @@ f"""  <url>
     return resp
 
 
-# app.config['SECRET_KEY'] = 'OHOSZO5D382UAL9J'
 app.config['SECRET_KEY'] = required_env('CONDOFIX_SECRET_KEY')
 # délai pour fermeture de session
 app.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(minutes=30)

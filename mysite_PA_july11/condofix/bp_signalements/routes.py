@@ -221,40 +221,6 @@ def creation_ticket_signalement(id_signalement):
 
     return redirect(url_for('bp_tickets.affiche_ticket_en_cours', id_ticket=ident_ticket))
 
-# @bp_signalements.route('/creation_ticket_signalement/<id_signalement>', methods=['GET','POST'])
-# def creation_ticket_signalement(id_signalement):
-#     """Créer un ticket dans la table mysql suivi par retour à la page affichant les signalements"""
-#     if session.get('ProfilUsager') is None:
-#         # probablement délai de session atteint
-#         return render_template('session_ferme.html')
-#     profile_list=session.get('ProfilUsager')
-#     client_ident=profile_list[0]
-#     mode = profile_list[8]
-#     cnx = connect_db(mode)
-#     cur = cnx.cursor()
-#     list_signalement=[]
-#     cur.execute("SELECT DateHeureSoumis, IDSujetSignalement, Unite, Courriel, Emplacement, Description from signalements "
-#                 "WHERE IDSignalement=%s AND IDClient=%s",(id_signalement,client_ident))
-#     for row in cur.fetchall():
-#         list_signalement.append(row)
-#     date_prevue= datetime.now()+timedelta(days=6)
-#     cur.execute('INSERT INTO tickets (IDClient, Statut, Priorite, DatePrevue, IDSignalement, DateCreation, IDUsager, Emplacement, TypeTravail, Description_travail) '
-#                  'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)',
-#                  [client_ident, 2, 3, date_prevue.date(), id_signalement, datetime.now().date(), profile_list[1], list_signalement[0][4], 1, list_signalement[0][5]])
-#     cnx.commit()
-#     ident_ticket =int()
-#     # trouver le IDTicket de cet enregistrement (dernier dans la table)
-#     cur.execute("SELECT max(IDTicket) FROM tickets")
-#     for item in cur.fetchall():
-#         ident_ticket=item[0]
-#
-#     # modifier le signalement pour ajouter le no. de ticket
-#     cur.execute("UPDATE signalements SET IDTicket=%s WHERE IDSignalement=%s AND IDClient=%s",[ident_ticket,id_signalement,client_ident])
-#     cnx.commit()
-#     cnx.close()
-#
-#     return redirect(url_for('bp_tickets.affiche_ticket_en_cours',id_ticket=ident_ticket))
-
 @bp_signalements.route('/archiver_signalement/<id_signalement>', methods=['GET','POST'])
 def archiver_signalement(id_signalement):
     """rendre un signalement inactif  dans la table mysql suivi par retour à la page affichant les signalements"""
@@ -330,38 +296,3 @@ def afficher_de_date_2():
         date_debut=date,
         bd=profile_list[3]
     )
-
-# @bp_signalements.route("/afficher_de_date_2", methods=['POST','GET'])
-# def afficher_de_date_2():
-#     """afficher la page de la table de signalements à partir de date spécifiée
-# """
-#     if session.get('ProfilUsager') is None:
-#         # probablement délai de session atteint
-#         return render_template('session_ferme.html')
-#     profile_list=session.get('ProfilUsager')
-#     client_ident = profile_list[0]
-#     mode = profile_list[8]
-#     cnx = connect_db(mode)
-#     cur = cnx.cursor()
-#     # # sélectionner enregistrements depuis date demandée
-#     date = request.form['date_debut']
-#     if date == '':
-#         flash('Vous devez sélectionner une date de début des signalements.', "warning")
-#         return redirect(url_for('bp_signalements.signalements_table'))
-#     # convertir date en datetime
-#     date_hre = datetime.strptime(date, "%Y-%m-%d")
-#
-#     client_ident = profile_list[0]
-#     cnx = connect_db()
-#     cur = cnx.cursor()
-#     list_signalements = []
-#     cur.execute(
-#         "SELECT IDSignalement, DateHeureSoumis, IDSujetSignalement, Unite, Courriel, Emplacement, Description, IDTicket, Actif "
-#         "FROM signalements WHERE DateHeureSoumis>=%s AND IDClient=%s", (date_hre, client_ident))
-#     for row in cur.fetchall():
-#         cur.execute("SELECT Description from sujetsignalement WHERE IDSujetSignalement=%s", (row[2],))
-#         for item in cur.fetchall():
-#             row += item
-#         list_signalements.append(row)
-#
-#     return render_template('signalements_table.html', fill_signalements=list_signalements, date_debut=date, bd=profile_list[3])
