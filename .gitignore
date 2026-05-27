@@ -37,3 +37,4 @@ Central.db
 
 # Local generated test invoices
 mysite_PA_july11/documentation/Test_docs/Factures/*.pdf
+mysite_PA_july11/documentation/*_docs/statut_*.csv

@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, session, request, redirect, url_for, flash
+from flask import Blueprint, render_template, session, request, redirect, url_for, flash, current_app
+from html import escape
+from services.email_service import send_html_email
 import mysql.connector
 from io import StringIO
 import unicodedata
@@ -7,12 +9,6 @@ from werkzeug.wrappers import Response
 from werkzeug.utils import secure_filename
 from datetime import datetime,timedelta
 import os
-import traceback
-import smtplib
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
 from utils import connect_db, chemin_rep
 
 bp_signalements = Blueprint('bp_signalements', __name__)
@@ -111,24 +107,14 @@ def signalement_ajout():
     cur.execute("SELECT EnvoiEMailSignal,EmailSignalement FROM parametres WHERE IDClient=%s", (client_ident,))
     for item in cur.fetchall():
         envoi_email = item[0]
-        email_a = item[1]
-        email_list = email_a.split(',')
+        email_a = item[1] or ""
+        email_list = [email.strip() for email in email_a.split(",") if email.strip()]
     cnx.close()
 
-    if envoi_email==1: #paramètre activé
-        no_unite=request.form['no_unite']
-        emplacement=request.form['emplacement']
-        description=request.form['desc_signalement']
-
-        # préparation email
-
-
-        yahoo_mail_user = 'condofix.ca@yahoo.com'
-        yahoo_mail_password = 'spyvlumgfwscqfkc'
-        #utiliser le mode 'mixed' au lieu de 'related' pour que les images jointes s'affichent dans IOS
-        msg = MIMEMultipart('mixed')
-        msg['Subject'] = "Signalement"
-        msg['From'] = yahoo_mail_user
+    if envoi_email == 1 and email_list:
+        no_unite = request.form['no_unite']
+        emplacement = request.form['emplacement']
+        description = request.form['desc_signalement']
 
         html = """
         <html><body>
@@ -139,25 +125,27 @@ def signalement_ajout():
         </body></html>
         """
 
-        html = html.format(sujet=sujet,no_unite=no_unite,emplacement=emplacement,description=description)
+        html = html.format(
+            sujet=escape(sujet or ""),
+            no_unite=escape(no_unite or ""),
+            emplacement=escape(emplacement or ""),
+            description=escape(description or "")
+        )
 
-        # enregistrer le MIME pour l'HTML
-        contenu = MIMEText(html, 'html')
-        # attacher le contenu au 'container' du message
-        msg.attach(contenu)
-
-        # envoi du email
         try:
-            server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
-            server.ehlo()
-            server.login(yahoo_mail_user, yahoo_mail_password)
-            # sendmail function takes 3 arguments: sender's address, recipient's address
-            # and message to send - here it is sent as one string.
-            for i in range(len(email_list)):
-                server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
-            server.quit()
-        except:
-            print(traceback.format_exc())
+            send_html_email(
+                subject="Signalement",
+                recipients=email_list,
+                html_body=html,
+                reply_to=request.form.get('courriel')
+            )
+        except Exception:
+            current_app.logger.exception("Erreur lors de l'envoi du courriel de signalement.")
+
+    elif envoi_email == 1 and not email_list:
+        current_app.logger.warning(
+            "EnvoiEMailSignal est actif, mais aucun destinataire EmailSignalement n'est configuré."
+        )
 
     return redirect(url_for('bp_documentation.docs_table_proprios'))
 

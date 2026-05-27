@@ -4,9 +4,6 @@ from dateutil.relativedelta import relativedelta
 import time
 import mysql.connector
 import traceback
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import unicodedata
 import urllib.request
 from pathlib import Path
@@ -349,175 +346,6 @@ def soumettre_info():
         current_app.logger.exception("Erreur lors de l'envoi du courriel de demande d'information.")
 
     return render_template('-merci_demande_info.html')
-# @bp_public.route('/soumettre_info', methods=['POST'])
-# def soumettre_info():
-#     """
-#     Envoi des données de demande de contact via email à l'équipe CondoFix
-#     et enregistrement dans la bd démo.
-#     """
-#     # --- Honeypot check (Task 132.1) ---
-#     hp = (request.form.get('website') or '').strip()
-#     if hp:
-#         ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-#         ua = request.headers.get('User-Agent', '')
-#         try:
-#             current_app.logger.info(f"HONEYPOT block on /soumettre_info ip={ip} ua={ua[:120]}")
-#         except Exception:
-#             pass
-#         # Return normal thank-you page; no DB write, no email
-#         return render_template('-merci_demande_info.html')
-#     # --- end honeypot ---
-#
-#     # Helper: safe get (prevents KeyError if field missing)
-#     def f(name, default=''):
-#         return (request.form.get(name) or default).strip()
-#
-#     # --- Read fields ---
-#     syndicat_nom   = f('syndicat_nom')
-#     contact_prenom = f('contact_prenom')
-#     contact_nom    = f('contact_nom')
-#     nbre_portes    = f('nbre_portes')
-#     contact_email  = f('contact_email')
-#     contact_tel    = f('contact_tel')
-#     commentaires   = f('commentaires')
-#     role           = f('options_role')
-#
-#     # NEW: multi-select checkbox values (slugs)
-#     demande_ids = request.form.getlist('options_demande')  # e.g. ['demo_acces','soumission_devis']
-#
-#     # --- Basic tampering / length checks (mirror HTML maxlength) ---
-#     if len(syndicat_nom) > 40:
-#         flash("Les données soumises ne sont pas conformes.", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     if len(contact_prenom) > 30 or len(contact_nom) > 30:
-#         flash("Les données soumises ne sont pas conformes.", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     if len(nbre_portes) > 3:
-#         flash("Les données soumises ne sont pas conformes.", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     if len(contact_email) > 40:
-#         flash("Les données soumises ne sont pas conformes.", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     if len(contact_tel) > 12:
-#         flash("Les données soumises ne sont pas conformes.", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     if len(commentaires) > 200:
-#         flash("Les données soumises ne sont pas conformes.", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     # REQUIRED: role must be selected (was implicitly enforced before; now explicit server-side)
-#     if not role:
-#         flash("Veuillez sélectionner votre rôle.", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     # --- Validate + normalize checkbox values (tamper-proof) ---
-#     DEMANDE_MAP = {
-#         'demo_acces': "Recevoir un accès démo (code envoyé par courriel)",
-#         'demo_planifier': "Planifier une démonstration en ligne (20 min)",
-#         'soumission_devis': "Recevoir une soumission / un devis (tarification selon le nombre de portes)",
-#         'implantation_demarrage': "Être contacté pour l’implantation / démarrage (mise en place, paramètres, formation)",
-#     }
-#
-#     # keep only allowed values + dedupe while preserving order
-#     seen = set()
-#     demande_ids = [d for d in demande_ids if d in DEMANDE_MAP and not (d in seen or seen.add(d))]
-#
-#     if not demande_ids:
-#         flash("Veuillez sélectionner au moins une option dans « Je souhaite ».", 'warning')
-#         return render_template('-demande_info.html')
-#
-#     demandes_labels = [DEMANDE_MAP[d] for d in demande_ids]
-#
-#     # DB: compact, stable identifiers
-#     type_demande_db = ",".join(demande_ids)  # demo_acces,soumission_devis
-#
-#     # Build full contact name (for DB + email)
-#     nom_contact = f"{contact_prenom} {contact_nom}".strip()
-#
-#     # --- GEO lookup ---
-#     GEO_IP_API_URL = 'http://ip-api.com/json/'
-#     if request.environ.get('HTTP_X_FORWARDED_FOR') is None:
-#         IP_TO_SEARCH = request.environ.get('REMOTE_ADDR', '')
-#     else:
-#         IP_TO_SEARCH = request.environ.get('HTTP_X_FORWARDED_FOR', '')
-#
-#     try:
-#         req = urllib.request.Request(GEO_IP_API_URL + IP_TO_SEARCH)
-#         response = urllib.request.urlopen(req).read()
-#         json_response = json.loads(response.decode('utf-8'))
-#         ville_brut = (json_response.get('city') or '').strip()
-#         pays = (json_response.get('country') or '').strip()
-#         # Keep it simple: if city missing, fallback
-#         ville = ville_brut or 'Inconnue'
-#     except Exception:
-#         ville = 'Inconnue'
-#
-#     # --- DB insert ---
-#     cnx = connect_dbase()
-#     cur = cnx.cursor()
-#     cur.execute(
-#         "INSERT INTO demandes_info (Date, Nom, Syndicat, Ville, Portes, Courriel, Telephone, Role, TypeDemande, Commentaires) "
-#         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-#         [datetime.now(), nom_contact, syndicat_nom, ville, nbre_portes, contact_email, contact_tel, role, type_demande_db, commentaires]
-#     )
-#     cnx.commit()
-#     cnx.close()
-#
-#     # --- Email ---
-#     # mail_to = 'donald.boileau@gmail.com, sabourinpd@outlook.com'
-#     mail_to = os.getenv(
-#         "CONDOFIX_INFO_REQUEST_RECIPIENTS",
-#         "sabourinpd@outlook.com"
-#     )
-#     email_list = [e.strip() for e in mail_to.split(',') if e.strip()]
-#
-#     yahoo_mail_user = 'condofix.ca@yahoo.com'
-#     yahoo_mail_password = 'password'
-#
-#     msg = MIMEMultipart("related")
-#     msg['Subject'] = 'Demande de prospect CondoFix'
-#     msg['From'] = yahoo_mail_user
-#
-#     demandes_html = "".join(f"<li>{label}</li>" for label in demandes_labels)
-#
-#     html = f"""
-#     <html><body>
-#       <p>
-#         <b>Syndicat:</b>&nbsp;{syndicat_nom}<br/>
-#         <b>Soumis par:</b>&nbsp;{contact_prenom} {contact_nom}<br/>
-#         <b>Rôle:</b>&nbsp;{role}<br/>
-#         <b>Nombre de portes:</b>&nbsp;{nbre_portes}<br/>
-#         <b>Courriel:</b>&nbsp;{contact_email}<br/>
-#         <b>Téléphone:</b>&nbsp;{contact_tel}<br/>
-#       </p>
-#
-#       <p><b>Je souhaite :</b></p>
-#       <ul>
-#         {demandes_html}
-#       </ul>
-#
-#       <p><b>Commentaires :</b><br/>{commentaires}</p>
-#     </body></html>
-#     """
-#
-#     msg.attach(MIMEText(html, 'html'))
-#
-#     try:
-#         server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
-#         server.ehlo()
-#         server.login(yahoo_mail_user, yahoo_mail_password)
-#         for addr in email_list:
-#             server.sendmail(yahoo_mail_user, addr, msg.as_string())
-#         server.quit()
-#         return render_template('-merci_demande_info.html')
-#     except Exception:
-#         print(traceback.format_exc())
-#         return render_template('-merci_demande_info.html')
 
 
 @bp_public.route('/produits')
@@ -654,50 +482,6 @@ def calcul_tarifs():
     else:
         flash('Veuillez saisir un nombre de portes plus grand que 0.','warning')
         return render_template('-tarifs_total.html', fill_tarifs=[], fill_visiteur=[], fill_choix=[1, 0, 0])
-
-    # # envoi d'email
-    # date_tarifs=str(datetime.now().replace(microsecond=0))
-    # # envoi de courriel
-    # mail_to = 'donald.boileau@gmail.com,jaclus1111@icloud.com'
-    # email_list = mail_to.split(',')
-    # yahoo_mail_user = 'condofix.ca@yahoo.com'
-    # yahoo_mail_password = 'password'
-    #
-    # msg = MIMEMultipart("related")
-    # msg['Subject'] = 'Requête de tarifs'
-    # msg['From'] = yahoo_mail_user
-    # html = """
-    #         <html><body>
-    #         <p><b>Date:</b>&nbsp;{date}<br/>
-    #         <b>Pays:</b>&nbsp;{pays}<br/>
-    #         <b>Ville:</b>&nbsp;{ville}<br/>
-    #         <b>Nombre de portes:</b>&nbsp;{nbre_portes}<br/>
-    #         <b>Portail:</b>&nbsp;{desc_portail}<br/>
-    #         <b>Réservations:</b>&nbsp;{desc_rez}<br/>
-    #         </body></html>
-    #         """
-    #
-    # html = html.format(date=date_tarifs, pays=pays, ville=ville, nbre_portes=nbre_portes, desc_portail=desc_portail, desc_rez=desc_rez )
-    #
-    # # enregistrer le MIME pour l'HTML
-    # contenu = MIMEText(html, 'html')
-    # # attacher le contenu au 'container' du message
-    # msg.attach(contenu)
-    # try:
-    #     server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
-    #     server.ehlo()
-    #     server.login(yahoo_mail_user, yahoo_mail_password)
-    #     # sendmail function takes 3 arguments: sender's address, recipient's address
-    #     # and message to send - here it is sent as one string.
-    #     for i in range(len(email_list)):
-    #         server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
-    #     server.quit()
-    #     return render_template('-tarifs_total.html', fill_visiteur=fill_visiteur, fill_tarifs=fill_tarifs, fill_choix=fill_choix)
-    #
-    # except:
-    #     print(traceback.format_exc())
-     #   return render_template('-tarifs_total.html', fill_visiteur=fill_visiteur, fill_tarifs=fill_tarifs, fill_choix=fill_choix)
-
 
 @bp_public.route('/carnet_entretien')
 #page du carnet d'entretien
@@ -939,15 +723,6 @@ def confidentialite():
 def attestation_home():
     return redirect('https://attestationcondo-condofix.pythonanywhere.com/', code=302)
 
-# @bp_public.route('/attestation_home')
-# def attestation_home():
-#     # pour permettre un maximum de 3 tentatives de saisie de login par session
-#     session['solde_tentatives'] = 3
-#     session['logged_in'] = False
-#
-#     # pour faire un timeout selon le nombre de minutes d'inactivité de l'usager (voir flask_app.py):
-#     session.permanent = True
-#     return "Bientôt: nouveau site de préparation d'attestation d'état de copropriété"
 
 
 

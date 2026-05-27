@@ -1,18 +1,59 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from flask import Blueprint, render_template,redirect,url_for,g,session,flash,request,redirect,send_from_directory
+from flask import Blueprint, render_template, redirect, url_for, g, session, flash, request, send_from_directory, current_app
+from services.email_service import send_html_email
 import csv
 from tabulate import tabulate
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import smtplib
-import traceback
 import mysql.connector
 from datetime import datetime,date
 from utils import connect_db, chemin_rep
 
 bp_rapports = Blueprint('bp_rapports', __name__)
+
+# ---------------------------------------------------------------------------
+# Rapport d'activité CondoFix
+# ---------------------------------------------------------------------------
+# Cette route génère et envoie le rapport d'activité pour le client courant.
+#
+# Déclenchement:
+# - Cette route est appelée par la logique de login administrateur dans
+#   bp_admin.login().
+# - Après authentification, les copropriétaires (IDTypeUsager = 5) sont redirigés
+#   immédiatement vers leur page documentaire et ne déclenchent pas ce traitement.
+# - Pour les profils administratifs, le login lit dans parametres:
+#       Date_MAJ_Preventif
+#       DateRapportActivite
+#       FreqRapportActivite
+# - La mise à jour du calendrier préventif est prioritaire. Si elle est due,
+#   le login redirige vers bp_admin.maj_calendriers avant de vérifier le rapport.
+# - Le rapport d'activité est déclenché lorsque:
+#       (date du jour - DateRapportActivite).days >= FreqRapportActivite
+# - Dans ce cas, le login redirige vers:
+#       /envoi_rapport_activite/<dernier_envoi>/<type_usager>
+# - Le paramètre `dernier_envoi` correspond à DateRapportActivite et sert de
+#   date de référence pour calculer l'activité à inclure dans le rapport.
+#
+# Fonctionnement:
+# 1. Génère `statut_1.csv` avec les tickets créés, complétés et fermés depuis
+#    `dernier_envoi`.
+# 2. Génère `statut_2.csv` avec le résumé des tickets en cours (`Statut = 2`)
+#    et le dépassement moyen selon `DatePrevue`.
+# 3. Génère `statut_3.csv` avec un maximum de 6 tickets importants, en priorité:
+#    critiques, élevés, puis moyens.
+# 4. Convertit les fichiers CSV en tableaux HTML avec `tabulate`.
+# 5. Envoie le rapport aux destinataires configurés dans:
+#       parametres.EmailsRapport
+# 6. Si l'envoi réussit, met à jour:
+#       parametres.DateRapportActivite = date du jour
+#
+# Test:
+# - Configurer EmailsRapport avec une adresse de test.
+# - Mettre DateRapportActivite à plus de FreqRapportActivite jours dans le passé.
+# - Se connecter avec un profil administrateur.
+# - Vérifier que le rapport est envoyé et que DateRapportActivite est remis à
+#   la date du jour.
+# ---------------------------------------------------------------------------
 
 # envoi du rapport d'activité
 @bp_rapports.route("/envoi_rapport_activite/<dernier_envoi>/<type_usager>")
@@ -233,15 +274,11 @@ def envoi_rapport_activite(dernier_envoi,type_usager):
     for item in cur.fetchall():
         email_listing=item[0]
 
-    yahoo_mail_user = 'condofix.ca@yahoo.com'
-    yahoo_mail_password = 'spyvlumgfwscqfkc'
-
-    email_list=email_listing.split(',')
-
-    #Créer le 'container' du message
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = "Rapport d'activité CondoFix pour "+profile_list[3]
-    msg['From'] = 'condofix.ca@yahoo.com'
+    email_list = [
+        email.strip()
+        for email in (email_listing or "").split(",")
+        if email.strip()
+    ]
 
     html = """
     <html><body>
@@ -262,36 +299,42 @@ def envoi_rapport_activite(dernier_envoi,type_usager):
     </body></html>
     """
 
-    html = html.format(date_maj=dernier_envoi,table_1=tabulate(data_1, headers="firstrow", tablefmt="html",numalign="center"),
-                       table_2=tabulate(data_2, headers="firstrow", tablefmt="html",numalign="center"),
-                       table_3=tabulate(data_3, headers="firstrow", tablefmt="html",numalign="center"))
-    # enregistrer le MIME pour l'HTML
-    contenu=MIMEText(html,'html')
-    # attacher le contenu au 'container' du message
-    msg.attach(contenu)
+    html = html.format(
+        date_maj=dernier_envoi,
+        table_1=tabulate(data_1, headers="firstrow", tablefmt="html", numalign="center"),
+        table_2=tabulate(data_2, headers="firstrow", tablefmt="html", numalign="center"),
+        table_3=tabulate(data_3, headers="firstrow", tablefmt="html", numalign="center")
+    )
 
     try:
-        server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
-        server.ehlo()
-        server.login(yahoo_mail_user, yahoo_mail_password)
-        # message MIME doit être expédié un destinataire à la fois (modifs serveur Yahoo fev 2024)
-        print('email list:',email_list)
-        for i in range(len(email_list)):
-            print(email_list[i])
-            server.sendmail(yahoo_mail_user, email_list[i], msg.as_string())
-        server.close()
+        if not email_list:
+            current_app.logger.warning(
+                "Rapport d'activité non envoyé: aucun destinataire EmailsRapport configuré pour IDClient=%s",
+                client_ident
+            )
+        else:
+            send_html_email(
+                subject="Rapport d'activité CondoFix pour " + profile_list[3],
+                recipients=email_list,
+                html_body=html
+            )
 
-        #si l'envoi a réussi on met à jour la date dans les paramètres
-        date_format = "%Y-%m-%d"
-        date_now=str(date.today())
-        date_envoye = datetime.strptime(date_now, date_format)
-        #date_envoye = datetime.now().date
-        cur.execute("UPDATE parametres SET DateRapportActivite=%s WHERE IDClient=%s", (date_envoye,client_ident))
-        cnx.commit()
+            # Si l'envoi a réussi, mettre à jour la date dans les paramètres.
+            date_format = "%Y-%m-%d"
+            date_now = str(date.today())
+            date_envoye = datetime.strptime(date_now, date_format)
+
+            cur.execute(
+                "UPDATE parametres SET DateRapportActivite=%s WHERE IDClient=%s",
+                (date_envoye, client_ident)
+            )
+            cnx.commit()
+
+    except Exception:
+        current_app.logger.exception("Erreur lors de l'envoi du rapport d'activité CondoFix.")
+
+    finally:
         cnx.close()
-
-    except:
-        print(traceback.format_exc())
     # coproprio
     if type_usager==5:
         return redirect(url_for('bp_documentation.docs_table_proprios'))
