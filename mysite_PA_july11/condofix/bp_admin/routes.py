@@ -695,7 +695,9 @@ def maj_calendriers(date_maj):
     # recherche de tous les entretiens dûs selon le groupe Uniformat II
     cur.execute(
         "SELECT IDFondsPrevoyance,IDIntervenant,IDCategorie,DescriptionDepense,TypeMtceRempl,RefGroupeUniformat,RefAnalyse,"
-        "ValeurActuelleInterv,IDEquipement,PartSyndicat,AnProchain,Actif from fondsprevoyance WHERE IDClient=%s and Actif=1",
+        "ValeurActuelleInterv,IDEquipement,PartSyndicat,AnProchain,Actif "
+        "FROM fondsprevoyance "
+        "WHERE IDClient=%s AND Actif=1 AND (historique IS NULL OR historique=0)",
         (client_ident,)
     )
 
