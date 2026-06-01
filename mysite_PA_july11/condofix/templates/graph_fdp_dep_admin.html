@@ -876,7 +876,7 @@
                 const wrapper = $('#table_data_wrapper');
                 wrapper.find('.dt-buttons').appendTo('#fdp-dt-buttons');
                 wrapper.find('.dataTables_filter').appendTo('#fdp-dt-search');
-                updateKpis();
+
                 syncFdpScrollWidth();
             }
         });
@@ -885,6 +885,14 @@
             updateKpis();
             syncFdpScrollWidth();
         });
+
+        /*
+         * Initial KPI refresh.
+         * Must run after the DataTable assignment above, otherwise updateKpis()
+         * can read the table before the DataTables API is available.
+         */
+        updateKpis();
+        syncFdpScrollWidth();
 
         $('#fdp-group-filters').on('click', '[data-filter-group]', function () {
             const groupId = $(this).attr('data-filter-group');
