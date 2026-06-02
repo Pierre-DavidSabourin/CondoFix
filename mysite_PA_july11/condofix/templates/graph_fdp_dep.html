@@ -1,4 +1,4 @@
-{% extends "layout_admin_tables.html" %}
+{% extends base_layout %}
 {% block content %}
 
 <!-- DataTables -->
@@ -168,6 +168,21 @@
     }
 
     .fdp-dep-page .fdp-banner { margin-bottom: 1rem; }
+
+    .fdp-dep-page .fdp-warning {
+        margin-bottom: 1rem;
+        padding: 0.85rem 1rem;
+        border-radius: var(--fdp-radius-md);
+        border: 1px solid var(--theme-border);
+        border-left: 5px solid var(--theme-priority-high);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 800;
+    }
+
+    .fdp-dep-page .fdp-warning strong {
+        color: var(--theme-text);
+    }
 
     .fdp-dep-page .fdp-filter-card {
         margin-bottom: 1rem;
@@ -400,7 +415,7 @@
                 </p>
             </div>
 
-            <form action="{{ url_for('bp_fonds_prevoyance.depenses_fdp', usager='admin') }}" method="post" role="form">
+            <form action="{{ url_for('bp_fonds_prevoyance.depenses_fdp', usager=fdp_usager) }}" method="post" class="form-horizontal" role="form">
                 <label class="fdp-view-toggle" title="Basculer entre la part du syndicat et la part des copropriétaires">
                     {% if toggle == "syndicat": %}
                         <input type="checkbox" name="toggle" onchange="this.form.submit()">
@@ -448,6 +463,12 @@
             {% endif %}
         </div>
 
+        {% if fdp_date_warning %}
+        <div class="fdp-warning" role="status">
+            <strong>À vérifier :</strong> {{ fdp_date_warning.replace('À vérifier : ', '') }}
+        </div>
+        {% endif %}
+
         <div class="fdp-filter-card">
             <p class="fdp-filter-title">Groupes Uniformat affichés</p>
             <div class="fdp-chip-row" id="fdp-group-filters">
@@ -475,12 +496,12 @@
             <div class="col-lg-6 col-md-12">
                 <div class="fdp-card">
                     <h2>Dépenses réelles vs prévues — 10 ans</h2>
-                    <p class="fdp-muted">Compare les tickets fermés FDP avec les dépenses projetées depuis la dernière analyse.</p>
+                    <p class="fdp-muted">Compare les tickets fermés de type Fonds de prévoyance avec les projections de l’analyse active.</p>
                     <div class="fdp-chart-wrap"><canvas id="fdp-actual-chart"></canvas></div>
                 </div>
             </div>
         </div>
-
+{% if show_projected_table %}
         <div class="fdp-page-header mb-3">
             <div>
                 <h1>Calendrier projeté des interventions</h1>
@@ -547,8 +568,10 @@
                 </table>
             </div>
         </div>
+{% endif %}
     </section>
 </div>
+
 
 <script>
     function getThemeVar(name, fallback) {
@@ -561,7 +584,12 @@
     }
 
     function normalizeText(value) {
-        return stripHtml(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+        return stripHtml(value)
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
     }
 
     function normalizeGroup(value) {
@@ -573,33 +601,137 @@
     }
 
     function formatCurrencyTooltip(value) {
-        return Number(value || 0).toLocaleString('fr-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' $';
+        return Number(value || 0).toLocaleString('fr-CA', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + ' $';
     }
 
     function formatCurrencyCompact(value) {
         const num = Number(value || 0);
-        if (Math.abs(num) >= 1000000) return (num / 1000000).toLocaleString('fr-CA', { maximumFractionDigits: 1 }) + ' M$';
-        if (Math.abs(num) >= 1000) return (num / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' k$';
+
+        if (Math.abs(num) >= 1000000) {
+            return (num / 1000000).toLocaleString('fr-CA', { maximumFractionDigits: 1 }) + ' M$';
+        }
+
+        if (Math.abs(num) >= 1000) {
+            return (num / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' k$';
+        }
+
         return num.toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' $';
     }
 
     const chartText = getThemeVar('--theme-text', '#243447');
     const chartMuted = getThemeVar('--theme-text-muted', '#66778a');
     const chartBorder = getThemeVar('--theme-border', '#d6dde6');
+
     const projectedLabels = {{ labels|tojson }};
     const actualLabels = {{ labels_1|tojson }};
-    const projectedTotal10FromRoute = {{ dep_prevues|tojson }};
+    const fdpStartYear = {{ fdp_start_year|tojson }};
+    const fdpStartDate = {{ fdp_start_date_label|tojson }};
+    const currentYear = {{ current_year|tojson }};
+    const showProjectedTable = {{ show_projected_table|tojson }};
 
     const groupDefinitions = [
-        { id: '1', shortLabel: 'A', label: 'Infrastructures', tablePrefix: 'A-', color: getThemeVar('--theme-chart-equipment', '#4a97ab'), projected: {{ values_1|tojson }}, actual: {{ dep_grp_1|tojson }} },
-        { id: '2', shortLabel: 'B', label: 'Superstructures et enveloppes', tablePrefix: 'B-', color: getThemeVar('--theme-priority-low', '#198754'), projected: {{ values_2|tojson }}, actual: {{ dep_grp_2|tojson }} },
-        { id: '3', shortLabel: 'C', label: 'Aménagements intérieurs', tablePrefix: 'C-', color: getThemeVar('--theme-priority-medium', '#0d6efd'), projected: {{ values_3|tojson }}, actual: {{ dep_grp_3|tojson }} },
-        { id: '4', shortLabel: 'D', label: 'Services', tablePrefix: 'D-', color: getThemeVar('--theme-priority-high', '#f4b400'), projected: {{ values_4|tojson }}, actual: {{ dep_grp_4|tojson }} },
-        { id: '5', shortLabel: 'E', label: 'Équipements et ameublement', tablePrefix: 'E-', color: getThemeVar('--theme-link-complete', '#f59e0b'), projected: {{ values_5|tojson }}, actual: {{ dep_grp_5|tojson }} },
-        { id: '6', shortLabel: 'F', label: 'Constructions spéciales', tablePrefix: 'F-', color: getThemeVar('--theme-priority-critical', '#dc3545'), projected: {{ values_6|tojson }}, actual: {{ dep_grp_6|tojson }} },
-        { id: '7', shortLabel: 'G', label: 'Terrains', tablePrefix: 'G-', color: getThemeVar('--theme-link-delete', '#dc3545'), projected: {{ values_7|tojson }}, actual: {{ dep_grp_7|tojson }} },
-        { id: '8', shortLabel: 'Autre', label: 'Autre', tablePrefix: 'Autre', color: getThemeVar('--theme-kpi-hours', '#5f788a'), projected: {{ values_8|tojson }}, actual: {{ dep_grp_8|tojson }} },
-        { id: '9', shortLabel: 'Z', label: 'Parties communes à usage restreint', tablePrefix: 'Z-', color: getThemeVar('--theme-kpi-age', '#d7dee8'), projected: {{ values_9|tojson }}, actual: {{ dep_grp_9|tojson }} }
+        {
+            id: '1',
+            shortLabel: 'A',
+            label: 'Infrastructures',
+            tablePrefix: 'A-',
+            color: getThemeVar('--theme-chart-equipment', '#4a97ab'),
+            projected: {{ values_1|tojson }},
+            comparisonProjected: {{ prev_grp_1|tojson }},
+            actual: {{ dep_grp_1|tojson }}
+        },
+        {
+            id: '2',
+            shortLabel: 'B',
+            label: 'Superstructures et enveloppes',
+            tablePrefix: 'B-',
+            color: getThemeVar('--theme-priority-low', '#198754'),
+            projected: {{ values_2|tojson }},
+            comparisonProjected: {{ prev_grp_2|tojson }},
+            actual: {{ dep_grp_2|tojson }}
+        },
+        {
+            id: '3',
+            shortLabel: 'C',
+            label: 'Aménagements intérieurs',
+            tablePrefix: 'C-',
+            color: getThemeVar('--theme-priority-medium', '#0d6efd'),
+            projected: {{ values_3|tojson }},
+            comparisonProjected: {{ prev_grp_3|tojson }},
+            actual: {{ dep_grp_3|tojson }}
+        },
+        {
+            id: '4',
+            shortLabel: 'D',
+            label: 'Services',
+            tablePrefix: 'D-',
+            color: getThemeVar('--theme-priority-high', '#f4b400'),
+            projected: {{ values_4|tojson }},
+            comparisonProjected: {{ prev_grp_4|tojson }},
+            actual: {{ dep_grp_4|tojson }}
+        },
+        {
+            id: '5',
+            shortLabel: 'E',
+            label: 'Équipements et ameublement',
+            tablePrefix: 'E-',
+            color: getThemeVar('--theme-link-complete', '#f59e0b'),
+            projected: {{ values_5|tojson }},
+            comparisonProjected: {{ prev_grp_5|tojson }},
+            actual: {{ dep_grp_5|tojson }}
+        },
+        {
+            id: '6',
+            shortLabel: 'F',
+            label: 'Constructions spéciales',
+            tablePrefix: 'F-',
+            color: getThemeVar('--theme-priority-critical', '#dc3545'),
+            projected: {{ values_6|tojson }},
+            comparisonProjected: {{ prev_grp_6|tojson }},
+            actual: {{ dep_grp_6|tojson }}
+        },
+        {
+            id: '7',
+            shortLabel: 'G',
+            label: 'Terrains',
+            tablePrefix: 'G-',
+            color: getThemeVar('--theme-link-delete', '#dc3545'),
+            projected: {{ values_7|tojson }},
+            comparisonProjected: {{ prev_grp_7|tojson }},
+            actual: {{ dep_grp_7|tojson }}
+        },
+        {
+            id: '8',
+            shortLabel: 'Autre',
+            label: 'Autre',
+            tablePrefix: 'Autre',
+            color: getThemeVar('--theme-kpi-hours', '#5f788a'),
+            projected: {{ values_8|tojson }},
+            comparisonProjected: {{ prev_grp_8|tojson }},
+            actual: {{ dep_grp_8|tojson }}
+        },
+        {
+            id: '9',
+            shortLabel: 'Z',
+            label: 'Parties communes à usage restreint',
+            tablePrefix: 'Z-',
+            color: getThemeVar('--theme-kpi-age', '#d7dee8'),
+            projected: {{ values_9|tojson }},
+            comparisonProjected: {{ prev_grp_9|tojson }},
+            actual: {{ dep_grp_9|tojson }}
+        }
+    ];
+
+    const projectedRowMetadata = [
+        {% for item in fill_table %}
+        {
+            year: "{{ item[4] }}",
+            groupId: "{{ item[7] }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
     ];
 
     let activeGroups = new Set(groupDefinitions.map(group => group.id));
@@ -614,46 +746,75 @@
 
     function getYearTotals() {
         const visibleGroups = getVisibleGroups();
-        return projectedLabels.map((year, index) => visibleGroups.reduce((sum, group) => sum + Number(group.projected[index] || 0), 0));
+
+        return projectedLabels.map((year, index) => {
+            return visibleGroups.reduce((sum, group) => {
+                return sum + Number(group.projected[index] || 0);
+            }, 0);
+        });
     }
 
     function getProjected10Totals() {
         const visibleGroups = getVisibleGroups();
-        return actualLabels.map(year => {
-            const projectedIndex = projectedLabels.findIndex(projectedYear => String(projectedYear) === String(year));
-            if (projectedIndex === -1) return 0;
-            return visibleGroups.reduce((sum, group) => sum + Number(group.projected[projectedIndex] || 0), 0);
+
+        return actualLabels.map((year, index) => {
+            return visibleGroups.reduce((sum, group) => {
+                return sum + Number(group.comparisonProjected[index] || 0);
+            }, 0);
         });
     }
 
     function tableGroupMatches(groupCell) {
         if (activeGroups.size === groupDefinitions.length) return true;
+
         const normalizedCell = normalizeGroup(groupCell);
+
         return getVisibleGroups().some(group => {
             const normalizedPrefix = normalizeGroup(group.tablePrefix);
             const normalizedLabel = normalizeGroup(group.label);
-            return normalizedCell.startsWith(normalizedPrefix) || normalizedCell.includes(normalizedLabel) || normalizedCell === normalizedLabel;
+
+            return normalizedCell.startsWith(normalizedPrefix)
+                || normalizedCell.includes(normalizedLabel)
+                || normalizedCell === normalizedLabel;
         });
+    }
+
+    function metadataGroupMatches(groupId) {
+        if (activeGroups.size === groupDefinitions.length) return true;
+
+        return activeGroups.has(String(groupId));
     }
 
     function setYearFilter(year) {
         activeYearFilter = year ? String(year) : null;
         updateActiveFilterBanner();
+
         if (table) {
             table.draw();
             updateKpis();
-            document.getElementById('fdp-table-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            const tableCard = document.getElementById('fdp-table-card');
+
+            if (tableCard) {
+                tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else {
+            updateKpis();
         }
     }
 
     function updateActiveFilterBanner() {
         const banner = document.getElementById('fdp-active-filter');
         const text = document.getElementById('fdp-active-filter-text');
+
+        if (!banner || !text) return;
+
         if (!activeYearFilter) {
             banner.classList.remove('show');
             text.textContent = '';
             return;
         }
+
         text.textContent = 'Filtre actif : année ' + activeYearFilter;
         banner.classList.add('show');
     }
@@ -661,28 +822,69 @@
     function updateGroupChips() {
         $('[data-filter-group]').each(function () {
             const groupId = $(this).attr('data-filter-group');
-            $(this).toggleClass('active', groupId === 'all' ? activeGroups.size === groupDefinitions.length : activeGroups.has(groupId));
+            const isActive = groupId === 'all'
+                ? activeGroups.size === groupDefinitions.length
+                : activeGroups.has(groupId);
+
+            $(this).toggleClass('active', isActive);
         });
     }
 
     function updateCharts() {
-        projectedChart.data.datasets.forEach(dataset => dataset.hidden = dataset.groupId && !activeGroups.has(dataset.groupId));
-        projectedChart.update();
-        actualChart.data.datasets.forEach(dataset => {
-            if (dataset.groupId) dataset.hidden = !activeGroups.has(dataset.groupId);
-            if (dataset.datasetRole === 'projected-line') dataset.data = getProjected10Totals();
-        });
-        actualChart.update();
+        if (projectedChart) {
+            projectedChart.data.datasets.forEach(dataset => {
+                dataset.hidden = dataset.groupId && !activeGroups.has(dataset.groupId);
+            });
+
+            projectedChart.update();
+        }
+
+        if (actualChart) {
+            actualChart.data.datasets.forEach(dataset => {
+                if (dataset.groupId) {
+                    dataset.hidden = !activeGroups.has(dataset.groupId);
+                }
+
+                if (dataset.datasetRole === 'projected-line') {
+                    dataset.data = getProjected10Totals();
+                }
+            });
+
+            actualChart.update();
+        }
     }
 
     function getRowCountForYear(year) {
-        if (!table) return 0;
-        let count = 0;
-        table.rows().every(function () {
-            const data = this.data();
-            if (String(stripHtml(data[0])) === String(year) && tableGroupMatches(data[3])) count += 1;
-        });
-        return count;
+        if (table) {
+            let count = 0;
+
+            table.rows().every(function () {
+                const data = this.data();
+
+                if (String(stripHtml(data[0])) === String(year) && tableGroupMatches(data[3])) {
+                    count += 1;
+                }
+            });
+
+            return count;
+        }
+
+        return projectedRowMetadata.filter(row => {
+            return String(row.year) === String(year) && metadataGroupMatches(row.groupId);
+        }).length;
+    }
+
+    function getVisibleProjectedRowCount() {
+        if (table) {
+            return table.rows({ search: 'applied' }).data().length;
+        }
+
+        return projectedRowMetadata.filter(row => {
+            const yearMatches = !activeYearFilter || String(row.year) === String(activeYearFilter);
+            const groupMatches = metadataGroupMatches(row.groupId);
+
+            return yearMatches && groupMatches;
+        }).length;
     }
 
     function updateKpis() {
@@ -691,10 +893,13 @@
         const firstIndex = totals.findIndex(value => Number(value || 0) > 0);
         const peakValue = Math.max.apply(null, totals.concat([0]));
         const peakIndex = totals.findIndex(value => Number(value || 0) === peakValue && peakValue > 0);
+
         let mainGroup = null;
         let mainGroupValue = 0;
+
         getVisibleGroups().forEach(group => {
             const value = group.projected.reduce((sum, current) => sum + Number(current || 0), 0);
+
             if (value > mainGroupValue) {
                 mainGroup = group;
                 mainGroupValue = value;
@@ -706,6 +911,7 @@
         if (firstIndex >= 0) {
             const year = projectedLabels[firstIndex];
             const count = getRowCountForYear(year);
+
             $('#fdp-next-year').text(year);
             $('#fdp-next-sub').text(count + ' intervention' + (count > 1 ? 's' : '') + ' · ' + formatCurrency(totals[firstIndex]));
             $('#fdp-kpi-next').attr('data-year', year);
@@ -717,6 +923,7 @@
 
         if (peakIndex >= 0) {
             const year = projectedLabels[peakIndex];
+
             $('#fdp-peak-year').text(year);
             $('#fdp-peak-sub').text(formatCurrency(peakValue));
             $('#fdp-kpi-peak').attr('data-year', year);
@@ -736,15 +943,111 @@
             $('#fdp-kpi-group').removeAttr('data-group');
         }
 
-        $('#fdp-row-count').text(table ? table.rows({ filter: 'applied' }).data().length.toLocaleString('fr-CA') : '0');
+        $('#fdp-row-count').text(getVisibleProjectedRowCount().toLocaleString('fr-CA'));
     }
 
     function syncFdpScrollWidth() {
         const bottom = $('.fdp-table-scroll').get(0);
+
         if (!bottom) return;
+
         $('.fdp-table-scroll-top-inner').width(bottom.scrollWidth);
         $('.fdp-table-scroll-top').scrollLeft($('.fdp-table-scroll').scrollLeft());
-        if (table) table.columns.adjust();
+
+        if (table) {
+            table.columns.adjust();
+        }
+    }
+
+    const fdpMarkerPlugin = {
+        afterDraw: function (chart) {
+            const markers = chart.config.options.fdpMarkers || [];
+
+            if (!markers.length) return;
+
+            const xAxis = chart.scales['x-axis-0'];
+            const chartArea = chart.chartArea;
+            const ctx = chart.chart.ctx;
+
+            if (!xAxis || !chartArea) return;
+
+            chart.fdpMarkerHitboxes = [];
+
+            markers.forEach(function (marker, markerIndex) {
+                const index = chart.data.labels.findIndex(label => String(label) === String(marker.year));
+
+                if (index === -1) return;
+
+                const x = xAxis.getPixelForTick(index);
+                const label = marker.label;
+
+                ctx.save();
+
+                ctx.beginPath();
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(x, chartArea.top);
+                ctx.lineTo(x, chartArea.bottom);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = marker.color;
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+                ctx.font = 'bold 11px "Segoe UI", Arial, sans-serif';
+
+                const textWidth = ctx.measureText(label).width;
+                const boxWidth = textWidth + 12;
+                const boxHeight = 18;
+                const boxX = Math.min(
+                    Math.max(x - boxWidth / 2, chartArea.left),
+                    chartArea.right - boxWidth
+                );
+                const boxY = chartArea.top + 4 + (markerIndex * 22);
+
+                chart.fdpMarkerHitboxes.push({
+                    left: boxX,
+                    right: boxX + boxWidth,
+                    top: chartArea.top,
+                    bottom: chartArea.bottom,
+                    tooltip: marker.tooltip || marker.label
+                });
+
+                ctx.fillStyle = marker.color;
+                ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, boxX + 6, boxY + boxHeight / 2);
+
+                ctx.restore();
+            });
+        }
+    };
+
+    Chart.plugins.register(fdpMarkerPlugin);
+
+    function attachMarkerHover(chart, canvas) {
+        if (!chart || !canvas) return;
+
+        canvas.addEventListener('mousemove', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const hit = (chart.fdpMarkerHitboxes || []).find(marker => {
+                return x >= marker.left
+                    && x <= marker.right
+                    && y >= marker.top
+                    && y <= marker.bottom;
+            });
+
+            canvas.style.cursor = hit ? 'help' : 'default';
+            canvas.title = hit ? hit.tooltip : '';
+        });
+
+        canvas.addEventListener('mouseleave', function () {
+            canvas.style.cursor = 'default';
+            canvas.title = '';
+        });
     }
 
     function createCharts() {
@@ -771,18 +1074,39 @@
                     callbacks: {
                         label: function (tooltipItem, data) {
                             const dataset = data.datasets[tooltipItem.datasetIndex];
-                            const total = data.datasets.reduce((sum, current) => current.hidden ? sum : sum + Number(current.data[tooltipItem.index] || 0), 0);
-                            return [dataset.label + ' : ' + formatCurrencyTooltip(tooltipItem.yLabel || 0), 'Total de l’année : ' + formatCurrencyTooltip(total)];
+                            const total = data.datasets.reduce((sum, current) => {
+                                return current.hidden ? sum : sum + Number(current.data[tooltipItem.index] || 0);
+                            }, 0);
+
+                            return [
+                                dataset.label + ' : ' + formatCurrencyTooltip(tooltipItem.yLabel || 0),
+                                'Total de l’année : ' + formatCurrencyTooltip(total)
+                            ];
                         }
                     }
                 },
                 onClick: function (event) {
                     const points = this.getElementAtEvent(event);
-                    if (points.length) setYearFilter(projectedLabels[points[0]._index]);
+
+                    if (points.length) {
+                        setYearFilter(projectedLabels[points[0]._index]);
+                    }
                 },
                 scales: {
-                    xAxes: [{ stacked: true, gridLines: { color: chartBorder }, ticks: { fontColor: chartMuted } }],
-                    yAxes: [{ stacked: true, gridLines: { color: chartBorder }, ticks: { beginAtZero: true, fontColor: chartMuted, callback: formatCurrencyCompact } }]
+                    xAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: { fontColor: chartMuted }
+                    }],
+                    yAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: chartMuted,
+                            callback: formatCurrencyCompact
+                        }
+                    }]
                 }
             }
         });
@@ -795,7 +1119,7 @@
                     label: 'Dépenses prévues',
                     datasetRole: 'projected-line',
                     type: 'line',
-                    data: projectedTotal10FromRoute,
+                    data: getProjected10Totals(),
                     borderColor: getThemeVar('--theme-link-edit', '#0d6efd'),
                     backgroundColor: 'rgba(13, 110, 253, 0.10)',
                     pointBackgroundColor: getThemeVar('--theme-link-edit', '#0d6efd'),
@@ -818,33 +1142,66 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 legend: { display: false },
+                fdpMarkers: [
+                    {
+                        year: fdpStartYear,
+                        label: 'Début FDP',
+                        tooltip: 'Début FDP : ' + fdpStartDate,
+                        color: getThemeVar('--theme-link-complete', '#f59e0b')
+                    },
+                    {
+                        year: currentYear,
+                        label: 'Année courante',
+                        tooltip: 'Année courante : ' + currentYear,
+                        color: getThemeVar('--theme-link-edit', '#0d6efd')
+                    }
+                ],
                 tooltips: {
                     callbacks: {
                         label: function (tooltipItem, data) {
                             const dataset = data.datasets[tooltipItem.datasetIndex];
-                            return (dataset.datasetRole === 'projected-line' ? 'Dépenses prévues : ' : dataset.label + ' : ') + formatCurrencyTooltip(tooltipItem.yLabel || 0);
+                            const prefix = dataset.datasetRole === 'projected-line'
+                                ? 'Dépenses prévues : '
+                                : dataset.label + ' : ';
+
+                            return prefix + formatCurrencyTooltip(tooltipItem.yLabel || 0);
                         }
                     }
                 },
-                onClick: function (event) {
-                    const points = this.getElementAtEvent(event);
-                    if (points.length) setYearFilter(actualLabels[points[0]._index]);
-                },
                 scales: {
-                    xAxes: [{ stacked: true, gridLines: { color: chartBorder }, ticks: { fontColor: chartMuted } }],
-                    yAxes: [{ stacked: true, gridLines: { color: chartBorder }, ticks: { beginAtZero: true, fontColor: chartMuted, callback: formatCurrencyCompact } }]
+                    xAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: { fontColor: chartMuted }
+                    }],
+                    yAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: chartMuted,
+                            callback: formatCurrencyCompact
+                        }
+                    }]
                 }
             }
         });
+
+        attachMarkerHover(actualChart, document.getElementById('fdp-actual-chart'));
     }
 
-    $(document).ready(function () {
-        createCharts();
+    function initializeDataTable() {
+        if (!showProjectedTable || !$('#table_data').length) return;
 
         $.fn.dataTable.ext.search.push(function (settings, data) {
             if (settings.nTable.id !== 'table_data') return true;
+
             const rowYear = String(stripHtml(data[0] || ''));
-            if (activeYearFilter && rowYear !== String(activeYearFilter)) return false;
+
+            if (activeYearFilter && rowYear !== String(activeYearFilter)) {
+                return false;
+            }
+
             return tableGroupMatches(data[3]);
         });
 
@@ -853,7 +1210,11 @@
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Tous']],
             pageLength: 25,
             order: [[0, 'asc']],
-            buttons: [{ extend: 'excelHtml5', title: 'Export CondoFix Dépenses Prévues Fonds de Prévoyance', text: 'Excel' }],
+            buttons: [{
+                extend: 'excelHtml5',
+                title: 'Export CondoFix Dépenses Prévues Fonds de Prévoyance',
+                text: 'Excel'
+            }],
             language: {
                 decimal: '',
                 emptyTable: 'Aucune donnée disponible dans le tableau',
@@ -866,7 +1227,12 @@
                 processing: 'Traitement...',
                 search: 'Recherche',
                 zeroRecords: 'Aucun résultat trouvé',
-                paginate: { first: 'Premier', last: 'Dernier', next: 'Suivant', previous: 'Précédent' },
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
                 aria: {
                     sortAscending: ': activer pour trier la colonne par ordre croissant',
                     sortDescending: ': activer pour trier la colonne par ordre décroissant'
@@ -874,6 +1240,7 @@
             },
             initComplete: function () {
                 const wrapper = $('#table_data_wrapper');
+
                 wrapper.find('.dt-buttons').appendTo('#fdp-dt-buttons');
                 wrapper.find('.dataTables_filter').appendTo('#fdp-dt-search');
 
@@ -886,65 +1253,101 @@
             syncFdpScrollWidth();
         });
 
-        /*
-         * Initial KPI refresh.
-         * Must run after the DataTable assignment above, otherwise updateKpis()
-         * can read the table before the DataTables API is available.
-         */
-        updateKpis();
-        syncFdpScrollWidth();
+        $('#fdp-clear-year-filter').on('click', function () {
+            setYearFilter(null);
+        });
 
+        $('.fdp-table-scroll-top').on('scroll', function () {
+            $('.fdp-table-scroll').scrollLeft($(this).scrollLeft());
+        });
+
+        $('.fdp-table-scroll').on('scroll', function () {
+            $('.fdp-table-scroll-top').scrollLeft($(this).scrollLeft());
+        });
+
+        $(window).on('resize', syncFdpScrollWidth);
+        setTimeout(syncFdpScrollWidth, 150);
+        syncFdpScrollWidth();
+    }
+
+    function bindInteractions() {
         $('#fdp-group-filters').on('click', '[data-filter-group]', function () {
             const groupId = $(this).attr('data-filter-group');
+
             if (groupId === 'all') {
                 activeGroups = new Set(groupDefinitions.map(group => group.id));
             } else if (activeGroups.size === groupDefinitions.length) {
                 activeGroups = new Set([groupId]);
             } else if (activeGroups.has(groupId)) {
                 activeGroups.delete(groupId);
-                if (activeGroups.size === 0) activeGroups = new Set(groupDefinitions.map(group => group.id));
+
+                if (activeGroups.size === 0) {
+                    activeGroups = new Set(groupDefinitions.map(group => group.id));
+                }
             } else {
                 activeGroups.add(groupId);
             }
+
             updateGroupChips();
             updateCharts();
-            table.draw();
+
+            if (table) {
+                table.draw();
+            }
+
             updateKpis();
         });
 
         $('#fdp-kpi-total, #fdp-kpi-count').on('click', function () {
             activeYearFilter = null;
             activeGroups = new Set(groupDefinitions.map(group => group.id));
+
             updateGroupChips();
             updateCharts();
             updateActiveFilterBanner();
-            table.draw();
+
+            if (table) {
+                table.draw();
+            }
+
             updateKpis();
         });
 
         $('#fdp-kpi-next, #fdp-kpi-peak').on('click', function () {
             const year = $(this).attr('data-year');
-            if (year) setYearFilter(year);
+
+            if (year) {
+                setYearFilter(year);
+            }
         });
 
         $('#fdp-kpi-group').on('click', function () {
             const groupId = $(this).attr('data-group');
+
             if (!groupId) return;
+
             activeGroups = new Set([groupId]);
             activeYearFilter = null;
+
             updateGroupChips();
             updateCharts();
             updateActiveFilterBanner();
-            table.draw();
+
+            if (table) {
+                table.draw();
+            }
+
             updateKpis();
         });
+    }
 
-        $('#fdp-clear-year-filter').on('click', function () { setYearFilter(null); });
-
-        $('.fdp-table-scroll-top').on('scroll', function () { $('.fdp-table-scroll').scrollLeft($(this).scrollLeft()); });
-        $('.fdp-table-scroll').on('scroll', function () { $('.fdp-table-scroll-top').scrollLeft($(this).scrollLeft()); });
-        $(window).on('resize', syncFdpScrollWidth);
-        setTimeout(syncFdpScrollWidth, 150);
+    $(document).ready(function () {
+        createCharts();
+        initializeDataTable();
+        bindInteractions();
+        updateGroupChips();
+        updateKpis();
+        syncFdpScrollWidth();
     });
 </script>
 
