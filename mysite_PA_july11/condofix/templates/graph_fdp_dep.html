@@ -1,0 +1,1354 @@
+{% extends base_layout %}
+{% block content %}
+
+<!-- DataTables -->
+<script src="../static/DataTables/DataTables_with_buttons/jquery-3.5.1.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jquery.dataTables.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/dataTables.buttons.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/jszip.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/pdfmake.min.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/vfs_fonts.js"></script>
+<script src="../static/DataTables/DataTables_with_buttons/buttons.html5.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="../static/bootstrap-4.1.3-dist/js/bootstrap.min.js"></script>
+
+<!-- Chart.js -->
+<script src="../static/Chart.min.js"></script>
+
+<!-- DataTables CSS -->
+<link href="../static/DataTables/DataTables_with_buttons/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="../static/DataTables/DataTables_with_buttons/css/buttons.dataTables.min.css" rel="stylesheet" />
+
+<style>
+    .fdp-dep-page {
+        --fdp-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        --fdp-soft-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        --fdp-radius-xl: 20px;
+        --fdp-radius-lg: 16px;
+        --fdp-radius-md: 14px;
+        --fdp-radius-sm: 12px;
+        color: var(--theme-text);
+        padding: 1.25rem 0 2rem;
+    }
+
+    .fdp-dep-page .fdp-shell,
+    .fdp-dep-page .fdp-card {
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-border);
+        box-shadow: var(--fdp-shadow);
+    }
+
+    .fdp-dep-page .fdp-shell {
+        border-radius: var(--fdp-radius-xl);
+        padding: 1.25rem;
+    }
+
+    .fdp-dep-page .fdp-card {
+        border-radius: var(--fdp-radius-lg);
+        padding: 1rem;
+        height: 100%;
+    }
+
+    .fdp-dep-page .fdp-page-header,
+    .fdp-dep-page .fdp-toolbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .fdp-dep-page h1 {
+        margin: 0;
+        color: var(--theme-text);
+        font-size: 1.95rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .fdp-dep-page h2 {
+        margin: 0 0 0.35rem;
+        color: var(--theme-text);
+        font-size: 1.2rem;
+        font-weight: 800;
+    }
+
+    .fdp-dep-page .fdp-muted {
+        margin: 0.35rem 0 0;
+        color: var(--theme-text-muted);
+        font-size: 0.98rem;
+    }
+
+    .fdp-dep-page .fdp-view-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.65rem;
+        min-height: 44px;
+        padding: 0.55rem 0.85rem;
+        border: 1px solid var(--theme-border);
+        border-radius: var(--fdp-radius-md);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 800;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .fdp-dep-page .fdp-view-toggle input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        accent-color: var(--theme-link-edit);
+    }
+
+    .fdp-dep-page .fdp-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 0.75rem;
+        margin: 1rem 0;
+    }
+
+    .fdp-dep-page .fdp-kpi {
+        min-height: 88px;
+        padding: 0.85rem 1rem;
+        border: 0;
+        border-radius: var(--fdp-radius-lg);
+        color: #fff;
+        box-shadow: var(--fdp-soft-shadow);
+        text-align: left;
+        cursor: pointer;
+        transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .fdp-dep-page .fdp-kpi:hover,
+    .fdp-dep-page .fdp-kpi:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.14);
+        outline: none;
+    }
+
+    .fdp-dep-page .fdp-kpi-label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.035em;
+    }
+
+    .fdp-dep-page .fdp-kpi-value {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1.05;
+    }
+
+    .fdp-dep-page .fdp-kpi-sub {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .fdp-dep-page .fdp-kpi-total { background: linear-gradient(135deg, var(--theme-priority-medium), var(--theme-link-edit)); color: var(--theme-priority-medium-text); }
+    .fdp-dep-page .fdp-kpi-next { background: linear-gradient(135deg, var(--theme-priority-high), var(--theme-link-complete)); color: var(--theme-priority-high-text); }
+    .fdp-dep-page .fdp-kpi-peak { background: linear-gradient(135deg, var(--theme-priority-critical), var(--theme-link-delete)); color: var(--theme-priority-critical-text); }
+    .fdp-dep-page .fdp-kpi-group { background: linear-gradient(135deg, var(--theme-priority-low), var(--theme-chart-equipment)); color: var(--theme-priority-low-text); }
+    .fdp-dep-page .fdp-kpi-count { background: linear-gradient(135deg, var(--theme-kpi-hours), var(--theme-chart-budget)); color: var(--theme-kpi-hours-text); }
+
+    .fdp-dep-page .fdp-banner,
+    .fdp-dep-page .fdp-active-filter {
+        padding: 0.85rem 1rem;
+        border-radius: var(--fdp-radius-md);
+        border: 1px dashed var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 800;
+    }
+
+    .fdp-dep-page .fdp-banner { margin-bottom: 1rem; }
+
+    .fdp-dep-page .fdp-warning {
+        margin-bottom: 1rem;
+        padding: 0.85rem 1rem;
+        border-radius: var(--fdp-radius-md);
+        border: 1px solid var(--theme-border);
+        border-left: 5px solid var(--theme-priority-high);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 800;
+    }
+
+    .fdp-dep-page .fdp-warning strong {
+        color: var(--theme-text);
+    }
+
+    .fdp-dep-page .fdp-filter-card {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border-radius: var(--fdp-radius-lg);
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface);
+        box-shadow: var(--fdp-soft-shadow);
+    }
+
+    .fdp-dep-page .fdp-filter-title {
+        margin: 0 0 0.75rem;
+        color: var(--theme-text);
+        font-weight: 900;
+    }
+
+    .fdp-dep-page .fdp-chip-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .fdp-dep-page .fdp-chip {
+        min-height: 34px;
+        padding: 0.4rem 0.72rem;
+        border-radius: 999px;
+        border: 1px solid var(--theme-border);
+        background: var(--theme-surface-alt);
+        color: var(--theme-text);
+        font-weight: 800;
+        font-size: 0.84rem;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .fdp-dep-page .fdp-chip:hover,
+    .fdp-dep-page .fdp-chip:focus {
+        transform: translateY(-1px);
+        box-shadow: var(--fdp-soft-shadow);
+        outline: none;
+    }
+
+    .fdp-dep-page .fdp-chip.active {
+        background: var(--theme-link-edit);
+        border-color: var(--theme-link-edit);
+        color: #fff;
+    }
+
+    .fdp-dep-page .fdp-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 305px;
+    }
+
+    .fdp-dep-page .fdp-chart-wrap canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .fdp-dep-page .fdp-table-card {
+        border-radius: var(--fdp-radius-lg);
+        overflow: hidden;
+    }
+
+    .fdp-dep-page .fdp-table-scroll-top,
+    .fdp-dep-page .fdp-table-scroll {
+        width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .fdp-dep-page .fdp-table-scroll-top { height: 18px; margin-bottom: 8px; }
+    .fdp-dep-page .fdp-table-scroll-top-inner { height: 1px; min-width: 1250px; }
+    .fdp-dep-page .fdp-table-scroll table { min-width: 1250px !important; }
+
+    .fdp-dep-page .fdp-toolbar { align-items: center; margin: 0.5rem 0 1rem; }
+    .fdp-dep-page .fdp-toolbar-left,
+    .fdp-dep-page .fdp-toolbar-right { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+    .fdp-dep-page .dt-buttons .dt-button {
+        min-height: 42px;
+        padding: 0.6rem 1rem;
+        border-radius: var(--fdp-radius-sm);
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        font-weight: 800 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+    }
+
+    .fdp-dep-page #fdp-dt-search .dataTables_filter label,
+    .fdp-dep-page .dataTables_wrapper .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin: 0;
+        color: var(--theme-text-muted);
+        font-weight: 800;
+    }
+
+    .fdp-dep-page #fdp-dt-search .dataTables_filter input,
+    .fdp-dep-page .dataTables_wrapper .dataTables_filter input {
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-height: 44px !important;
+        padding: 0.65rem 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid var(--theme-border) !important;
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .fdp-dep-page .dataTables_wrapper .dataTables_length,
+    .fdp-dep-page .dataTables_wrapper .dataTables_info,
+    .fdp-dep-page .dataTables_wrapper .dataTables_paginate { color: var(--theme-text-muted) !important; }
+
+    .fdp-dep-page table.dataTable,
+    .fdp-dep-page table#table_data {
+        width: 100% !important;
+        margin: 0 !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        font-size: 0.94rem;
+        border: 0 !important;
+    }
+
+    .fdp-dep-page table.dataTable thead th,
+    .fdp-dep-page table#table_data thead th {
+        background: var(--theme-surface-alt) !important;
+        color: var(--theme-text) !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        border-right: 0 !important;
+        padding: 14px 26px 14px 12px !important;
+        font-size: 0.9rem;
+        font-weight: 900;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .fdp-dep-page table.dataTable tbody td,
+    .fdp-dep-page table#table_data tbody td {
+        background: var(--theme-surface) !important;
+        color: var(--theme-text) !important;
+        border-top: 0 !important;
+        border-right: 0 !important;
+        border-left: 0 !important;
+        border-bottom: 1px solid var(--theme-border) !important;
+        padding: 14px 12px !important;
+        vertical-align: top;
+    }
+
+    .fdp-dep-page table.dataTable tbody tr:nth-child(even) td,
+    .fdp-dep-page table#table_data tbody tr:nth-child(even) td { background: rgba(127, 145, 168, 0.05) !important; }
+    .fdp-dep-page .dataTables_wrapper .dataTables_length { padding: 1rem 0.5rem 0.75rem !important; }
+    .fdp-dep-page .dataTables_wrapper .dataTables_info { padding: 1.2rem 0.5rem 0.6rem !important; }
+    .fdp-dep-page .dataTables_wrapper .dataTables_paginate { padding: 1rem 0.5rem 0.75rem !important; }
+
+    .fdp-dep-page .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 10px !important;
+        border: 1px solid transparent !important;
+        color: var(--theme-text) !important;
+        padding: 0.45rem 0.8rem !important;
+        margin-left: 0.2rem !important;
+    }
+
+    .fdp-dep-page .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .fdp-dep-page .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover,
+    .fdp-dep-page .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--theme-surface-alt) !important;
+        border-color: var(--theme-border) !important;
+        color: var(--theme-text) !important;
+    }
+
+    .fdp-dep-page .fdp-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 900;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .fdp-dep-page .fdp-pill-maintenance { color: var(--theme-link-edit); background: rgba(13, 110, 253, 0.12); }
+    .fdp-dep-page .fdp-pill-remplacement { color: var(--theme-link-complete); background: rgba(245, 158, 11, 0.14); }
+    .fdp-dep-page .fdp-pill-group { color: var(--theme-text); background: var(--theme-surface-alt); border: 1px solid var(--theme-border); }
+    .fdp-dep-page .fdp-money,
+    .fdp-dep-page .fdp-year { font-weight: 900; white-space: nowrap; }
+
+    .fdp-dep-page .fdp-active-filter { display: none; margin-bottom: 0.9rem; }
+    .fdp-dep-page .fdp-active-filter.show { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+    .fdp-dep-page .fdp-clear-filter { border: 0; background: transparent; color: var(--theme-link-edit); font-weight: 900; cursor: pointer; padding: 0; }
+
+    @media (max-width: 1200px) { .fdp-dep-page .fdp-kpi-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); } }
+    @media (max-width: 991px) { .fdp-dep-page .fdp-chart-wrap { height: 270px; } }
+    @media (max-width: 768px) {
+        .fdp-dep-page .fdp-shell { padding: 1rem; border-radius: 16px; }
+        .fdp-dep-page h1 { font-size: 1.6rem; }
+        .fdp-dep-page .fdp-kpi-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+    }
+    @media (max-width: 575px) {
+        .fdp-dep-page .fdp-kpi-grid { grid-template-columns: 1fr; }
+        .fdp-dep-page .fdp-toolbar { flex-direction: column; align-items: stretch; }
+        .fdp-dep-page .fdp-toolbar-left,
+        .fdp-dep-page .fdp-toolbar-right { width: 100%; }
+        .fdp-dep-page #fdp-dt-search .dataTables_filter label { width: 100%; flex-direction: column; align-items: flex-start; }
+        .fdp-dep-page #fdp-dt-search .dataTables_filter input { width: 100% !important; min-width: 0 !important; }
+        .fdp-dep-page .fdp-chart-wrap { height: 235px; }
+    }
+</style>
+
+<div class="container-fluid fdp-dep-page">
+    <section class="fdp-shell">
+        <div class="fdp-page-header">
+            <div>
+                <h1>Analyse des dépenses projetées</h1>
+                <p class="fdp-muted">
+                    Consultez les dépenses actualisées du fonds de prévoyance par année, groupe Uniformat et catégorie.
+                    Les projections proviennent de l’analyse en vigueur; les dépenses réelles proviennent des tickets fermés de type Fonds de prévoyance.
+                </p>
+            </div>
+
+            <form action="{{ url_for('bp_fonds_prevoyance.depenses_fdp', usager=fdp_usager) }}" method="post" class="form-horizontal" role="form">
+                <label class="fdp-view-toggle" title="Basculer entre la part du syndicat et la part des copropriétaires">
+                    {% if toggle == "syndicat": %}
+                        <input type="checkbox" name="toggle" onchange="this.form.submit()">
+                    {% else %}
+                        <input type="checkbox" name="toggle" onchange="this.form.submit()" checked>
+                    {% endif %}
+                    <span>Vue copropriétaires</span>
+                </label>
+            </form>
+        </div>
+
+        <div class="fdp-kpi-grid">
+            <button type="button" class="fdp-kpi fdp-kpi-total" id="fdp-kpi-total">
+                <span class="fdp-kpi-label">Total projeté — 25 ans</span>
+                <span class="fdp-kpi-value" id="fdp-total-projected">—</span>
+                <span class="fdp-kpi-sub">dépenses visibles</span>
+            </button>
+            <button type="button" class="fdp-kpi fdp-kpi-next" id="fdp-kpi-next">
+                <span class="fdp-kpi-label">Prochaine dépense</span>
+                <span class="fdp-kpi-value" id="fdp-next-year">—</span>
+                <span class="fdp-kpi-sub" id="fdp-next-sub">—</span>
+            </button>
+            <button type="button" class="fdp-kpi fdp-kpi-peak" id="fdp-kpi-peak">
+                <span class="fdp-kpi-label">Année la plus coûteuse</span>
+                <span class="fdp-kpi-value" id="fdp-peak-year">—</span>
+                <span class="fdp-kpi-sub" id="fdp-peak-sub">—</span>
+            </button>
+            <button type="button" class="fdp-kpi fdp-kpi-group" id="fdp-kpi-group">
+                <span class="fdp-kpi-label">Groupe principal</span>
+                <span class="fdp-kpi-value" id="fdp-main-group">—</span>
+                <span class="fdp-kpi-sub" id="fdp-main-group-sub">—</span>
+            </button>
+            <button type="button" class="fdp-kpi fdp-kpi-count" id="fdp-kpi-count">
+                <span class="fdp-kpi-label">Occurrences projetées</span>
+                <span class="fdp-kpi-value" id="fdp-row-count">—</span>
+                <span class="fdp-kpi-sub">lignes affichées</span>
+            </button>
+        </div>
+
+        <div class="fdp-banner">
+            {% if toggle == "syndicat": %}
+                Analyse courante : dépenses projetées selon la part payée par le syndicat.
+            {% else %}
+                Analyse courante : dépenses projetées selon la part assumée par les copropriétaires.
+            {% endif %}
+        </div>
+
+        {% if fdp_date_warning %}
+        <div class="fdp-warning" role="status">
+            <strong>À vérifier :</strong> {{ fdp_date_warning.replace('À vérifier : ', '') }}
+        </div>
+        {% endif %}
+
+        <div class="fdp-filter-card">
+            <p class="fdp-filter-title">Groupes Uniformat affichés</p>
+            <div class="fdp-chip-row" id="fdp-group-filters">
+                <button type="button" class="fdp-chip active" data-filter-group="all">Tous</button>
+                <button type="button" class="fdp-chip active" data-filter-group="1">A · Infrastructures</button>
+                <button type="button" class="fdp-chip active" data-filter-group="2">B · Superstructures</button>
+                <button type="button" class="fdp-chip active" data-filter-group="3">C · Aménagements</button>
+                <button type="button" class="fdp-chip active" data-filter-group="4">D · Services</button>
+                <button type="button" class="fdp-chip active" data-filter-group="5">E · Équipements</button>
+                <button type="button" class="fdp-chip active" data-filter-group="6">F · Constructions</button>
+                <button type="button" class="fdp-chip active" data-filter-group="7">G · Terrains</button>
+                <button type="button" class="fdp-chip active" data-filter-group="8">Autre</button>
+                <button type="button" class="fdp-chip active" data-filter-group="9">Z · Usage restreint</button>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-6 col-md-12 mb-4 mb-lg-0">
+                <div class="fdp-card">
+                    <h2>Dépenses projetées par groupe Uniformat</h2>
+                    <p class="fdp-muted">En dollars actualisés. Cliquez une année dans le graphique pour filtrer le calendrier projeté.</p>
+                    <div class="fdp-chart-wrap"><canvas id="fdp-projected-chart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12">
+                <div class="fdp-card">
+                    <h2>Dépenses réelles vs prévues — 10 ans</h2>
+                    <p class="fdp-muted">Compare les tickets fermés de type Fonds de prévoyance avec les projections de l’analyse active.</p>
+                    <div class="fdp-chart-wrap"><canvas id="fdp-actual-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+{% if show_projected_table %}
+        <div class="fdp-page-header mb-3">
+            <div>
+                <h1>Calendrier projeté des interventions</h1>
+                <p class="fdp-muted">Liste calculée à partir des interventions du fonds de prévoyance, de leur fréquence et des taux d’inflation applicables.</p>
+            </div>
+        </div>
+
+        <div class="fdp-active-filter" id="fdp-active-filter">
+            <span id="fdp-active-filter-text"></span>
+            <button type="button" class="fdp-clear-filter" id="fdp-clear-year-filter">Effacer le filtre d’année</button>
+        </div>
+
+        <div class="fdp-toolbar">
+            <div class="fdp-toolbar-left"><div id="fdp-dt-buttons"></div></div>
+            <div class="fdp-toolbar-right"><div id="fdp-dt-search"></div></div>
+        </div>
+
+        <div class="fdp-card fdp-table-card" id="fdp-table-card">
+            <div class="fdp-table-scroll-top"><div class="fdp-table-scroll-top-inner"></div></div>
+            <div class="fdp-table-scroll">
+                <table id="table_data" class="table">
+                    <thead>
+                        <tr>
+                            <th>Année</th>
+                            <th>Référence</th>
+                            <th>Type</th>
+                            <th>Groupe</th>
+                            <th>Catégorie</th>
+                            <th>Description</th>
+                            <th>Coût actualisé ($)</th>
+                            <th>Fréquence (ans)</th>
+                            <th>Intervenant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in fill_table %}
+                        <tr>
+                            <td class="fdp-year">{{ item[4] }}</td>
+                            <td><strong>{{ item[0] }}</strong></td>
+                            <td>
+                                {% if item[5] == "Maintenance" %}
+                                    <span class="fdp-pill fdp-pill-maintenance">Maintenance</span>
+                                {% elif item[5] == "Remplacement" %}
+                                    <span class="fdp-pill fdp-pill-remplacement">Remplacement</span>
+                                {% else %}
+                                    {{ item[5] }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item[8] %}
+                                    <span class="fdp-pill fdp-pill-group">{{ item[8] }}</span>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>{{ item[6] }}</td>
+                            <td>{{ item[1] }}</td>
+                            <td class="fdp-money">{{ item[3] }}</td>
+                            <td>{{ item[2] }}</td>
+                            <td>{{ item[9] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+{% endif %}
+    </section>
+</div>
+
+
+<script>
+    function getThemeVar(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return value || fallback;
+    }
+
+    function stripHtml(value) {
+        return $('<div>').html(String(value || '')).text();
+    }
+
+    function normalizeText(value) {
+        return stripHtml(value)
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function normalizeGroup(value) {
+        return normalizeText(value).replace(/\s*-\s*/g, '-');
+    }
+
+    function formatCurrency(value) {
+        return Number(value || 0).toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' $';
+    }
+
+    function formatCurrencyTooltip(value) {
+        return Number(value || 0).toLocaleString('fr-CA', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + ' $';
+    }
+
+    function formatCurrencyCompact(value) {
+        const num = Number(value || 0);
+
+        if (Math.abs(num) >= 1000000) {
+            return (num / 1000000).toLocaleString('fr-CA', { maximumFractionDigits: 1 }) + ' M$';
+        }
+
+        if (Math.abs(num) >= 1000) {
+            return (num / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' k$';
+        }
+
+        return num.toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' $';
+    }
+
+    const chartText = getThemeVar('--theme-text', '#243447');
+    const chartMuted = getThemeVar('--theme-text-muted', '#66778a');
+    const chartBorder = getThemeVar('--theme-border', '#d6dde6');
+
+    const projectedLabels = {{ labels|tojson }};
+    const actualLabels = {{ labels_1|tojson }};
+    const fdpStartYear = {{ fdp_start_year|tojson }};
+    const fdpStartDate = {{ fdp_start_date_label|tojson }};
+    const currentYear = {{ current_year|tojson }};
+    const showProjectedTable = {{ show_projected_table|tojson }};
+
+    const groupDefinitions = [
+        {
+            id: '1',
+            shortLabel: 'A',
+            label: 'Infrastructures',
+            tablePrefix: 'A-',
+            color: getThemeVar('--theme-chart-equipment', '#4a97ab'),
+            projected: {{ values_1|tojson }},
+            comparisonProjected: {{ prev_grp_1|tojson }},
+            actual: {{ dep_grp_1|tojson }}
+        },
+        {
+            id: '2',
+            shortLabel: 'B',
+            label: 'Superstructures et enveloppes',
+            tablePrefix: 'B-',
+            color: getThemeVar('--theme-priority-low', '#198754'),
+            projected: {{ values_2|tojson }},
+            comparisonProjected: {{ prev_grp_2|tojson }},
+            actual: {{ dep_grp_2|tojson }}
+        },
+        {
+            id: '3',
+            shortLabel: 'C',
+            label: 'Aménagements intérieurs',
+            tablePrefix: 'C-',
+            color: getThemeVar('--theme-priority-medium', '#0d6efd'),
+            projected: {{ values_3|tojson }},
+            comparisonProjected: {{ prev_grp_3|tojson }},
+            actual: {{ dep_grp_3|tojson }}
+        },
+        {
+            id: '4',
+            shortLabel: 'D',
+            label: 'Services',
+            tablePrefix: 'D-',
+            color: getThemeVar('--theme-priority-high', '#f4b400'),
+            projected: {{ values_4|tojson }},
+            comparisonProjected: {{ prev_grp_4|tojson }},
+            actual: {{ dep_grp_4|tojson }}
+        },
+        {
+            id: '5',
+            shortLabel: 'E',
+            label: 'Équipements et ameublement',
+            tablePrefix: 'E-',
+            color: getThemeVar('--theme-link-complete', '#f59e0b'),
+            projected: {{ values_5|tojson }},
+            comparisonProjected: {{ prev_grp_5|tojson }},
+            actual: {{ dep_grp_5|tojson }}
+        },
+        {
+            id: '6',
+            shortLabel: 'F',
+            label: 'Constructions spéciales',
+            tablePrefix: 'F-',
+            color: getThemeVar('--theme-priority-critical', '#dc3545'),
+            projected: {{ values_6|tojson }},
+            comparisonProjected: {{ prev_grp_6|tojson }},
+            actual: {{ dep_grp_6|tojson }}
+        },
+        {
+            id: '7',
+            shortLabel: 'G',
+            label: 'Terrains',
+            tablePrefix: 'G-',
+            color: getThemeVar('--theme-link-delete', '#dc3545'),
+            projected: {{ values_7|tojson }},
+            comparisonProjected: {{ prev_grp_7|tojson }},
+            actual: {{ dep_grp_7|tojson }}
+        },
+        {
+            id: '8',
+            shortLabel: 'Autre',
+            label: 'Autre',
+            tablePrefix: 'Autre',
+            color: getThemeVar('--theme-kpi-hours', '#5f788a'),
+            projected: {{ values_8|tojson }},
+            comparisonProjected: {{ prev_grp_8|tojson }},
+            actual: {{ dep_grp_8|tojson }}
+        },
+        {
+            id: '9',
+            shortLabel: 'Z',
+            label: 'Parties communes à usage restreint',
+            tablePrefix: 'Z-',
+            color: getThemeVar('--theme-kpi-age', '#d7dee8'),
+            projected: {{ values_9|tojson }},
+            comparisonProjected: {{ prev_grp_9|tojson }},
+            actual: {{ dep_grp_9|tojson }}
+        }
+    ];
+
+    const projectedRowMetadata = [
+        {% for item in fill_table %}
+        {
+            year: "{{ item[4] }}",
+            groupId: "{{ item[7] }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    let activeGroups = new Set(groupDefinitions.map(group => group.id));
+    let activeYearFilter = null;
+    let table = null;
+    let projectedChart = null;
+    let actualChart = null;
+
+    function getVisibleGroups() {
+        return groupDefinitions.filter(group => activeGroups.has(group.id));
+    }
+
+    function getYearTotals() {
+        const visibleGroups = getVisibleGroups();
+
+        return projectedLabels.map((year, index) => {
+            return visibleGroups.reduce((sum, group) => {
+                return sum + Number(group.projected[index] || 0);
+            }, 0);
+        });
+    }
+
+    function getProjected10Totals() {
+        const visibleGroups = getVisibleGroups();
+
+        return actualLabels.map((year, index) => {
+            return visibleGroups.reduce((sum, group) => {
+                return sum + Number(group.comparisonProjected[index] || 0);
+            }, 0);
+        });
+    }
+
+    function tableGroupMatches(groupCell) {
+        if (activeGroups.size === groupDefinitions.length) return true;
+
+        const normalizedCell = normalizeGroup(groupCell);
+
+        return getVisibleGroups().some(group => {
+            const normalizedPrefix = normalizeGroup(group.tablePrefix);
+            const normalizedLabel = normalizeGroup(group.label);
+
+            return normalizedCell.startsWith(normalizedPrefix)
+                || normalizedCell.includes(normalizedLabel)
+                || normalizedCell === normalizedLabel;
+        });
+    }
+
+    function metadataGroupMatches(groupId) {
+        if (activeGroups.size === groupDefinitions.length) return true;
+
+        return activeGroups.has(String(groupId));
+    }
+
+    function setYearFilter(year) {
+        activeYearFilter = year ? String(year) : null;
+        updateActiveFilterBanner();
+
+        if (table) {
+            table.draw();
+            updateKpis();
+
+            const tableCard = document.getElementById('fdp-table-card');
+
+            if (tableCard) {
+                tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else {
+            updateKpis();
+        }
+    }
+
+    function updateActiveFilterBanner() {
+        const banner = document.getElementById('fdp-active-filter');
+        const text = document.getElementById('fdp-active-filter-text');
+
+        if (!banner || !text) return;
+
+        if (!activeYearFilter) {
+            banner.classList.remove('show');
+            text.textContent = '';
+            return;
+        }
+
+        text.textContent = 'Filtre actif : année ' + activeYearFilter;
+        banner.classList.add('show');
+    }
+
+    function updateGroupChips() {
+        $('[data-filter-group]').each(function () {
+            const groupId = $(this).attr('data-filter-group');
+            const isActive = groupId === 'all'
+                ? activeGroups.size === groupDefinitions.length
+                : activeGroups.has(groupId);
+
+            $(this).toggleClass('active', isActive);
+        });
+    }
+
+    function updateCharts() {
+        if (projectedChart) {
+            projectedChart.data.datasets.forEach(dataset => {
+                dataset.hidden = dataset.groupId && !activeGroups.has(dataset.groupId);
+            });
+
+            projectedChart.update();
+        }
+
+        if (actualChart) {
+            actualChart.data.datasets.forEach(dataset => {
+                if (dataset.groupId) {
+                    dataset.hidden = !activeGroups.has(dataset.groupId);
+                }
+
+                if (dataset.datasetRole === 'projected-line') {
+                    dataset.data = getProjected10Totals();
+                }
+            });
+
+            actualChart.update();
+        }
+    }
+
+    function getRowCountForYear(year) {
+        if (table) {
+            let count = 0;
+
+            table.rows().every(function () {
+                const data = this.data();
+
+                if (String(stripHtml(data[0])) === String(year) && tableGroupMatches(data[3])) {
+                    count += 1;
+                }
+            });
+
+            return count;
+        }
+
+        return projectedRowMetadata.filter(row => {
+            return String(row.year) === String(year) && metadataGroupMatches(row.groupId);
+        }).length;
+    }
+
+    function getVisibleProjectedRowCount() {
+        if (table) {
+            return table.rows({ search: 'applied' }).data().length;
+        }
+
+        return projectedRowMetadata.filter(row => {
+            const yearMatches = !activeYearFilter || String(row.year) === String(activeYearFilter);
+            const groupMatches = metadataGroupMatches(row.groupId);
+
+            return yearMatches && groupMatches;
+        }).length;
+    }
+
+    function updateKpis() {
+        const totals = getYearTotals();
+        const total = totals.reduce((sum, value) => sum + Number(value || 0), 0);
+        const firstIndex = totals.findIndex(value => Number(value || 0) > 0);
+        const peakValue = Math.max.apply(null, totals.concat([0]));
+        const peakIndex = totals.findIndex(value => Number(value || 0) === peakValue && peakValue > 0);
+
+        let mainGroup = null;
+        let mainGroupValue = 0;
+
+        getVisibleGroups().forEach(group => {
+            const value = group.projected.reduce((sum, current) => sum + Number(current || 0), 0);
+
+            if (value > mainGroupValue) {
+                mainGroup = group;
+                mainGroupValue = value;
+            }
+        });
+
+        $('#fdp-total-projected').text(formatCurrency(total));
+
+        if (firstIndex >= 0) {
+            const year = projectedLabels[firstIndex];
+            const count = getRowCountForYear(year);
+
+            $('#fdp-next-year').text(year);
+            $('#fdp-next-sub').text(count + ' intervention' + (count > 1 ? 's' : '') + ' · ' + formatCurrency(totals[firstIndex]));
+            $('#fdp-kpi-next').attr('data-year', year);
+        } else {
+            $('#fdp-next-year').text('—');
+            $('#fdp-next-sub').text('aucune dépense visible');
+            $('#fdp-kpi-next').removeAttr('data-year');
+        }
+
+        if (peakIndex >= 0) {
+            const year = projectedLabels[peakIndex];
+
+            $('#fdp-peak-year').text(year);
+            $('#fdp-peak-sub').text(formatCurrency(peakValue));
+            $('#fdp-kpi-peak').attr('data-year', year);
+        } else {
+            $('#fdp-peak-year').text('—');
+            $('#fdp-peak-sub').text('aucune dépense visible');
+            $('#fdp-kpi-peak').removeAttr('data-year');
+        }
+
+        if (mainGroup) {
+            $('#fdp-main-group').text(mainGroup.shortLabel + ' · ' + mainGroup.label);
+            $('#fdp-main-group-sub').text(formatCurrency(mainGroupValue));
+            $('#fdp-kpi-group').attr('data-group', mainGroup.id);
+        } else {
+            $('#fdp-main-group').text('—');
+            $('#fdp-main-group-sub').text('aucun groupe visible');
+            $('#fdp-kpi-group').removeAttr('data-group');
+        }
+
+        $('#fdp-row-count').text(getVisibleProjectedRowCount().toLocaleString('fr-CA'));
+    }
+
+    function syncFdpScrollWidth() {
+        const bottom = $('.fdp-table-scroll').get(0);
+
+        if (!bottom) return;
+
+        $('.fdp-table-scroll-top-inner').width(bottom.scrollWidth);
+        $('.fdp-table-scroll-top').scrollLeft($('.fdp-table-scroll').scrollLeft());
+
+        if (table) {
+            table.columns.adjust();
+        }
+    }
+
+    const fdpMarkerPlugin = {
+        afterDraw: function (chart) {
+            const markers = chart.config.options.fdpMarkers || [];
+
+            if (!markers.length) return;
+
+            const xAxis = chart.scales['x-axis-0'];
+            const chartArea = chart.chartArea;
+            const ctx = chart.chart.ctx;
+
+            if (!xAxis || !chartArea) return;
+
+            chart.fdpMarkerHitboxes = [];
+
+            markers.forEach(function (marker, markerIndex) {
+                const index = chart.data.labels.findIndex(label => String(label) === String(marker.year));
+
+                if (index === -1) return;
+
+                const x = xAxis.getPixelForTick(index);
+                const label = marker.label;
+
+                ctx.save();
+
+                ctx.beginPath();
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(x, chartArea.top);
+                ctx.lineTo(x, chartArea.bottom);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = marker.color;
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+                ctx.font = 'bold 11px "Segoe UI", Arial, sans-serif';
+
+                const textWidth = ctx.measureText(label).width;
+                const boxWidth = textWidth + 12;
+                const boxHeight = 18;
+                const boxX = Math.min(
+                    Math.max(x - boxWidth / 2, chartArea.left),
+                    chartArea.right - boxWidth
+                );
+                const boxY = chartArea.top + 4 + (markerIndex * 22);
+
+                chart.fdpMarkerHitboxes.push({
+                    left: boxX,
+                    right: boxX + boxWidth,
+                    top: chartArea.top,
+                    bottom: chartArea.bottom,
+                    tooltip: marker.tooltip || marker.label
+                });
+
+                ctx.fillStyle = marker.color;
+                ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, boxX + 6, boxY + boxHeight / 2);
+
+                ctx.restore();
+            });
+        }
+    };
+
+    Chart.plugins.register(fdpMarkerPlugin);
+
+    function attachMarkerHover(chart, canvas) {
+        if (!chart || !canvas) return;
+
+        canvas.addEventListener('mousemove', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const hit = (chart.fdpMarkerHitboxes || []).find(marker => {
+                return x >= marker.left
+                    && x <= marker.right
+                    && y >= marker.top
+                    && y <= marker.bottom;
+            });
+
+            canvas.style.cursor = hit ? 'help' : 'default';
+            canvas.title = hit ? hit.tooltip : '';
+        });
+
+        canvas.addEventListener('mouseleave', function () {
+            canvas.style.cursor = 'default';
+            canvas.title = '';
+        });
+    }
+
+    function createCharts() {
+        Chart.defaults.global.defaultFontColor = chartText;
+
+        projectedChart = new Chart(document.getElementById('fdp-projected-chart'), {
+            type: 'bar',
+            data: {
+                labels: projectedLabels,
+                datasets: groupDefinitions.map(group => ({
+                    label: group.shortLabel + ' · ' + group.label,
+                    groupId: group.id,
+                    backgroundColor: group.color,
+                    borderColor: group.color,
+                    data: group.projected,
+                    borderWidth: 0
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: { display: false },
+                tooltips: {
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            const dataset = data.datasets[tooltipItem.datasetIndex];
+                            const total = data.datasets.reduce((sum, current) => {
+                                return current.hidden ? sum : sum + Number(current.data[tooltipItem.index] || 0);
+                            }, 0);
+
+                            return [
+                                dataset.label + ' : ' + formatCurrencyTooltip(tooltipItem.yLabel || 0),
+                                'Total de l’année : ' + formatCurrencyTooltip(total)
+                            ];
+                        }
+                    }
+                },
+                onClick: function (event) {
+                    const points = this.getElementAtEvent(event);
+
+                    if (points.length) {
+                        setYearFilter(projectedLabels[points[0]._index]);
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: { fontColor: chartMuted }
+                    }],
+                    yAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: chartMuted,
+                            callback: formatCurrencyCompact
+                        }
+                    }]
+                }
+            }
+        });
+
+        actualChart = new Chart(document.getElementById('fdp-actual-chart'), {
+            type: 'bar',
+            data: {
+                labels: actualLabels,
+                datasets: [{
+                    label: 'Dépenses prévues',
+                    datasetRole: 'projected-line',
+                    type: 'line',
+                    data: getProjected10Totals(),
+                    borderColor: getThemeVar('--theme-link-edit', '#0d6efd'),
+                    backgroundColor: 'rgba(13, 110, 253, 0.10)',
+                    pointBackgroundColor: getThemeVar('--theme-link-edit', '#0d6efd'),
+                    pointBorderColor: getThemeVar('--theme-link-edit', '#0d6efd'),
+                    pointRadius: 4,
+                    pointHoverRadius: 5,
+                    borderWidth: 3,
+                    fill: true,
+                    lineTension: 0.25
+                }].concat(groupDefinitions.map(group => ({
+                    label: 'Réel — ' + group.shortLabel + ' · ' + group.label,
+                    groupId: group.id,
+                    backgroundColor: group.color,
+                    borderColor: group.color,
+                    data: group.actual,
+                    borderWidth: 0
+                })))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: { display: false },
+                fdpMarkers: [
+                    {
+                        year: fdpStartYear,
+                        label: 'Début FDP',
+                        tooltip: 'Début FDP : ' + fdpStartDate,
+                        color: getThemeVar('--theme-link-complete', '#f59e0b')
+                    },
+                    {
+                        year: currentYear,
+                        label: 'Année courante',
+                        tooltip: 'Année courante : ' + currentYear,
+                        color: getThemeVar('--theme-link-edit', '#0d6efd')
+                    }
+                ],
+                tooltips: {
+                    callbacks: {
+                        label: function (tooltipItem, data) {
+                            const dataset = data.datasets[tooltipItem.datasetIndex];
+                            const prefix = dataset.datasetRole === 'projected-line'
+                                ? 'Dépenses prévues : '
+                                : dataset.label + ' : ';
+
+                            return prefix + formatCurrencyTooltip(tooltipItem.yLabel || 0);
+                        }
+                    }
+                },
+                scales: {
+                    xAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: { fontColor: chartMuted }
+                    }],
+                    yAxes: [{
+                        stacked: true,
+                        gridLines: { color: chartBorder },
+                        ticks: {
+                            beginAtZero: true,
+                            fontColor: chartMuted,
+                            callback: formatCurrencyCompact
+                        }
+                    }]
+                }
+            }
+        });
+
+        attachMarkerHover(actualChart, document.getElementById('fdp-actual-chart'));
+    }
+
+    function initializeDataTable() {
+        if (!showProjectedTable || !$('#table_data').length) return;
+
+        $.fn.dataTable.ext.search.push(function (settings, data) {
+            if (settings.nTable.id !== 'table_data') return true;
+
+            const rowYear = String(stripHtml(data[0] || ''));
+
+            if (activeYearFilter && rowYear !== String(activeYearFilter)) {
+                return false;
+            }
+
+            return tableGroupMatches(data[3]);
+        });
+
+        table = $('#table_data').DataTable({
+            dom: 'Blfrtip',
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Tous']],
+            pageLength: 25,
+            order: [[0, 'asc']],
+            buttons: [{
+                extend: 'excelHtml5',
+                title: 'Export CondoFix Dépenses Prévues Fonds de Prévoyance',
+                text: 'Excel'
+            }],
+            language: {
+                decimal: '',
+                emptyTable: 'Aucune donnée disponible dans le tableau',
+                info: 'Affichage de _START_ à _END_ sur _TOTAL_ entrées',
+                infoEmpty: 'Affichage de 0 à 0 sur 0 entrée',
+                infoFiltered: '(filtré à partir de _MAX_ entrées au total)',
+                thousands: ' ',
+                lengthMenu: 'Afficher _MENU_ entrées',
+                loadingRecords: 'Chargement...',
+                processing: 'Traitement...',
+                search: 'Recherche',
+                zeroRecords: 'Aucun résultat trouvé',
+                paginate: {
+                    first: 'Premier',
+                    last: 'Dernier',
+                    next: 'Suivant',
+                    previous: 'Précédent'
+                },
+                aria: {
+                    sortAscending: ': activer pour trier la colonne par ordre croissant',
+                    sortDescending: ': activer pour trier la colonne par ordre décroissant'
+                }
+            },
+            initComplete: function () {
+                const wrapper = $('#table_data_wrapper');
+
+                wrapper.find('.dt-buttons').appendTo('#fdp-dt-buttons');
+                wrapper.find('.dataTables_filter').appendTo('#fdp-dt-search');
+
+                syncFdpScrollWidth();
+            }
+        });
+
+        table.on('draw', function () {
+            updateKpis();
+            syncFdpScrollWidth();
+        });
+
+        $('#fdp-clear-year-filter').on('click', function () {
+            setYearFilter(null);
+        });
+
+        $('.fdp-table-scroll-top').on('scroll', function () {
+            $('.fdp-table-scroll').scrollLeft($(this).scrollLeft());
+        });
+
+        $('.fdp-table-scroll').on('scroll', function () {
+            $('.fdp-table-scroll-top').scrollLeft($(this).scrollLeft());
+        });
+
+        $(window).on('resize', syncFdpScrollWidth);
+        setTimeout(syncFdpScrollWidth, 150);
+        syncFdpScrollWidth();
+    }
+
+    function bindInteractions() {
+        $('#fdp-group-filters').on('click', '[data-filter-group]', function () {
+            const groupId = $(this).attr('data-filter-group');
+
+            if (groupId === 'all') {
+                activeGroups = new Set(groupDefinitions.map(group => group.id));
+            } else if (activeGroups.size === groupDefinitions.length) {
+                activeGroups = new Set([groupId]);
+            } else if (activeGroups.has(groupId)) {
+                activeGroups.delete(groupId);
+
+                if (activeGroups.size === 0) {
+                    activeGroups = new Set(groupDefinitions.map(group => group.id));
+                }
+            } else {
+                activeGroups.add(groupId);
+            }
+
+            updateGroupChips();
+            updateCharts();
+
+            if (table) {
+                table.draw();
+            }
+
+            updateKpis();
+        });
+
+        $('#fdp-kpi-total, #fdp-kpi-count').on('click', function () {
+            activeYearFilter = null;
+            activeGroups = new Set(groupDefinitions.map(group => group.id));
+
+            updateGroupChips();
+            updateCharts();
+            updateActiveFilterBanner();
+
+            if (table) {
+                table.draw();
+            }
+
+            updateKpis();
+        });
+
+        $('#fdp-kpi-next, #fdp-kpi-peak').on('click', function () {
+            const year = $(this).attr('data-year');
+
+            if (year) {
+                setYearFilter(year);
+            }
+        });
+
+        $('#fdp-kpi-group').on('click', function () {
+            const groupId = $(this).attr('data-group');
+
+            if (!groupId) return;
+
+            activeGroups = new Set([groupId]);
+            activeYearFilter = null;
+
+            updateGroupChips();
+            updateCharts();
+            updateActiveFilterBanner();
+
+            if (table) {
+                table.draw();
+            }
+
+            updateKpis();
+        });
+    }
+
+    $(document).ready(function () {
+        createCharts();
+        initializeDataTable();
+        bindInteractions();
+        updateGroupChips();
+        updateKpis();
+        syncFdpScrollWidth();
+    });
+</script>
+
+{% endblock content %}

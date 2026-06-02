@@ -446,277 +446,554 @@ def calcul_dep(args):
 
     return res
 
-
-@bp_fonds_prevoyance.route('/depenses_fdp/<usager>', methods=['POST','GET'])
+@bp_fonds_prevoyance.route('/depenses_fdp/<usager>', methods=['POST', 'GET'])
 def depenses_fdp(usager):
-    """afficher la page des dépenses du fonds de prévoyance aux admin selon usager
-    'admin' ou 'coproprios'
+    """Afficher les dépenses projetées du fonds de prévoyance.
+
+    La même page est utilisée pour :
+    - admin : vue complète avec graphiques et calendrier projeté;
+    - coproprios sans restriction : vue complète avec graphiques et calendrier projeté;
+    - coproprios avec restriction : vue graphique seulement.
+
+    Les calculs financiers restent délégués à calcul_dep().
     """
 
     if session.get('ProfilUsager') is None:
-        # probablement délai de session atteint
         return render_template('session_ferme.html')
+
     profile_list = session.get('ProfilUsager')
-    # vérifier type d'usager (pas employé)
+
+    # Employés : accès non autorisé.
     if profile_list[2] == 3:
-            return redirect(url_for('bp_admin.permission'))
+        return redirect(url_for('bp_admin.permission'))
+
     client_ident = profile_list[0]
-
-     # ***************************préparation des données 25 ans du graphique histogramme de dépenses prévues
-    # processus de programmation:
-    # 1- appeler la fonction de calcul des interventions pour obtenir la liste complète 50 ans
-    # 2- supprimer les éléments de la liste ayant un 'an_prochain' plus grand que la période voulue
-    # 3- Créer les listes suivantes pour accumuler les données à afficher dans les graphiques:
-    #       - étiquettes d'années selon 'ans_traites' (1 liste)
-    #       - total annuel des valeurs actualisées pour les enregistrements pour chacun des 7 groupes Uniformat (7 listes)
-    #       IMPORTANT: toutes ces listes doivent avoir le même nombre d'éléments pour faire coincider les étiquettes
-    # 4- passer la liste dans une boucle avec 'ans_traites' croissants jusqu'au maximum
-    #   - pour chaque année de calendrier:
-    #       - multiplier la valeur de l'item par le taux d'inflation prévu selon le nombre d'années et selon la plage d'années applicables (0-5, 6-15, 16 et plus)
-    #       - cumuler les enregistrements ayant le même groupe pour l'année en cours de traitement
-    #       - ajouter ces cumuls à la liste du groupe applicable (voir item 8)
-
-    #1 Fonction de calcul préalable
-    if request.form.get('toggle')==None:
-        entite='syndicat'
-    else:
-        entite='coproprios'
-
-    # obtenir la liste des dépenses indexées pour prochains 50 ans
-    #liste_parametres=[usager, mode, taux_inflation]
-    parametres=[entite,'base',0]
-    res=calcul_dep(parametres)
-    fill_table=res[0]
-    fill_dep=res[0]
-    indices=res[1]
-    taux_infl_moyen_anal=indices[0]
-    croiss_ICC=indices[1]
-
     mode_connexion = profile_list[8]
+
+    # Vue financière affichée :
+    # - syndicat par défaut;
+    # - coproprios si la case "Vue copropriétaires" est cochée.
+    entite = 'coproprios' if request.form.get('toggle') else 'syndicat'
+
+    # Liste complète des dépenses indexées.
+    # calcul_dep() contient la logique financière existante :
+    # inflation, fréquence, part syndicat/copropriétaires, etc.
+    projection_rows_all, indices = calcul_dep([entite, 'base', 0])
+
     cnx = connect_db(mode_connexion)
     cur = cnx.cursor()
-    date_anal=datetime
 
-    cur.execute("SELECT DateAnalPrevoyance, AccesLimCoprop FROM parametres WHERE IDClient=%s", (client_ident,))
-    for item in cur.fetchall():
-        date_anal = item[0]
-        # pour coproprios, vérifier si accès limité dans paramètres
-        limite_acces = item[1]
+    cur.execute(
+        "SELECT DateAnalPrevoyance, AccesLimCoprop "
+        "FROM parametres "
+        "WHERE IDClient=%s",
+        (client_ident,)
+    )
+    parametres_fdp = cur.fetchone()
+
+    if parametres_fdp is None:
+        return render_template('session_ferme.html')
+
+    date_anal = parametres_fdp[0]
+    limite_acces = parametres_fdp[1] or 0
     annee_anal = date_anal.year
+    date_anal_label = date_anal.strftime('%Y-%m-%d')
 
-    # 2- supprimer les éléments de la liste ayant un 'an_prochain' plus grand que la période de 25 ans
-    indice = 0
+    # Fenêtre d'affichage : 25 ans à partir de la dernière analyse FDP.
+    # Important : le tableau doit recevoir cette liste filtrée, pas la liste complète
+    # retournée par calcul_dep(), sinon on affiche la projection complète.
     date_fin_brut = date_anal + relativedelta(years=24)
     annee_fin = date_fin_brut.year
-    for item in fill_dep:
-        #if item[4] > annee_fin:
-        if item[4] > date_fin_brut.strftime('%Y'):
-            del fill_dep[indice]
-        indice += 1
 
-    # 8- Créer les listes suivantes pour accumuler les données à afficher dans les graphiques:
-    #    étiquettes d'années selon 'ans_traites'
-    labels=[]
-    # total annuel des valeurs actualisées pour chaque groupe Uniformat
-    groupe_1=[]
-    groupe_2 = []
-    groupe_3 = []
-    groupe_4 = []
-    groupe_5 = []
-    groupe_6 = []
-    groupe_7 = []
-    groupe_8 = [] #autres
-    groupe_9 = []
-    cum_total_mtce=0
-    cum_total_rempl=0
+    projection_rows_visible = [
+        item for item in projection_rows_all
+        if int(item[4]) <= annee_fin
+    ]
 
-   #       IMPORTANT: toutes ces listes doivent avoir le même nombre d'éléments pour faire coincider les étiquettes
+    labels = []
+    groupes_projection = {group_id: [] for group_id in range(1, 10)}
 
-    # 9- passer la liste dans une boucle avec 'ans_traites' croissants jusqu'au maximum
-    #   - pour chaque année de calendrier:
-
-    annee_en_cours=annee_anal
-    indice=1
-    dep_tot_10_ans=[]
-    while annee_en_cours<=annee_fin:
-        # étiquettes des années:
+    # CONTENU DES ROWS DE calcul_dep() :
+    # 0 RefAnalyse
+    # 1 DescriptionDepense
+    # 2 FrequenceAns
+    # 3 Dépense actualisée
+    # 4 Année de l'intervention
+    # 5 Type d'intervention
+    # 6 Description catégorie
+    # 7 IDGroupe Uniformat
+    # 8 Description groupe Uniformat
+    # 9 Nom intervenant
+    for annee_en_cours in range(annee_anal, annee_fin + 1):
         labels.append(annee_en_cours)
-        # valeurs affichées par groupe
-        cum_1 = 0
-        cum_2 = 0
-        cum_3 = 0
-        cum_4 = 0
-        cum_5 = 0
-        cum_6 = 0
-        cum_7 = 0
-        cum_8 = 0
-        cum_9 = 0
-        # CONTENU DE L'AJOUT=  0 ref_analyse, 1 desc_intervention, 2 frequence, 3 dep_actualisee, 4 annee de l'intervention,
-        # 5 desc type intervention, 6 description categorie, 7 IDGroupe uniformat, 8 description groupe uniformat, 9 nom d'intervenant
 
-        for item in fill_dep:
-              if int(item[4])==int(annee_en_cours):
-                # cumul valeurs actualisées par année selon groupe Uniformat
+        cumuls = {group_id: 0.0 for group_id in range(1, 10)}
 
-                if int(item[7]) == 1:
-                    cum_1+= float(item[3])
+        for item in projection_rows_visible:
+            if int(item[4]) != annee_en_cours:
+                continue
 
-                elif int(item[7]) == 2:
-                    cum_2 += float(item[3])
+            try:
+                group_id = int(item[7])
+            except (TypeError, ValueError):
+                group_id = 8  # Autre
 
-                elif int(item[7]) == 3:
-                    cum_3 += float(item[3])
+            if group_id in cumuls:
+                cumuls[group_id] += float(item[3] or 0)
 
-                elif int(item[7]) == 4:
-                    cum_4 += float(item[3])
+        for group_id in range(1, 10):
+            groupes_projection[group_id].append(int(cumuls[group_id]))
 
-                elif int(item[7]) == 5:
-                    cum_5 += float(item[3])
+    # -------------------------------------------------------------------------
+    # Graphique réel vs prévu — fenêtre dynamique de 10 ans
+    #
+    # Le repère "Début FDP" doit représenter la date officielle de la dernière
+    # analyse du fonds de prévoyance, donc DateAnalPrevoyance. Ce repère est un
+    # jalon légal / administratif, et non la première année où une dépense est
+    # projetée.
+    #
+    # Fenêtre de base :
+    #   DateAnalPrevoyance - 5 ans à DateAnalPrevoyance + 4 ans.
+    #
+    # Pour éviter une fenêtre figée trop ancienne, on fait glisser la fenêtre si
+    # l'année courante dépasse la fin de cette période.
+    # -------------------------------------------------------------------------
+    current_year = datetime.now().year
+    current_date = datetime.now().date()
 
-                elif int(item[7]) == 6:
-                    cum_6 += float(item[3])
+    comparison_base_end_year = annee_anal + 4
+    comparison_end_year = max(comparison_base_end_year, current_year)
+    comparison_start_year = comparison_end_year - 9
+    fill_10_ans = list(range(comparison_start_year, comparison_end_year + 1))
 
-                elif int(item[7]) == 7:
-                    cum_7 += float(item[3])
+    groupes_prevus_10_ans = {group_id: [] for group_id in range(1, 10)}
 
-                elif int(item[7]) == 8:
-                    cum_8 += float(item[3])
+    for annee in fill_10_ans:
+        cumuls = {group_id: 0.0 for group_id in range(1, 10)}
 
-                elif int(item[7]) == 9:
-                    cum_9 += float(item[3])
-                # cumul par type d'intervention (mtce ou remplacement)
-                if item[5] == 'Maintenance':
-                    cum_total_mtce += float(item[3])
-                if item[5] == 'Remplacement':
-                    cum_total_rempl += float(item[3])
+        for item in projection_rows_all:
+            if int(item[4]) != annee:
+                continue
 
-        # cumul des dépenses totales prévues par année pour 10 ans pour graphique des actuelles vs. prévues
-        cum_global_annee=cum_1+cum_2+cum_3+cum_4+cum_5+cum_6+cum_7+cum_8+cum_9
-        if indice<11:
-            ajout_annee=(annee_en_cours,int(cum_global_annee))
-            dep_tot_10_ans.append(ajout_annee)
+            try:
+                group_id = int(item[7])
+            except (TypeError, ValueError):
+                group_id = 8  # Autre
 
+            if group_id in cumuls:
+                cumuls[group_id] += float(item[3] or 0)
 
-        # ajouter ces cumuls à la liste du groupe applicable
-        groupe_1.append(int(cum_1))
-        groupe_2.append(int(cum_2))
-        groupe_3.append(int(cum_3))
-        groupe_4.append(int(cum_4))
-        groupe_5.append(int(cum_5))
-        groupe_6.append(int(cum_6))
-        groupe_7.append(int(cum_7))
-        groupe_8.append(int(cum_8))
-        groupe_9.append(int(cum_9))
+        for group_id in range(1, 10):
+            groupes_prevus_10_ans[group_id].append(int(cumuls[group_id]))
 
-        annee_en_cours+=1
-        indice+=1
+    dep_10_ans = [
+        sum(groupes_prevus_10_ans[group_id][index] for group_id in range(1, 10))
+        for index in range(len(fill_10_ans))
+    ]
 
-    # ***************************préparation des données 10 ans du graphique de courbes de dépenses actuelles vs. prévues
+    # Avertissement admin seulement : utile lorsqu'une nouvelle analyse active a
+    # été importée, mais que DateAnalPrevoyance n'a pas encore été ajustée dans
+    # Paramètres > Fonds de prévoyance.
+    projected_year_candidates = [
+        int(item[4])
+        for item in projection_rows_all
+        if item[4] is not None and float(item[3] or 0) > 0
+    ]
+    first_projected_year = min(projected_year_candidates) if projected_year_candidates else None
 
-    fill_10_ans = []
-    dep_10_ans=[]
-    for item in dep_tot_10_ans:
-        #print('item dans dep_tot-10ans:',item)
-        fill_10_ans.append(item[0])
-        dep_10_ans.append(item[1])
-    #print ('liste 10 ans:',fill_10_ans)
+    fdp_date_warning = None
+    if (
+        usager == 'admin'
+        and first_projected_year is not None
+        and first_projected_year > annee_anal
+    ):
+        fdp_date_warning = (
+            f"À vérifier : la date d’analyse FDP est {annee_anal}, "
+            f"mais les interventions actives commencent en {first_projected_year}."
+        )
 
-    # obtenir dépenses des tickets fermés avec type de travail=2 (fonds de prévoyance)
-    fill_tickets=[]
-    cur.execute("SELECT DateComplet, CoutTotalTTC, IDCategorie FROM tickets WHERE TypeTravail=%s AND DateComplet>%s AND IDClient=%s",(2,date_anal,client_ident))
-    for item in cur.fetchall():
-        cur.execute("SELECT IDGroupe FROM categories WHERE IDCategorie=%s AND IDClient=%s",(item[2],client_ident))
-        for row in cur.fetchall():
-            # tenir compte des interventions dans parties communes à usage restreint ('Z') IDGroupe=9
-            if entite=='syndicat' and row[0]!=9:
-                ajout_ticket = (item[0].year, int(item[1]), row[0])
-                fill_tickets.append(ajout_ticket)
-            if entite == 'coproprios' and row[0] == 9:
-                ajout_ticket = (item[0].year, int(item[1]), row[0])
-                fill_tickets.append(ajout_ticket)
+    # Dépenses réelles : tickets fermés de type Fonds de prévoyance
+    # dans la fenêtre dynamique, jusqu'à la date courante.
+    fill_tickets = []
 
-    groupe_1_act=[]
-    groupe_2_act = []
-    groupe_3_act = []
-    groupe_4_act = []
-    groupe_5_act = []
-    groupe_6_act = []
-    groupe_7_act = []
-    groupe_8_act = []
-    groupe_9_act = []
+    cur.execute(
+        "SELECT YEAR(t.DateComplet), t.CoutTotalTTC, COALESCE(c.IDGroupe, 8) "
+        "FROM tickets t "
+        "LEFT JOIN categories c "
+        "  ON c.IDCategorie = t.IDCategorie "
+        " AND c.IDClient = t.IDClient "
+        "WHERE t.TypeTravail=%s "
+        "  AND t.IDClient=%s "
+        "  AND t.DateComplet IS NOT NULL "
+        "  AND t.DateComplet >= %s "
+        "  AND t.DateComplet <= %s",
+        (
+            2,
+            client_ident,
+            f"{comparison_start_year}-01-01",
+            current_date,
+        )
+    )
 
-    for item in fill_10_ans:
-        cum_dep_act_1 = 0
-        cum_dep_act_2 = 0
-        cum_dep_act_3 = 0
-        cum_dep_act_4 = 0
-        cum_dep_act_5 = 0
-        cum_dep_act_6 = 0
-        cum_dep_act_7 = 0
-        cum_dep_act_8 = 0
-        cum_dep_act_9 = 0
-        for unit in fill_tickets:
-            if unit[0]==item:
-                  if unit[2]==1:
-                      cum_dep_act_1+=unit[1]
-                  if unit[2]==2:
-                      cum_dep_act_2+=unit[1]
-                  if unit[2]==3:
-                      cum_dep_act_3+=unit[1]
-                  if unit[2]==4:
-                      cum_dep_act_4+=unit[1]
-                  if unit[2]==5:
-                      cum_dep_act_5+=unit[1]
-                  if unit[2]==6:
-                      cum_dep_act_6+=unit[1]
-                  if unit[2]==7:
-                      cum_dep_act_7+=unit[1]
-                  if unit[2] == 8:
-                      cum_dep_act_8 += unit[1]
-                  if unit[2] == 9:
-                      cum_dep_act_9 += unit[1]
-        groupe_1_act.append(cum_dep_act_1)
-        groupe_2_act.append(cum_dep_act_2)
-        groupe_3_act.append(cum_dep_act_3)
-        groupe_4_act.append(cum_dep_act_4)
-        groupe_5_act.append(cum_dep_act_5)
-        groupe_6_act.append(cum_dep_act_6)
-        groupe_7_act.append(cum_dep_act_7)
-        groupe_8_act.append(cum_dep_act_8)
-        groupe_9_act.append(cum_dep_act_9)
+    for ticket_year, ticket_cost, group_id in cur.fetchall():
+        if entite == 'syndicat' and group_id != 9:
+            fill_tickets.append((ticket_year, int(ticket_cost or 0), group_id))
 
-#***************************remplissage de la table dynamique des dépenses prévues au bas de la page
+        if entite == 'coproprios' and group_id == 9:
+            fill_tickets.append((ticket_year, int(ticket_cost or 0), group_id))
 
-    #vérifier si pour coproprios ou admin. Si coproprio, vérifier si accès limité dans paramètres
+    groupes_reels = {group_id: [] for group_id in range(1, 10)}
+
+    for annee in fill_10_ans:
+        cumuls = {group_id: 0 for group_id in range(1, 10)}
+
+        for ticket_year, ticket_amount, group_id in fill_tickets:
+            if ticket_year == annee and group_id in cumuls:
+                cumuls[group_id] += ticket_amount
+
+        for group_id in range(1, 10):
+            groupes_reels[group_id].append(cumuls[group_id])
+
+    template_args = dict(
+        labels=labels,
+        values_1=groupes_projection[1],
+        values_2=groupes_projection[2],
+        values_3=groupes_projection[3],
+        values_4=groupes_projection[4],
+        values_5=groupes_projection[5],
+        values_6=groupes_projection[6],
+        values_7=groupes_projection[7],
+        values_8=groupes_projection[8],
+        values_9=groupes_projection[9],
+
+        # Important :
+        # projection_rows_visible = même fenêtre 25 ans que le graphique principal.
+        # projection_rows_all serait la projection complète retournée par calcul_dep().
+        fill_table=projection_rows_visible,
+
+        toggle=entite,
+        labels_1=fill_10_ans,
+        dep_prevues=dep_10_ans,
+
+        prev_grp_1=groupes_prevus_10_ans[1],
+        prev_grp_2=groupes_prevus_10_ans[2],
+        prev_grp_3=groupes_prevus_10_ans[3],
+        prev_grp_4=groupes_prevus_10_ans[4],
+        prev_grp_5=groupes_prevus_10_ans[5],
+        prev_grp_6=groupes_prevus_10_ans[6],
+        prev_grp_7=groupes_prevus_10_ans[7],
+        prev_grp_8=groupes_prevus_10_ans[8],
+        prev_grp_9=groupes_prevus_10_ans[9],
+
+        dep_grp_1=groupes_reels[1],
+        dep_grp_2=groupes_reels[2],
+        dep_grp_3=groupes_reels[3],
+        dep_grp_4=groupes_reels[4],
+        dep_grp_5=groupes_reels[5],
+        dep_grp_6=groupes_reels[6],
+        dep_grp_7=groupes_reels[7],
+        dep_grp_8=groupes_reels[8],
+        dep_grp_9=groupes_reels[9],
+
+        fdp_start_year=annee_anal,
+        fdp_start_date_label=date_anal_label,
+        current_year=current_year,
+        fdp_date_warning=fdp_date_warning,
+        bd=profile_list[3],
+    )
+
+    if usager == 'admin':
+        return render_template(
+            'graph_fdp_dep.html',
+            base_layout='layout_admin_tables.html',
+            fdp_usager='admin',
+            show_projected_table=True,
+            **template_args
+        )
+
     if usager == 'coproprios':
-        if limite_acces==1:
-            return render_template('graph_fdp_dep_limite.html', labels=labels,
-                                   values_1=groupe_1, values_2=groupe_2, values_3=groupe_3, values_4=groupe_4,
-                                   values_5=groupe_5,
-                                   values_6=groupe_6, values_7=groupe_7, values_8=groupe_8, values_9=groupe_9, fill_table=fill_table, labels_1=fill_10_ans,
-                                   dep_prevues=dep_10_ans, toggle=entite,
-                                   dep_grp_1=groupe_1_act, dep_grp_2=groupe_2_act, dep_grp_3=groupe_3_act,
-                                   dep_grp_4=groupe_4_act, dep_grp_5=groupe_5_act, dep_grp_6=groupe_6_act,
-                                   dep_grp_7=groupe_7_act, dep_grp_8=groupe_8_act, dep_grp_9=groupe_9_act,
-                                   bd=profile_list[3])
-        else: # pas de restriction
-            return render_template('graph_fdp_dep_proprios.html', labels=labels, values_1=groupe_1, values_2=groupe_2,
-                                   values_3=groupe_3,
-                                   values_4=groupe_4, values_5=groupe_5, values_6=groupe_6, values_7=groupe_7, values_8=groupe_8,
-                                   values_9=groupe_9, fill_table=fill_table, toggle=entite,
-                                   labels_1=fill_10_ans, dep_prevues=dep_10_ans, dep_grp_1=groupe_1_act,
-                                   dep_grp_2=groupe_2_act,
-                                   dep_grp_3=groupe_3_act, dep_grp_4=groupe_4_act, dep_grp_5=groupe_5_act,
-                                   dep_grp_6=groupe_6_act,
-                                   dep_grp_7=groupe_7_act, dep_grp_8=groupe_8_act, dep_grp_9=groupe_9_act, bd=profile_list[3])
+        return render_template(
+            'graph_fdp_dep.html',
+            base_layout='proprios_layout_tables.html',
+            fdp_usager='coproprios',
+            show_projected_table=(limite_acces != 1),
+            **template_args
+        )
 
-    if usager=='admin':
-        return render_template('graph_fdp_dep_admin.html',labels=labels, values_1=groupe_1, values_2=groupe_2,values_3=groupe_3,
-                               values_4=groupe_4,values_5=groupe_5,values_6=groupe_6,values_7=groupe_7,values_8=groupe_8,values_9=groupe_9,
-                                fill_table=fill_table, toggle=entite,
-                               labels_1=fill_10_ans, dep_prevues=dep_10_ans, dep_grp_1=groupe_1_act, dep_grp_2=groupe_2_act,
-                               dep_grp_3=groupe_3_act, dep_grp_4=groupe_4_act, dep_grp_5=groupe_5_act, dep_grp_6=groupe_6_act,
-                               dep_grp_7=groupe_7_act, dep_grp_8=groupe_8_act, dep_grp_9=groupe_9_act, bd=profile_list[3])
+    return redirect(url_for('bp_admin.permission'))
+
+
+
+# @bp_fonds_prevoyance.route('/depenses_fdp/<usager>', methods=['POST','GET'])
+# def depenses_fdp(usager):
+#     """afficher la page des dépenses du fonds de prévoyance aux admin selon usager
+#     'admin' ou 'coproprios'
+#     """
+#
+#     if session.get('ProfilUsager') is None:
+#         # probablement délai de session atteint
+#         return render_template('session_ferme.html')
+#     profile_list = session.get('ProfilUsager')
+#     # vérifier type d'usager (pas employé)
+#     if profile_list[2] == 3:
+#             return redirect(url_for('bp_admin.permission'))
+#     client_ident = profile_list[0]
+#
+#      # ***************************préparation des données 25 ans du graphique histogramme de dépenses prévues
+#     # processus de programmation:
+#     # 1- appeler la fonction de calcul des interventions pour obtenir la liste complète 50 ans
+#     # 2- supprimer les éléments de la liste ayant un 'an_prochain' plus grand que la période voulue
+#     # 3- Créer les listes suivantes pour accumuler les données à afficher dans les graphiques:
+#     #       - étiquettes d'années selon 'ans_traites' (1 liste)
+#     #       - total annuel des valeurs actualisées pour les enregistrements pour chacun des 7 groupes Uniformat (7 listes)
+#     #       IMPORTANT: toutes ces listes doivent avoir le même nombre d'éléments pour faire coincider les étiquettes
+#     # 4- passer la liste dans une boucle avec 'ans_traites' croissants jusqu'au maximum
+#     #   - pour chaque année de calendrier:
+#     #       - multiplier la valeur de l'item par le taux d'inflation prévu selon le nombre d'années et selon la plage d'années applicables (0-5, 6-15, 16 et plus)
+#     #       - cumuler les enregistrements ayant le même groupe pour l'année en cours de traitement
+#     #       - ajouter ces cumuls à la liste du groupe applicable (voir item 8)
+#
+#     #1 Fonction de calcul préalable
+#     if request.form.get('toggle')==None:
+#         entite='syndicat'
+#     else:
+#         entite='coproprios'
+#
+#     # obtenir la liste des dépenses indexées pour prochains 50 ans
+#     #liste_parametres=[usager, mode, taux_inflation]
+#     parametres=[entite,'base',0]
+#     res=calcul_dep(parametres)
+#     fill_table=res[0]
+#     fill_dep=res[0]
+#     indices=res[1]
+#     taux_infl_moyen_anal=indices[0]
+#     croiss_ICC=indices[1]
+#
+#     mode_connexion = profile_list[8]
+#     cnx = connect_db(mode_connexion)
+#     cur = cnx.cursor()
+#     date_anal=datetime
+#
+#     cur.execute("SELECT DateAnalPrevoyance, AccesLimCoprop FROM parametres WHERE IDClient=%s", (client_ident,))
+#     for item in cur.fetchall():
+#         date_anal = item[0]
+#         # pour coproprios, vérifier si accès limité dans paramètres
+#         limite_acces = item[1]
+#     annee_anal = date_anal.year
+#
+#     # 2- supprimer les éléments de la liste ayant un 'an_prochain' plus grand que la période de 25 ans
+#     indice = 0
+#     date_fin_brut = date_anal + relativedelta(years=24)
+#     annee_fin = date_fin_brut.year
+#     for item in fill_dep:
+#         #if item[4] > annee_fin:
+#         if item[4] > date_fin_brut.strftime('%Y'):
+#             del fill_dep[indice]
+#         indice += 1
+#
+#     # 8- Créer les listes suivantes pour accumuler les données à afficher dans les graphiques:
+#     #    étiquettes d'années selon 'ans_traites'
+#     labels=[]
+#     # total annuel des valeurs actualisées pour chaque groupe Uniformat
+#     groupe_1=[]
+#     groupe_2 = []
+#     groupe_3 = []
+#     groupe_4 = []
+#     groupe_5 = []
+#     groupe_6 = []
+#     groupe_7 = []
+#     groupe_8 = [] #autres
+#     groupe_9 = []
+#     cum_total_mtce=0
+#     cum_total_rempl=0
+#
+#    #       IMPORTANT: toutes ces listes doivent avoir le même nombre d'éléments pour faire coincider les étiquettes
+#
+#     # 9- passer la liste dans une boucle avec 'ans_traites' croissants jusqu'au maximum
+#     #   - pour chaque année de calendrier:
+#
+#     annee_en_cours=annee_anal
+#     indice=1
+#     dep_tot_10_ans=[]
+#     while annee_en_cours<=annee_fin:
+#         # étiquettes des années:
+#         labels.append(annee_en_cours)
+#         # valeurs affichées par groupe
+#         cum_1 = 0
+#         cum_2 = 0
+#         cum_3 = 0
+#         cum_4 = 0
+#         cum_5 = 0
+#         cum_6 = 0
+#         cum_7 = 0
+#         cum_8 = 0
+#         cum_9 = 0
+#         # CONTENU DE L'AJOUT=  0 ref_analyse, 1 desc_intervention, 2 frequence, 3 dep_actualisee, 4 annee de l'intervention,
+#         # 5 desc type intervention, 6 description categorie, 7 IDGroupe uniformat, 8 description groupe uniformat, 9 nom d'intervenant
+#
+#         for item in fill_dep:
+#               if int(item[4])==int(annee_en_cours):
+#                 # cumul valeurs actualisées par année selon groupe Uniformat
+#
+#                 if int(item[7]) == 1:
+#                     cum_1+= float(item[3])
+#
+#                 elif int(item[7]) == 2:
+#                     cum_2 += float(item[3])
+#
+#                 elif int(item[7]) == 3:
+#                     cum_3 += float(item[3])
+#
+#                 elif int(item[7]) == 4:
+#                     cum_4 += float(item[3])
+#
+#                 elif int(item[7]) == 5:
+#                     cum_5 += float(item[3])
+#
+#                 elif int(item[7]) == 6:
+#                     cum_6 += float(item[3])
+#
+#                 elif int(item[7]) == 7:
+#                     cum_7 += float(item[3])
+#
+#                 elif int(item[7]) == 8:
+#                     cum_8 += float(item[3])
+#
+#                 elif int(item[7]) == 9:
+#                     cum_9 += float(item[3])
+#                 # cumul par type d'intervention (mtce ou remplacement)
+#                 if item[5] == 'Maintenance':
+#                     cum_total_mtce += float(item[3])
+#                 if item[5] == 'Remplacement':
+#                     cum_total_rempl += float(item[3])
+#
+#         # cumul des dépenses totales prévues par année pour 10 ans pour graphique des actuelles vs. prévues
+#         cum_global_annee=cum_1+cum_2+cum_3+cum_4+cum_5+cum_6+cum_7+cum_8+cum_9
+#         if indice<11:
+#             ajout_annee=(annee_en_cours,int(cum_global_annee))
+#             dep_tot_10_ans.append(ajout_annee)
+#
+#
+#         # ajouter ces cumuls à la liste du groupe applicable
+#         groupe_1.append(int(cum_1))
+#         groupe_2.append(int(cum_2))
+#         groupe_3.append(int(cum_3))
+#         groupe_4.append(int(cum_4))
+#         groupe_5.append(int(cum_5))
+#         groupe_6.append(int(cum_6))
+#         groupe_7.append(int(cum_7))
+#         groupe_8.append(int(cum_8))
+#         groupe_9.append(int(cum_9))
+#
+#         annee_en_cours+=1
+#         indice+=1
+#
+#     # ***************************préparation des données 10 ans du graphique de courbes de dépenses actuelles vs. prévues
+#
+#     fill_10_ans = []
+#     dep_10_ans=[]
+#     for item in dep_tot_10_ans:
+#         #print('item dans dep_tot-10ans:',item)
+#         fill_10_ans.append(item[0])
+#         dep_10_ans.append(item[1])
+#     #print ('liste 10 ans:',fill_10_ans)
+#
+#     # obtenir dépenses des tickets fermés avec type de travail=2 (fonds de prévoyance)
+#     fill_tickets=[]
+#     cur.execute("SELECT DateComplet, CoutTotalTTC, IDCategorie FROM tickets WHERE TypeTravail=%s AND DateComplet>%s AND IDClient=%s",(2,date_anal,client_ident))
+#     for item in cur.fetchall():
+#         cur.execute("SELECT IDGroupe FROM categories WHERE IDCategorie=%s AND IDClient=%s",(item[2],client_ident))
+#         for row in cur.fetchall():
+#             # tenir compte des interventions dans parties communes à usage restreint ('Z') IDGroupe=9
+#             if entite=='syndicat' and row[0]!=9:
+#                 ajout_ticket = (item[0].year, int(item[1]), row[0])
+#                 fill_tickets.append(ajout_ticket)
+#             if entite == 'coproprios' and row[0] == 9:
+#                 ajout_ticket = (item[0].year, int(item[1]), row[0])
+#                 fill_tickets.append(ajout_ticket)
+#
+#     groupe_1_act=[]
+#     groupe_2_act = []
+#     groupe_3_act = []
+#     groupe_4_act = []
+#     groupe_5_act = []
+#     groupe_6_act = []
+#     groupe_7_act = []
+#     groupe_8_act = []
+#     groupe_9_act = []
+#
+#     for item in fill_10_ans:
+#         cum_dep_act_1 = 0
+#         cum_dep_act_2 = 0
+#         cum_dep_act_3 = 0
+#         cum_dep_act_4 = 0
+#         cum_dep_act_5 = 0
+#         cum_dep_act_6 = 0
+#         cum_dep_act_7 = 0
+#         cum_dep_act_8 = 0
+#         cum_dep_act_9 = 0
+#         for unit in fill_tickets:
+#             if unit[0]==item:
+#                   if unit[2]==1:
+#                       cum_dep_act_1+=unit[1]
+#                   if unit[2]==2:
+#                       cum_dep_act_2+=unit[1]
+#                   if unit[2]==3:
+#                       cum_dep_act_3+=unit[1]
+#                   if unit[2]==4:
+#                       cum_dep_act_4+=unit[1]
+#                   if unit[2]==5:
+#                       cum_dep_act_5+=unit[1]
+#                   if unit[2]==6:
+#                       cum_dep_act_6+=unit[1]
+#                   if unit[2]==7:
+#                       cum_dep_act_7+=unit[1]
+#                   if unit[2] == 8:
+#                       cum_dep_act_8 += unit[1]
+#                   if unit[2] == 9:
+#                       cum_dep_act_9 += unit[1]
+#         groupe_1_act.append(cum_dep_act_1)
+#         groupe_2_act.append(cum_dep_act_2)
+#         groupe_3_act.append(cum_dep_act_3)
+#         groupe_4_act.append(cum_dep_act_4)
+#         groupe_5_act.append(cum_dep_act_5)
+#         groupe_6_act.append(cum_dep_act_6)
+#         groupe_7_act.append(cum_dep_act_7)
+#         groupe_8_act.append(cum_dep_act_8)
+#         groupe_9_act.append(cum_dep_act_9)
+#
+# #***************************remplissage de la table dynamique des dépenses prévues au bas de la page
+#
+#     #vérifier si pour coproprios ou admin. Si coproprio, vérifier si accès limité dans paramètres
+#     if usager == 'coproprios':
+#         if limite_acces==1:
+#             return render_template('graph_fdp_dep_limite.html', labels=labels,
+#                                    values_1=groupe_1, values_2=groupe_2, values_3=groupe_3, values_4=groupe_4,
+#                                    values_5=groupe_5,
+#                                    values_6=groupe_6, values_7=groupe_7, values_8=groupe_8, values_9=groupe_9, fill_table=fill_table, labels_1=fill_10_ans,
+#                                    dep_prevues=dep_10_ans, toggle=entite,
+#                                    dep_grp_1=groupe_1_act, dep_grp_2=groupe_2_act, dep_grp_3=groupe_3_act,
+#                                    dep_grp_4=groupe_4_act, dep_grp_5=groupe_5_act, dep_grp_6=groupe_6_act,
+#                                    dep_grp_7=groupe_7_act, dep_grp_8=groupe_8_act, dep_grp_9=groupe_9_act,
+#                                    bd=profile_list[3])
+#         else: # pas de restriction
+#             return render_template('graph_fdp_dep_proprios.html', labels=labels, values_1=groupe_1, values_2=groupe_2,
+#                                    values_3=groupe_3,
+#                                    values_4=groupe_4, values_5=groupe_5, values_6=groupe_6, values_7=groupe_7, values_8=groupe_8,
+#                                    values_9=groupe_9, fill_table=fill_table, toggle=entite,
+#                                    labels_1=fill_10_ans, dep_prevues=dep_10_ans, dep_grp_1=groupe_1_act,
+#                                    dep_grp_2=groupe_2_act,
+#                                    dep_grp_3=groupe_3_act, dep_grp_4=groupe_4_act, dep_grp_5=groupe_5_act,
+#                                    dep_grp_6=groupe_6_act,
+#                                    dep_grp_7=groupe_7_act, dep_grp_8=groupe_8_act, dep_grp_9=groupe_9_act, bd=profile_list[3])
+#
+#     if usager=='admin':
+#         return render_template('graph_fdp_dep_admin.html',labels=labels, values_1=groupe_1, values_2=groupe_2,values_3=groupe_3,
+#                                values_4=groupe_4,values_5=groupe_5,values_6=groupe_6,values_7=groupe_7,values_8=groupe_8,values_9=groupe_9,
+#                                 fill_table=fill_table, toggle=entite,
+#                                labels_1=fill_10_ans, dep_prevues=dep_10_ans, dep_grp_1=groupe_1_act, dep_grp_2=groupe_2_act,
+#                                dep_grp_3=groupe_3_act, dep_grp_4=groupe_4_act, dep_grp_5=groupe_5_act, dep_grp_6=groupe_6_act,
+#                                dep_grp_7=groupe_7_act, dep_grp_8=groupe_8_act, dep_grp_9=groupe_9_act, bd=profile_list[3])
 
 #****************************Page affichant le solde du fonds et les dépenses selon l'analyse ou la modélisation*******************
 @bp_fonds_prevoyance.route('/calcul_solde/<args>', methods=['POST','GET'])
