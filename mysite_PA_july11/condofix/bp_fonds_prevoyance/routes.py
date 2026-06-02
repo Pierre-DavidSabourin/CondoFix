@@ -602,15 +602,15 @@ def depenses_fdp(usager):
     first_projected_year = min(projected_year_candidates) if projected_year_candidates else None
 
     fdp_date_warning = None
-    if (
-        usager == 'admin'
-        and first_projected_year is not None
-        and first_projected_year > annee_anal
-    ):
-        fdp_date_warning = (
-            f"À vérifier : la date d’analyse FDP est {annee_anal}, "
-            f"mais les interventions actives commencent en {first_projected_year}."
-        )
+
+    if usager == 'admin' and first_projected_year is not None:
+        fdp_gap_years = first_projected_year - annee_anal
+
+        if fdp_gap_years >= 3:
+            fdp_date_warning = (
+                f"À vérifier : la date d’analyse FDP est {annee_anal}, "
+                f"mais les interventions actives commencent en {first_projected_year}."
+            )
 
     # Dépenses réelles : tickets fermés de type Fonds de prévoyance
     # dans la fenêtre dynamique, jusqu'à la date courante.
